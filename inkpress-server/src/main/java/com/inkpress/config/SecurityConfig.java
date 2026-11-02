@@ -48,8 +48,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/articles/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/tags/**").permitAll()
-                        // 游客评论
+                        // 游客评论、游客点赞（点赞按 IP 去重）
                         .requestMatchers(HttpMethod.POST, "/api/comments").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/articles/*/like").permitAll()
                         // 接口文档
                         .requestMatchers("/doc.html", "/webjars/**", "/v3/api-docs/**",
                                 "/swagger-ui/**", "/swagger-ui.html", "/favicon.ico").permitAll()

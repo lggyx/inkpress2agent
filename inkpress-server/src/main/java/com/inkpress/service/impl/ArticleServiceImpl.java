@@ -68,6 +68,8 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public PageResult<ArticleVO> frontPage(ArticleQuery query) {
+        // 公开接口限制分页大小，防止超大 pageSize 拖库
+        normalizePage(query);
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<Article>()
                 .eq(Article::getStatus, Constants.ARTICLE_PUBLISHED)
                 .like(StringUtils.hasText(query.getKeyword()), Article::getTitle, query.getKeyword())
@@ -84,6 +86,7 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public PageResult<ArticleVO> adminPage(ArticleQuery query) {
+        normalizePage(query);
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<Article>()
                 .eq(StringUtils.hasText(query.getStatus()), Article::getStatus, query.getStatus())
                 .like(StringUtils.hasText(query.getKeyword()), Article::getTitle, query.getKeyword())
@@ -264,6 +267,18 @@ public class ArticleServiceImpl implements ArticleService {
                 stringRedisTemplate.delete(Constants.KEY_ARTICLE_VIEWS + idStr);
             }
             stringRedisTemplate.opsForSet().remove(Constants.KEY_ARTICLE_VIEWS_DIRTY, idStr);
+        }
+    }
+
+    /** 分页参数规范化：pageNum >= 1，pageSize 限制在 [1, 50] */
+    private void normalizePage(ArticleQuery query) {
+        if (query.getPageNum() == null || query.getPageNum() < 1) {
+            query.setPageNum(1L);
+        }
+        if (query.getPageSize() == null || query.getPageSize() < 1) {
+            query.setPageSize(10L);
+        } else if (query.getPageSize() > 50) {
+            query.setPageSize(50L);
         }
     }
 

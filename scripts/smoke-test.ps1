@@ -105,10 +105,15 @@ Assert "游客评论提交" ($comment.code -eq 200)
 $pending = Invoke-RestMethod "$BaseUrl/api/admin/comments?status=PENDING" -Headers $headers
 Assert "待审核评论可查询" ($pending.code -eq 200 -and $pending.data.total -ge 1)
 
-# 15. 点赞去重
+# 15. 游客点赞可用 + 去重
 $like1 = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/articles/1/like"
 $like2 = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/articles/1/like"
-Assert "重复点赞计数不变" ($like1.data -eq $like2.data)
+Assert "游客点赞可访问（非 401）" ($like1.code -eq 200 -and $null -ne $like1.data)
+Assert "重复点赞计数不变" ($null -ne $like1.data -and $like1.data -eq $like2.data)
+
+# 15b. 超大 pageSize 被限制
+$big = Invoke-RestMethod "$BaseUrl/api/articles/page?pageSize=100000"
+Assert "超大 pageSize 被限制为 50" ($big.code -eq 200 -and $big.data.pageSize -le 50)
 
 # 16. AI 未配置返回明确错误码
 $ai = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/admin/ai/summary" -Headers $headers `
