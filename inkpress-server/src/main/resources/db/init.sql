@@ -127,7 +127,7 @@ AS new ON DUPLICATE KEY UPDATE title = new.title;
 
 INSERT INTO article_tag (article_id, tag_id) VALUES
     (1, 8), (1, 7), (2, 1), (2, 2), (3, 5), (3, 6)
-ON DUPLICATE KEY UPDATE tag_id = VALUES(tag_id);
+AS new ON DUPLICATE KEY UPDATE tag_id = new.tag_id;
 
 INSERT INTO comment (id, article_id, user_id, nickname, email, content, parent_id, status) VALUES
     (1, 1, NULL, '路过的小白', 'reader@example.com', '写得很实在，正好最近也在纠结要不要自建博客，受教了！', NULL, 'APPROVED'),

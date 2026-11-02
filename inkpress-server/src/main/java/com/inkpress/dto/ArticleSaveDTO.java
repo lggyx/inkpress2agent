@@ -23,13 +23,15 @@ public class ArticleSaveDTO {
     private String summary;
 
     @NotBlank(message = "正文不能为空")
+    @Size(max = 100000, message = "正文最长 100000 字")
     private String content;
 
     private String cover;
 
     private Long categoryId;
 
-    /** 标签名称列表，不存在的标签自动创建 */
+    /** 标签名称列表，不存在的标签自动创建，最多 10 个 */
+    @Size(max = 10, message = "标签最多 10 个")
     private List<String> tags;
 
     @NotBlank(message = "状态不能为空")
