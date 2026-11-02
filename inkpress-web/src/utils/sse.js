@@ -54,7 +54,8 @@ export async function streamSse(url, body, { onMessage, onError, onDone, signal 
         const data = event
           .split('\n')
           .filter(line => line.startsWith('data:'))
-          .map(line => line.slice(5))
+          // SSE 规范允许 "data:" 后带一个可选空格，需消费掉避免混入正文
+          .map(line => (line.startsWith('data: ') ? line.slice(6) : line.slice(5)))
           .join('\n')
         if (data) {
           onMessage && onMessage(data)

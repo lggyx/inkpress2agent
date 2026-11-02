@@ -40,7 +40,11 @@ public class CommentServiceImpl implements CommentService {
                 .eq(Comment::getArticleId, articleId)
                 .eq(Comment::getStatus, Constants.COMMENT_APPROVED)
                 .orderByAsc(Comment::getCreatedAt));
-        return comments.stream().map(comment -> toVO(comment, false)).toList();
+        return comments.stream()
+                .map(comment -> toVO(comment, false))
+                // 前台不暴露游客邮箱（选填的联系方式仅管理端可见）
+                .peek(vo -> vo.setEmail(null))
+                .toList();
     }
 
     @Override
@@ -51,8 +55,10 @@ public class CommentServiceImpl implements CommentService {
         }
         if (dto.getParentId() != null) {
             Comment parent = commentMapper.selectById(dto.getParentId());
-            if (parent == null || !parent.getArticleId().equals(dto.getArticleId())) {
-                throw BizException.of("回复的评论不存在");
+            // 只允许回复同文章下已通过的评论，避免前台出现挂在不可见评论下的孤儿子评论
+            if (parent == null || !parent.getArticleId().equals(dto.getArticleId())
+                    || !Constants.COMMENT_APPROVED.equals(parent.getStatus())) {
+                throw BizException.of("回复的评论不存在或不可见");
             }
         }
         Comment comment = new Comment();
