@@ -1,0 +1,57 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: inkpress
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/inkpress?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:root123}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+
+springdoc:
+  api-docs:
+    enabled: true
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+inkpress:
+  jwt:
+    # 生产环境务必通过环境变量覆盖
+    secret: ${JWT_SECRET:inkpress-default-secret-please-change-in-production-0123456789}
+    expire-hours: 168
+  ai:
+    # OpenAI 兼容协议：更换厂商只需改 base-url / api-key / model
+    # 智谱:   https://open.bigmodel.cn/api/paas/v4   模型示例 glm-4-flash（免费）
+    # DeepSeek: https://api.deepseek.com/v1          模型示例 deepseek-chat
+    # Kimi:   https://api.moonshot.cn/v1              模型示例 moonshot-v1-8k
+    # 通义:   https://dashscope.aliyuncs.com/compatible-mode/v1  模型示例 qwen-turbo
+    # 本地:   http://localhost:11434/v1               模型示例 llama3.1（Ollama）
+    base-url: ${AI_BASE_URL:https://open.bigmodel.cn/api/paas/v4}
+    api-key: ${AI_API_KEY:}
+    model: ${AI_MODEL:glm-4-flash}
+    temperature: 0.7
+    timeout-seconds: 60
+  comment:
+    # 评论是否需要管理员审核后展示
+    audit: true
+
+logging:
+  level:
+    com.inkpress: info

@@ -1,0 +1,102 @@
+/* 全局样式 */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  background-color: #f6f7f9;
+  color: #303133;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* 文章正文排版 */
+.article-content {
+  line-height: 1.85;
+  font-size: 16px;
+  word-break: break-word;
+}
+
+.article-content h1,
+.article-content h2,
+.article-content h3 {
+  margin: 1.4em 0 0.7em;
+  font-weight: 600;
+}
+
+.article-content h1 {
+  font-size: 1.6em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.article-content h2 {
+  font-size: 1.35em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.article-content p {
+  margin: 0.8em 0;
+}
+
+.article-content img {
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+.article-content blockquote {
+  margin: 0.8em 0;
+  padding: 0.4em 1em;
+  border-left: 4px solid #409eff;
+  background: #f5f7fa;
+  color: #606266;
+}
+
+.article-content pre {
+  padding: 1em;
+  border-radius: 6px;
+  overflow-x: auto;
+  background: #f6f8fa;
+}
+
+.article-content pre code {
+  font-family: 'JetBrains Mono', Consolas, Menlo, monospace;
+  font-size: 14px;
+  background: transparent;
+  padding: 0;
+}
+
+.article-content code {
+  font-family: 'JetBrains Mono', Consolas, Menlo, monospace;
+  font-size: 0.9em;
+  background: #f1f3f5;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+
+.article-content table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: 100%;
+}
+
+.article-content th,
+.article-content td {
+  border: 1px solid #dcdfe6;
+  padding: 0.5em 0.8em;
+}
+
+.article-content th {
+  background: #f5f7fa;
+}
+
+.article-content ul,
+.article-content ol {
+  padding-left: 1.6em;
+}

@@ -1,0 +1,24 @@
+# Java / Maven
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# Node
+node_modules/
+dist/
+*.local
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Logs & OS
+logs/
+*.log
+.DS_Store
+Thumbs.db
+
+# 环境变量（含密钥，禁止入库）
+.env
