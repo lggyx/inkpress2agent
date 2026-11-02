@@ -120,6 +120,8 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public List<ArticleVO> hot(int limit) {
+        // 边界保护：LIMIT 0/负数会导致 SQL 语法错误，过大会全表拉取
+        int safeLimit = Math.min(Math.max(limit, 1), 20);
         String cached = stringRedisTemplate.opsForValue().get(Constants.KEY_HOT_ARTICLES);
         if (cached != null) {
             try {
@@ -132,7 +134,7 @@ public class ArticleServiceImpl implements ArticleService {
         List<Article> articles = articleMapper.selectList(new LambdaQueryWrapper<Article>()
                 .eq(Article::getStatus, Constants.ARTICLE_PUBLISHED)
                 .orderByDesc(Article::getViews)
-                .last("LIMIT " + limit));
+                .last("LIMIT " + safeLimit));
         List<ArticleVO> result = articles.stream().map(this::toVO).toList();
         try {
             stringRedisTemplate.opsForValue().set(Constants.KEY_HOT_ARTICLES,

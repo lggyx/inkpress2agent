@@ -29,6 +29,8 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public void save(Category category) {
+        // 新增操作不允许携带 id，避免与自增主键冲突
+        category.setId(null);
         checkNameUnique(category.getName(), null);
         categoryMapper.insert(category);
     }

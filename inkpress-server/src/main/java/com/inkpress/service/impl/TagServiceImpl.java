@@ -27,6 +27,8 @@ public class TagServiceImpl implements TagService {
 
     @Override
     public void save(Tag tag) {
+        // 新增操作不允许携带 id，避免与自增主键冲突
+        tag.setId(null);
         checkNameUnique(tag.getName(), null);
         tagMapper.insert(tag);
     }
