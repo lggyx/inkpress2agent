@@ -132,3 +132,5 @@ inkpress
 - [数据库设计](docs/数据库设计.md)
 - [接口文档](docs/接口文档.md)（在线版：启动后端访问 `/doc.html`）
 - [测试报告](docs/测试报告.md)
+- [工程制图](docs/diagrams/README.md)（9 张 PlantUML 图纸，PNG/SVG 双格式）
+- [接口冒烟测试脚本](scripts/smoke-test.ps1)（后端启动后执行，20 项断言）

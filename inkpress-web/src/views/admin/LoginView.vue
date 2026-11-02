@@ -3,14 +3,15 @@ import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
-import { login } from '@/api/auth'
+import { login, register } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
-const form = reactive({ username: '', password: '' })
+const mode = ref('login') // login | register
+const form = reactive({ username: '', password: '', nickname: '' })
 const loading = ref(false)
 
 async function submit() {
@@ -18,15 +19,33 @@ async function submit() {
     ElMessage.warning('请输入用户名和密码')
     return
   }
+  if (mode.value === 'register' && form.password.length < 6) {
+    ElMessage.warning('密码长度须在 6-32 位之间')
+    return
+  }
   loading.value = true
   try {
-    const { data } = await login(form)
+    if (mode.value === 'register') {
+      await register({
+        username: form.username,
+        password: form.password,
+        nickname: form.nickname || undefined
+      })
+      ElMessage.success('注册成功，已自动登录')
+    }
+    const { data } = await login({ username: form.username, password: form.password })
     userStore.setLogin(data.token, data.user)
-    ElMessage.success('登录成功')
+    if (mode.value === 'login') {
+      ElMessage.success('登录成功')
+    }
     router.push(route.query.redirect || '/admin')
   } finally {
     loading.value = false
   }
+}
+
+function switchMode(target) {
+  mode.value = target
 }
 </script>
 
@@ -39,15 +58,23 @@ async function submit() {
         <p>基于 Spring Boot + Vue 的个人博客与文章管理系统</p>
       </div>
 
+      <div class="mode-tabs">
+        <span class="tab" :class="{ active: mode === 'login' }" @click="switchMode('login')">登录</span>
+        <span class="tab" :class="{ active: mode === 'register' }" @click="switchMode('register')">注册</span>
+      </div>
+
       <el-form @submit.prevent="submit">
         <el-form-item>
-          <el-input v-model="form.username" placeholder="用户名" :prefix-icon="User" size="large" />
+          <el-input v-model="form.username" placeholder="用户名（3-20 位字母数字下划线）" :prefix-icon="User" size="large" />
+        </el-form-item>
+        <el-form-item v-if="mode === 'register'">
+          <el-input v-model="form.nickname" placeholder="昵称（选填）" :prefix-icon="User" size="large" maxlength="20" />
         </el-form-item>
         <el-form-item>
           <el-input
             v-model="form.password"
             type="password"
-            placeholder="密码"
+            :placeholder="mode === 'register' ? '密码（6-32 位）' : '密码'"
             :prefix-icon="Lock"
             size="large"
             show-password
@@ -55,7 +82,7 @@ async function submit() {
           />
         </el-form-item>
         <el-button type="primary" size="large" class="login-btn" :loading="loading" @click="submit">
-          登 录
+          {{ mode === 'register' ? '注 册' : '登 录' }}
         </el-button>
       </el-form>
 
@@ -82,7 +109,7 @@ async function submit() {
 
 .login-brand {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .login-brand .logo-mark {
@@ -106,6 +133,27 @@ async function submit() {
   color: #909399;
   font-size: 12px;
   margin: 0;
+}
+
+.mode-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 18px;
+}
+
+.tab {
+  font-size: 15px;
+  color: #909399;
+  cursor: pointer;
+  padding-bottom: 6px;
+  border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+  color: #409eff;
+  font-weight: 600;
+  border-bottom-color: #409eff;
 }
 
 .login-btn {

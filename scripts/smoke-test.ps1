@@ -45,17 +45,21 @@ Assert "管理员登录获取 token" ($login.code -eq 200 -and $token.Length -gt
 $headers = @{ Authorization = "Bearer $token" }
 
 # 6. 错误密码
-try {
-    Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/auth/login" `
-        -ContentType "application/json" -Body '{"username":"admin","password":"wrong"}' | Out-Null
-    $wrongPasswordOk = $false
-} catch {
-    # 后端返回 HTTP 200 + code=1002，不会抛异常；走到这里说明结构异常
-    $wrongPasswordOk = $false
-}
 $wrongLogin = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/auth/login" `
     -ContentType "application/json" -Body '{"username":"admin","password":"wrong"}'
 Assert "错误密码返回 code=1002" ($wrongLogin.code -eq 1002)
+
+# 6b. 注册新用户并登录（用户名带时间戳保证唯一）
+$stamp = Get-Date -Format "yyyyMMddHHmmss"
+$newUsername = "smoke_$stamp"
+$regBody = '{"username":"' + $newUsername + '","password":"test123456","nickname":"冒烟测试"}'
+$reg = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/auth/register" `
+    -ContentType "application/json; charset=utf-8" `
+    -Body ([System.Text.Encoding]::UTF8.GetBytes($regBody))
+Assert "注册新用户" ($reg.code -eq 200)
+$newUserLogin = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/auth/login" `
+    -ContentType "application/json" -Body ('{"username":"' + $newUsername + '","password":"test123456"}')
+Assert "新用户登录" ($newUserLogin.code -eq 200 -and $null -ne $newUserLogin.data.token)
 
 # 7. 越权访问（无 token）
 $adminNoAuth = Invoke-RestMethod "$BaseUrl/api/admin/dashboard/stats"
@@ -118,9 +122,11 @@ $ai = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/admin/ai/summary" -Heade
     -ContentType "application/json" -Body '{"content":"测试内容"}'
 Assert "AI 未配置返回 code=2001" ($ai.code -eq 2001)
 
-# 17. 清理：删除测试文章与测试评论
+# 17. 清理：删除测试文章与测试用户
 $del = Invoke-RestMethod -Method Delete -Uri "$BaseUrl/api/admin/articles/$newId" -Headers $headers
 Assert "删除测试文章" ($del.code -eq 200)
+$delUser = Invoke-RestMethod -Method Delete -Uri "$BaseUrl/api/admin/users/$($newUserLogin.data.user.id)" -Headers $headers
+Assert "清理测试用户" ($delUser.code -eq 200)
 
 Write-Host ""
 Write-Host ("冒烟测试完成：通过 {0} 项，失败 {1} 项" -f $pass, $fail)
