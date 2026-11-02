@@ -13,6 +13,7 @@ const route = useRoute()
 const userStore = useUserStore()
 
 const article = ref(null)
+const notFound = ref(false)
 const likeCount = ref(0)
 const liked = ref(false)
 const contentRef = ref(null)
@@ -32,15 +33,22 @@ function likedKey() {
 }
 
 async function load() {
-  const { data } = await detail(route.params.id)
-  article.value = data
-  likeCount.value = data.likes
-  liked.value = localStorage.getItem(likedKey()) === '1'
-  await nextTick()
-  if (contentRef.value) {
-    highlightIn(contentRef.value)
+  notFound.value = false
+  article.value = null
+  try {
+    const { data } = await detail(route.params.id)
+    article.value = data
+    likeCount.value = data.likes
+    liked.value = localStorage.getItem(likedKey()) === '1'
+    await nextTick()
+    if (contentRef.value) {
+      highlightIn(contentRef.value)
+    }
+    await loadComments()
+  } catch (e) {
+    // 草稿、已删除或不存在的文章：给出明确空状态而非白屏
+    notFound.value = true
   }
-  await loadComments()
 }
 
 async function loadComments() {
@@ -106,8 +114,12 @@ watch(() => route.params.id, () => {
 </script>
 
 <template>
-  <div class="article-detail" v-if="article">
-    <div class="detail-main">
+  <div class="article-detail">
+    <el-empty v-if="notFound" description="文章不存在或未发布">
+      <el-button type="primary" @click="$router.push('/')">返回首页</el-button>
+    </el-empty>
+
+    <div class="detail-main" v-else-if="article">
       <article class="detail-card">
         <h1 class="detail-title">{{ article.title }}</h1>
         <div class="detail-meta">

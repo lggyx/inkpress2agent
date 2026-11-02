@@ -37,7 +37,11 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  // 每次导航回到页面顶部，避免从长列表进入详情时停留在旧滚动位置
+  scrollBehavior() {
+    return { top: 0 }
+  }
 })
 
 router.beforeEach(to => {
