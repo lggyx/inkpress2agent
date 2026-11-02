@@ -1,0 +1,41 @@
+@startuml 06-AI润色流式调用时序图
+skinparam dpi 200
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+title AI 润色（SSE 流式）调用时序图
+
+actor 管理员 as admin
+participant "ArticleEditView\n(Vditor 编辑器)" as editor
+participant "AiController" as ctrl
+participant "AiServiceImpl" as svc
+participant "OpenAiCompatibleAdapter\n(ChatModelAdapter SPI)" as adapter
+participant "大模型 API\n(OpenAI 兼容)" as llm
+
+admin -> editor : 点击「AI 润色」\n（可填额外要求）
+editor -> ctrl : POST /api/admin/ai/polish\n{content, instruction}
+ctrl -> svc : ensureAvailable()
+alt API Key 未配置
+    svc --> editor : code=2001（前端提示配置）
+else 已配置
+    ctrl -> adapter : stream(messages, handler)\n【aiExecutor 线程池】
+    ctrl --> editor : 建立 SSE 响应流（SseEmitter）
+    adapter -> llm : POST /chat/completions\n{model, messages, stream:true}
+    loop 逐行读取上游 SSE
+        llm --> adapter : data: {"choices":[{"delta":{"content":"…"}}]}
+        adapter -> adapter : 解析 delta.content
+        adapter -> ctrl : handler.onDelta(delta)
+        ctrl -> editor : SseEmitter.send(delta)
+        editor -> editor : fetch + ReadableStream 解析\n节流 150ms 调用 vditor.setValue\n（打字机效果）
+    end
+    llm --> adapter : data: [DONE]
+    adapter -> ctrl : handler.onDone()
+    ctrl -> editor : emitter.complete()
+    editor --> admin : 润色完成，作者确认/修改后保存
+end
+
+note over adapter, llm
+  适配层屏蔽厂商差异：
+  智谱 / DeepSeek / Kimi / 通义 / Ollama
+  仅需更换 base-url、api-key、model 配置
+end note
+@enduml

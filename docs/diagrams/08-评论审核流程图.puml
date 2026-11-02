@@ -1,0 +1,34 @@
+@startuml 08-评论审核流程图
+skinparam dpi 200
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+title 评论提交与审核流程图
+
+|访客/用户|
+start
+:在文章页填写评论\n（游客需填昵称）;
+:POST /api/comments;
+if (文章存在且已发布?) then (否)
+  :提示"文章不存在或未发布";
+  stop
+else (是)
+endif
+if (是登录管理员?) then (是)
+  :状态 = APPROVED（直接展示）;
+elseif (系统未开启审核?) then (是)
+  :状态 = APPROVED;
+else (否)
+  :状态 = PENDING（待审核）;
+endif
+:落库 comment 表;
+|管理员|
+:后台"评论管理"查看待审核列表;
+if (审核结论?) then (通过)
+  :PUT status = APPROVED;
+  :前台文章页展示该评论;
+else (拒绝)
+  :PUT status = REJECTED;
+  :前台不展示;
+endif
+stop
+@enduml

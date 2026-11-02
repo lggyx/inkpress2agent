@@ -1,0 +1,37 @@
+@startuml 07-浏览量计数与回写流程图
+skinparam dpi 200
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+title 浏览量 Redis 计数与定时回写流程图
+
+start
+:访客打开文章详情页;
+:后端校验文章存在且已发布;
+:Redis INCR 文章浏览量计数键
+（原子自增，O(1) 高频写入）;
+:Redis SADD 脏集合标记该文章
+（等待定时回写）;
+:返回文章详情（前端渲染 Markdown）;
+
+partition "定时任务（每 60 秒）" {
+  :SMEMBERS 浏览量脏集合;
+  if (无待回写文章?) then (是)
+    :本轮结束;
+    stop
+  else (否)
+    :遍历脏文章 ID;
+    while (还有文章?) is (是)
+      :GET 计数键得到增量 delta;
+      if (delta > 0 ?) then (是)
+        :UPDATE article\nSET views = views + delta;
+      else (否)
+      endif
+      :DEL 计数键;
+      :SREM 脏集合;
+    endwhile (否)
+  endif
+}
+:数据库浏览量与 Redis 最终一致
+（一致性窗口内允许少量延迟）;
+stop
+@enduml

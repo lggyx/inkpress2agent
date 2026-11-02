@@ -1,0 +1,51 @@
+@startuml 03-用例图
+skinparam dpi 200
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+left to right direction
+title InkPress 系统用例图
+
+actor 访客 as guest
+actor "管理员（作者）" as admin
+
+rectangle "InkPress 系统" {
+  usecase "浏览文章列表" as UC1
+  usecase "阅读文章详情" as UC2
+  usecase "按分类/标签筛选" as UC3
+  usecase "搜索文章" as UC4
+  usecase "查看归档" as UC5
+  usecase "发表评论/回复" as UC6
+  usecase "点赞文章" as UC7
+
+  usecase "登录认证" as UC10
+  usecase "数据看板" as UC11
+  usecase "撰写/编辑文章" as UC12
+  usecase "AI 润色/摘要/标签" as UC13
+  usecase "管理分类与标签" as UC14
+  usecase "评论审核" as UC15
+  usecase "用户管理" as UC16
+  usecase "查看操作日志" as UC17
+}
+
+guest --> UC1
+guest --> UC2
+guest --> UC3
+guest --> UC4
+guest --> UC5
+guest --> UC6
+guest --> UC7
+
+admin --> UC1
+admin --> UC10
+admin --> UC11
+admin --> UC12
+admin --> UC13
+admin --> UC14
+admin --> UC15
+admin --> UC16
+admin --> UC17
+
+UC12 ..> UC10 : <<include>>
+UC13 ..> UC10 : <<include>>
+UC15 ..> UC10 : <<include>>
+@enduml

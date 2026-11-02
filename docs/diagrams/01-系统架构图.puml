@@ -1,0 +1,52 @@
+@startuml 01-系统架构图
+skinparam dpi 200
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+title InkPress 系统总体架构图
+
+actor 访客 as guest
+actor "管理员（作者）" as admin
+
+package "浏览器" {
+  [前台页面\nVue Router + Element Plus] as front
+  [后台管理\nECharts 看板 / Vditor 编辑器] as backui
+  [Pinia 状态管理\nAxios 请求封装] as store
+}
+
+package "Nginx（80）" {
+  [静态资源服务] as nginx
+  [反向代理 /api] as proxy
+}
+
+package "Spring Boot 应用（8080）" {
+  [Controller 接口层] as ctrl
+  [Service 业务层] as svc
+  [Spring Security\n+ JWT 过滤器] as sec
+  [MyBatis-Plus\nMapper 持久层] as mapper
+  [AI 适配层\nChatModelAdapter SPI] as ai
+  [AOP 操作日志] as aop
+  [定时任务\n浏览量回写] as sched
+}
+
+database "MySQL 8.0" as mysql
+database "Redis 7" as redis
+cloud "大模型 API\nOpenAI 兼容协议\n(智谱/DeepSeek/通义/Kimi)" as llm
+
+guest --> front
+admin --> backui
+front --> store
+backui --> store
+store --> nginx
+nginx --> proxy
+proxy --> sec
+sec --> ctrl
+ctrl --> svc
+svc --> mapper
+svc --> ai
+ctrl --> aop
+svc --> redis
+sched --> mysql
+mapper --> mysql
+ai --> llm
+@enduml

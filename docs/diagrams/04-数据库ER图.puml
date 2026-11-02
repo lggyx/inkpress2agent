@@ -1,0 +1,86 @@
+@startuml 04-数据库ER图
+skinparam dpi 200
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+skinparam linetype ortho
+hide circle
+hide empty members
+title InkPress 数据库 E-R 图
+
+entity "sys_user（用户）" as user {
+  * id : BIGINT <<PK>>
+  --
+  * username : VARCHAR(50) <<UK>>
+  * password : VARCHAR(100)
+  nickname : VARCHAR(50)
+  avatar : VARCHAR(255)
+  * role : VARCHAR(20)
+  * status : TINYINT
+  * created_at / updated_at
+}
+
+entity "article（文章）" as article {
+  * id : BIGINT <<PK>>
+  --
+  * title : VARCHAR(200)
+  summary : VARCHAR(500)
+  * content : LONGTEXT
+  cover : VARCHAR(255)
+  category_id : BIGINT <<FK>>
+  author_id : BIGINT <<FK>>
+  * status : VARCHAR(20)
+  is_top : TINYINT
+  views / likes : BIGINT
+  published_at : DATETIME
+}
+
+entity "category（分类）" as category {
+  * id : BIGINT <<PK>>
+  --
+  * name : VARCHAR(50) <<UK>>
+  description : VARCHAR(200)
+  sort : INT
+}
+
+entity "tag（标签）" as tag {
+  * id : BIGINT <<PK>>
+  --
+  * name : VARCHAR(50) <<UK>>
+}
+
+entity "article_tag（文章标签关联）" as article_tag {
+  * article_id : BIGINT <<PK,FK>>
+  * tag_id : BIGINT <<PK,FK>>
+}
+
+entity "comment（评论）" as comment {
+  * id : BIGINT <<PK>>
+  --
+  * article_id : BIGINT <<FK>>
+  user_id : BIGINT <<FK>>
+  * nickname : VARCHAR(50)
+  email : VARCHAR(100)
+  * content : VARCHAR(1000)
+  parent_id : BIGINT
+  * status : VARCHAR(20)
+}
+
+entity "operation_log（操作日志）" as log {
+  * id : BIGINT <<PK>>
+  --
+  user_id : BIGINT
+  username : VARCHAR(50)
+  module / operation
+  method / params / ip
+  cost_ms : BIGINT
+}
+
+user ||--o{ article : "1:N 撰写"
+category ||--o{ article : "1:N 归类"
+article ||--|{ article_tag : "1:N"
+tag ||--|{ article_tag : "1:N"
+article ||--o{ comment : "1:N"
+comment |o--o| comment : "parent_id 自关联\n（一级回复）"
+user ||--o{ comment : "0:N 登录评论"
+user ||--o{ log : "0:N 操作"
+@enduml

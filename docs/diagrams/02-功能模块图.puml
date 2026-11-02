@@ -1,0 +1,32 @@
+@startmindmap 02-功能模块图
+skinparam dpi 200
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+title InkPress 功能模块图
+
+* InkPress 博客与文章管理系统
+** 前台（访客）
+*** 文章浏览
+*** 分类 / 标签筛选
+*** 关键词搜索
+*** 归档时间线
+*** 评论 / 回复
+*** 点赞
+** 后台（管理员）
+*** 数据看板
+*** 文章管理
+*** 分类管理
+*** 标签管理
+*** 评论审核
+*** 用户管理
+*** 操作日志
+** AI 写作辅助
+*** 流式润色
+*** 摘要生成
+*** 标签推荐
+** 系统支撑
+*** JWT 认证授权
+*** Redis 缓存与计数
+*** 全局异常处理
+*** 操作日志 AOP
+@endmindmap
