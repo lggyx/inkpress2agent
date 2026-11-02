@@ -30,9 +30,9 @@ public class ArticleSaveDTO {
 
     private Long categoryId;
 
-    /** 标签名称列表，不存在的标签自动创建，最多 10 个 */
+    /** 标签名称列表，不存在的标签自动创建，最多 10 个、单个最长 50 字（与 tag.name 字段一致） */
     @Size(max = 10, message = "标签最多 10 个")
-    private List<String> tags;
+    private List<@Size(max = 50, message = "单个标签最长 50 字") String> tags;
 
     @NotBlank(message = "状态不能为空")
     private String status;

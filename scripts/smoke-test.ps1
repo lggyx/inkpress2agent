@@ -87,6 +87,19 @@ $saved = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/admin/articles" `
 $newId = $saved.data
 Assert "保存草稿文章" ($saved.code -eq 200 -and $newId -gt 0)
 
+# 10b. 超长标签名被参数校验拒绝（tag.name 为 VARCHAR(50)）
+$longTag = "长" * 60
+$badTagBody = @{
+    title   = "超长标签测试"
+    content = "测试内容"
+    status  = "DRAFT"
+    tags    = @($longTag)
+} | ConvertTo-Json
+$badTag = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/admin/articles" `
+    -Headers $headers -ContentType "application/json; charset=utf-8" `
+    -Body ([System.Text.Encoding]::UTF8.GetBytes($badTagBody))
+Assert "超长标签名返回参数错误" ($badTag.code -eq 400)
+
 # 11. 草稿对前台不可见（应 404）
 $draftDetail = Invoke-RestMethod "$BaseUrl/api/articles/$newId"
 Assert "草稿前台详情返回 404" ($draftDetail.code -eq 404)
