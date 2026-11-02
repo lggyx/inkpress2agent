@@ -37,11 +37,10 @@ public class CommentController {
         return ApiResponse.ok(commentService.listByArticle(articleId));
     }
 
-    @Operation(summary = "发表评论（游客或登录用户）")
+    @Operation(summary = "发表评论（游客或登录用户），返回落库状态 PENDING/APPROVED")
     @PostMapping("/comments")
-    public ApiResponse<Void> create(@Valid @RequestBody CommentDTO dto) {
-        commentService.create(dto);
-        return ApiResponse.ok();
+    public ApiResponse<String> create(@Valid @RequestBody CommentDTO dto) {
+        return ApiResponse.ok(commentService.create(dto));
     }
 
     @Operation(summary = "管理端评论分页")

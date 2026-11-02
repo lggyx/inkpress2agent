@@ -48,7 +48,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public void create(CommentDTO dto) {
+    public String create(CommentDTO dto) {
         Article article = articleMapper.selectById(dto.getArticleId());
         if (article == null || !Constants.ARTICLE_PUBLISHED.equals(article.getStatus())) {
             throw BizException.of("文章不存在或未发布");
@@ -82,6 +82,7 @@ public class CommentServiceImpl implements CommentService {
         }
         comment.setStatus(status);
         commentMapper.insert(comment);
+        return status;
     }
 
     @Override

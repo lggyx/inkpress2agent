@@ -101,7 +101,7 @@ $commentBody = @{ articleId = 1; nickname = "冒烟测试用户"; content = "自
 $comment = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/comments" `
     -ContentType "application/json; charset=utf-8" `
     -Body ([System.Text.Encoding]::UTF8.GetBytes($commentBody))
-Assert "游客评论提交" ($comment.code -eq 200)
+Assert "游客评论提交且状态为待审核" ($comment.code -eq 200 -and $comment.data -eq "PENDING")
 
 # 14. 管理端能看到待审核评论
 $pending = Invoke-RestMethod "$BaseUrl/api/admin/comments?status=PENDING" -Headers $headers

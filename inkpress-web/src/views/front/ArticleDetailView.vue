@@ -81,14 +81,15 @@ async function submitComment() {
   }
   submitting.value = true
   try {
-    await create({
+    const { data: status } = await create({
       articleId: Number(route.params.id),
       nickname: commentForm.value.nickname || undefined,
       email: commentForm.value.email || undefined,
       content: commentForm.value.content,
       parentId: commentForm.value.parentId
     })
-    ElMessage.success('评论提交成功，审核通过后将展示')
+    // 按落库状态给出准确提示：管理员或未开启审核时直接可见
+    ElMessage.success(status === 'PENDING' ? '评论提交成功，审核通过后将展示' : '评论已发布')
     commentForm.value.content = ''
     cancelReply()
     await loadComments()
