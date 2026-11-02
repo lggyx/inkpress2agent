@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.inkpress.common.BizException;
 import com.inkpress.common.Constants;
+import com.inkpress.common.ErrorCode;
 import com.inkpress.common.PageResult;
 import com.inkpress.dto.CommentDTO;
 import com.inkpress.entity.Article;
@@ -93,7 +94,7 @@ public class CommentServiceImpl implements CommentService {
         }
         Comment comment = commentMapper.selectById(id);
         if (comment == null) {
-            throw new BizException(com.inkpress.common.ErrorCode.NOT_FOUND);
+            throw new BizException(ErrorCode.NOT_FOUND);
         }
         Comment update = new Comment();
         update.setId(id);

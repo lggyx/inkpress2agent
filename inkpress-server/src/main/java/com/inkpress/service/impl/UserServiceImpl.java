@@ -3,6 +3,8 @@ package com.inkpress.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.inkpress.common.BizException;
+import com.inkpress.common.Constants;
+import com.inkpress.common.ErrorCode;
 import com.inkpress.common.PageResult;
 import com.inkpress.entity.User;
 import com.inkpress.mapper.UserMapper;
@@ -39,9 +41,9 @@ public class UserServiceImpl implements UserService {
         }
         User user = userMapper.selectById(id);
         if (user == null) {
-            throw new BizException(com.inkpress.common.ErrorCode.NOT_FOUND);
+            throw new BizException(ErrorCode.NOT_FOUND);
         }
-        if (com.inkpress.common.Constants.ROLE_ADMIN.equals(user.getRole())) {
+        if (Constants.ROLE_ADMIN.equals(user.getRole())) {
             throw BizException.of("管理员账号不能删除");
         }
         userMapper.deleteById(id);
@@ -51,7 +53,7 @@ public class UserServiceImpl implements UserService {
     public void resetPassword(Long id, String password) {
         User user = userMapper.selectById(id);
         if (user == null) {
-            throw new BizException(com.inkpress.common.ErrorCode.NOT_FOUND);
+            throw new BizException(ErrorCode.NOT_FOUND);
         }
         User update = new User();
         update.setId(id);

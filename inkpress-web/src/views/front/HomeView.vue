@@ -66,6 +66,14 @@ function changePage(page) {
   setQuery({ page: page > 1 ? page : undefined })
 }
 
+/** 文章卡片上的标签只有名称，按名称换算成 tagId 再筛选 */
+function goTagByName(name) {
+  const tag = tags.value.find(item => item.name === name)
+  if (tag) {
+    setQuery({ tagId: tag.id })
+  }
+}
+
 watch(
   () => [route.query.keyword, route.query.categoryId, route.query.tagId],
   () => {

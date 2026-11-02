@@ -15,6 +15,7 @@ import com.inkpress.dto.ArticleSaveDTO;
 import com.inkpress.entity.Article;
 import com.inkpress.entity.ArticleTag;
 import com.inkpress.entity.Category;
+import com.inkpress.entity.Comment;
 import com.inkpress.entity.Tag;
 import com.inkpress.entity.User;
 import com.inkpress.mapper.ArticleMapper;
@@ -242,8 +243,7 @@ public class ArticleServiceImpl implements ArticleService {
     public void delete(Long id) {
         articleMapper.deleteById(id);
         articleTagMapper.delete(new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, id));
-        commentMapper.delete(new LambdaQueryWrapper<com.inkpress.entity.Comment>()
-                .eq(com.inkpress.entity.Comment::getArticleId, id));
+        commentMapper.delete(new LambdaQueryWrapper<Comment>().eq(Comment::getArticleId, id));
     }
 
     /** 浏览量回写：每分钟将 Redis 计数合并进数据库 */
