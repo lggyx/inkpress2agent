@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "文章")
 @RestController
@@ -62,6 +63,12 @@ public class ArticleController {
     @GetMapping("/articles/{id}")
     public ApiResponse<ArticleDetailVO> detail(@PathVariable Long id) {
         return ApiResponse.ok(articleService.getDetail(id));
+    }
+
+    @Operation(summary = "相邻文章（上一篇/下一篇，按发布时间）")
+    @GetMapping("/articles/{id}/adjacent")
+    public ApiResponse<Map<String, Object>> adjacent(@PathVariable Long id) {
+        return ApiResponse.ok(articleService.adjacent(id));
     }
 
     @Operation(summary = "点赞")

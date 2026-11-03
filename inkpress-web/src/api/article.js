@@ -5,6 +5,8 @@ export const frontPage = params => request.get('/articles/page', { params })
 
 export const detail = id => request.get(`/articles/${id}`)
 
+export const adjacent = id => request.get(`/articles/${id}/adjacent`)
+
 export const hot = (limit = 5) => request.get('/articles/hot', { params: { limit } })
 
 export const archives = () => request.get('/articles/archives')

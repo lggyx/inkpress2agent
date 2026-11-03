@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { detail, like as likeApi } from '@/api/article'
+import { adjacent } from '@/api/article'
 import { listByArticle, create } from '@/api/comment'
 import { renderMarkdown, highlightIn } from '@/utils/markdown'
 import ArticleToc from '@/components/ArticleToc.vue'
@@ -23,6 +24,10 @@ const submitting = ref(false)
 const commentForm = ref({ nickname: '', email: '', content: '', parentId: null })
 const replyTo = ref(null)
 const tocRef = ref(null)
+const prevArticle = ref(null)
+const nextArticle = ref(null)
+const readProgress = ref(0)
+let progressRaf = null
 
 const html = computed(() => renderMarkdown(article.value?.content))
 
@@ -37,10 +42,15 @@ async function load() {
   notFound.value = false
   article.value = null
   try {
-    const { data } = await detail(route.params.id)
-    article.value = data
-    likeCount.value = data.likes
+    const [detailRes, adjacentRes] = await Promise.all([
+      detail(route.params.id),
+      adjacent(route.params.id)
+    ])
+    article.value = detailRes.data
+    likeCount.value = detailRes.data.likes
     liked.value = localStorage.getItem(likedKey()) === '1'
+    prevArticle.value = adjacentRes.data.prev
+    nextArticle.value = adjacentRes.data.next
     await nextTick()
     if (contentRef.value) {
       highlightIn(contentRef.value)
@@ -48,11 +58,40 @@ async function load() {
       tocRef.value?.refresh()
     }
     await loadComments()
+    updateProgress()
   } catch (e) {
     // 草稿、已删除或不存在的文章：给出明确空状态而非白屏
     notFound.value = true
   }
 }
+
+/** 阅读进度：文章主体区域内已读比例 */
+function updateProgress() {
+  if (progressRaf) {
+    return
+  }
+  progressRaf = requestAnimationFrame(() => {
+    progressRaf = null
+    const card = document.querySelector('.detail-card')
+    if (!card) {
+      return
+    }
+    const rect = card.getBoundingClientRect()
+    const total = rect.height - window.innerHeight
+    const passed = Math.min(Math.max(-rect.top, 0), Math.max(total, 1))
+    readProgress.value = total > 0 ? Math.round((passed / total) * 100) : 100
+  })
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', updateProgress, { passive: true })
+  window.addEventListener('resize', updateProgress)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', updateProgress)
+  window.removeEventListener('resize', updateProgress)
+})
 
 async function loadComments() {
   const { data } = await listByArticle(route.params.id)
@@ -131,6 +170,9 @@ watch(() => route.params.id, () => {
       </div>
 
       <div class="detail-layout">
+        <!-- 阅读进度条 -->
+        <div class="read-progress" :style="{ width: readProgress + '%' }"></div>
+
         <div class="detail-main">
           <article class="detail-card">
         <h1 class="detail-title">{{ article.title }}</h1>
@@ -165,6 +207,28 @@ watch(() => route.params.id, () => {
           </button>
         </div>
       </article>
+
+      <!-- 上一篇 / 下一篇 -->
+      <nav class="post-nav" v-if="prevArticle || nextArticle">
+        <router-link
+          v-if="prevArticle"
+          :to="`/article/${prevArticle.id}`"
+          class="nav-card nav-prev"
+        >
+          <span class="nav-label mono">← PREV</span>
+          <span class="nav-title">{{ prevArticle.title }}</span>
+        </router-link>
+        <span v-else class="nav-card nav-empty"></span>
+        <router-link
+          v-if="nextArticle"
+          :to="`/article/${nextArticle.id}`"
+          class="nav-card nav-next"
+        >
+          <span class="nav-label mono">NEXT →</span>
+          <span class="nav-title">{{ nextArticle.title }}</span>
+        </router-link>
+        <span v-else class="nav-card nav-empty"></span>
+      </nav>
 
       <!-- 评论区 -->
       <section class="comment-section">
@@ -522,6 +586,71 @@ watch(() => route.params.id, () => {
   white-space: pre-wrap;
   word-break: break-word;
   font-size: 14px;
+}
+
+/* ---------- 阅读进度条 ---------- */
+.read-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: var(--acid);
+  z-index: 300;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 8px rgba(204, 255, 0, 0.5);
+}
+
+/* ---------- 上一篇 / 下一篇 ---------- */
+.post-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 40px;
+}
+.nav-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 16px 20px;
+  transition: border-color 0.15s;
+  min-width: 0;
+}
+.nav-card:hover {
+  border-color: var(--acid);
+}
+.nav-next {
+  text-align: right;
+}
+.nav-empty {
+  border-color: transparent;
+  background: transparent;
+  pointer-events: none;
+}
+.nav-label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--acid);
+}
+.nav-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.nav-card:hover .nav-title {
+  color: var(--acid);
+}
+
+@media (max-width: 720px) {
+  .post-nav {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {

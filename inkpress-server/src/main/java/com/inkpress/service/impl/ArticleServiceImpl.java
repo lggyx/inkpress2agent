@@ -43,6 +43,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -180,6 +181,32 @@ public class ArticleServiceImpl implements ArticleService {
             articleMapper.incrementLikes(id);
         }
         return articleMapper.selectById(id).getLikes();
+    }
+
+    @Override
+    public Map<String, Object> adjacent(Long id) {
+        Article current = articleMapper.selectById(id);
+        if (current == null || !Constants.ARTICLE_PUBLISHED.equals(current.getStatus())) {
+            throw new BizException(ErrorCode.NOT_FOUND);
+        }
+        LocalDateTime time = current.getPublishedAt() != null
+                ? current.getPublishedAt() : current.getCreatedAt();
+        Article prev = articleMapper.selectOne(new LambdaQueryWrapper<Article>()
+                .select(Article::getId, Article::getTitle)
+                .eq(Article::getStatus, Constants.ARTICLE_PUBLISHED)
+                .lt(Article::getPublishedAt, time)
+                .orderByDesc(Article::getPublishedAt)
+                .last("LIMIT 1"));
+        Article next = articleMapper.selectOne(new LambdaQueryWrapper<Article>()
+                .select(Article::getId, Article::getTitle)
+                .eq(Article::getStatus, Constants.ARTICLE_PUBLISHED)
+                .gt(Article::getPublishedAt, time)
+                .orderByAsc(Article::getPublishedAt)
+                .last("LIMIT 1"));
+        Map<String, Object> result = new HashMap<>();
+        result.put("prev", prev == null ? null : Map.of("id", prev.getId(), "title", prev.getTitle()));
+        result.put("next", next == null ? null : Map.of("id", next.getId(), "title", next.getTitle()));
+        return result;
     }
 
     @Override

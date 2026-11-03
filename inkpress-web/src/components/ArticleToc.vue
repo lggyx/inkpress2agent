@@ -2,7 +2,7 @@
 /**
  * 文章目录大纲（TOC）
  * 从渲染后的文章 DOM 提取 h1~h3，生成锚点目录；
- * 宽屏右侧悬浮，窄屏顶部折叠；滚动时高亮当前章节。
+ * 宽屏（>=1280px）右侧悬浮，窄屏顶部折叠；滚动时高亮当前章节。
  */
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 
@@ -14,20 +14,27 @@ const props = defineProps({
   }
 })
 
+const MOBILE_BREAKPOINT = 1280
+
 const headings = ref([])
 const activeId = ref('')
 const expanded = ref(false)
-const isMobile = ref(window.innerWidth < 1280)
+const isMobile = ref(false)
+/** 点击跳转后短暂锁定高亮，避免平滑滚动途中 scrollspy 抢焦点 */
+const lockUntil = ref(0)
 
 const hasToc = computed(() => headings.value.length >= 2)
 
-function onResize() {
-  isMobile.value = window.innerWidth < 1280
+let scrollRaf = null
+
+function checkViewport() {
+  isMobile.value = window.innerWidth < MOBILE_BREAKPOINT
 }
 
 /** 从渲染后的 DOM 提取标题并生成锚点（文章切换时由父组件调用） */
 function refresh() {
   if (!props.contentEl) {
+    headings.value = []
     return
   }
   const nodes = props.contentEl.querySelectorAll('h1, h2, h3')
@@ -42,6 +49,7 @@ function refresh() {
     })
   })
   headings.value = items
+  updateActive()
 }
 
 function scrollTo(id) {
@@ -52,11 +60,16 @@ function scrollTo(id) {
   const top = target.getBoundingClientRect().top + window.scrollY - 76
   window.scrollTo({ top, behavior: 'smooth' })
   activeId.value = id
+  // 锁定 600ms，滚动经过的中间章节不抢高亮
+  lockUntil.value = Date.now() + 600
   expanded.value = false
 }
 
-function onScroll() {
+function updateActive() {
   if (!headings.value.length) {
+    return
+  }
+  if (Date.now() < lockUntil.value) {
     return
   }
   let current = headings.value[0].id
@@ -67,6 +80,16 @@ function onScroll() {
     }
   }
   activeId.value = current
+}
+
+function onScroll() {
+  if (scrollRaf) {
+    return
+  }
+  scrollRaf = requestAnimationFrame(() => {
+    scrollRaf = null
+    updateActive()
+  })
 }
 
 watch(
@@ -81,25 +104,29 @@ watch(
 )
 
 onMounted(() => {
+  checkViewport()
   window.addEventListener('scroll', onScroll, { passive: true })
-  window.addEventListener('resize', onResize)
+  window.addEventListener('resize', checkViewport)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', onScroll)
-  window.removeEventListener('resize', onResize)
+  window.removeEventListener('resize', checkViewport)
+  if (scrollRaf) {
+    cancelAnimationFrame(scrollRaf)
+  }
 })
 
 defineExpose({ refresh })
 </script>
 
 <template>
-  <nav v-if="hasToc" class="toc" :class="{ 'is-expanded': expanded }">
-    <div class="toc-header" @click="expanded = !expanded">
+  <nav v-if="hasToc" class="toc" :class="{ 'is-mobile': isMobile, 'is-expanded': expanded }">
+    <div class="toc-header" @click="isMobile && (expanded = !expanded)">
       <span class="toc-title mono">// 目录大纲</span>
-      <span class="toc-toggle mono">{{ expanded ? '[-]' : '[+]' }}</span>
+      <span v-if="isMobile" class="toc-toggle mono">{{ expanded ? '[-]' : '[+]' }}</span>
     </div>
-    <ol class="toc-list" v-show="expanded || !isMobile">
+    <ol class="toc-list" v-show="!isMobile || expanded">
       <li
         v-for="item in headings"
         :key="item.id"
@@ -178,6 +205,7 @@ defineExpose({ refresh })
   font-size: 12px;
 }
 
+/* 宽屏：右侧悬浮，与 detail-layout 断点保持一致 */
 @media (min-width: 1280px) {
   .toc {
     position: sticky;
@@ -185,14 +213,11 @@ defineExpose({ refresh })
     max-height: calc(100vh - 120px);
     overflow-y: auto;
   }
-  .toc-toggle {
-    display: none;
-  }
 }
 
+/* 窄屏：顶部折叠卡片 */
 @media (max-width: 1279px) {
   .toc {
-    margin-bottom: 24px;
     border: 1px solid var(--line);
     background: var(--surface);
     padding: 12px 16px;

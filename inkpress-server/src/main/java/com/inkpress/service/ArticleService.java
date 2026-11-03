@@ -8,6 +8,7 @@ import com.inkpress.vo.ArticleDetailVO;
 import com.inkpress.vo.ArticleVO;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ArticleService {
 
@@ -31,6 +32,12 @@ public interface ArticleService {
 
     /** 点赞（同一访客对同一文章仅一次），返回最新点赞数 */
     Long like(Long id, String viewer);
+
+    /**
+     * 获取相邻文章（按发布时间排序）
+     * @return {"prev": {id,title}|null, "next": {id,title}|null}
+     */
+    Map<String, Object> adjacent(Long id);
 
     /** 新增或更新文章，返回文章 ID */
     Long save(ArticleSaveDTO dto);
