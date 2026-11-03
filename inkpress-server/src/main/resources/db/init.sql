@@ -2,7 +2,10 @@
 -- InkPress 个人博客与文章管理系统 数据库初始化脚本
 -- MySQL 8.0，执行后重启后端服务即可
 -- 管理员账号由系统首次启动自动创建：admin / admin123
+-- 说明：SET NAMES 确保任何客户端（含 Docker 首次自动执行）都按 utf8mb4 读取本文件
 -- ============================================================
+
+SET NAMES utf8mb4;
 
 CREATE DATABASE IF NOT EXISTS inkpress DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE inkpress;
@@ -103,7 +106,7 @@ INSERT INTO category (id, name, description, sort) VALUES
     (2, '前端开发', 'Vue、JavaScript 等前端技术', 2),
     (3, '人工智能', '大语言模型与 AI 应用', 3),
     (4, '生活随笔', '记录生活与思考', 4)
-AS new ON DUPLICATE KEY UPDATE name = new.name;
+AS new ON DUPLICATE KEY UPDATE name = new.name, description = new.description;
 
 INSERT INTO tag (id, name) VALUES
     (1, 'Java'), (2, 'Spring Boot'), (3, 'MySQL'), (4, 'Redis'),
@@ -133,4 +136,4 @@ INSERT INTO comment (id, article_id, user_id, nickname, email, content, parent_i
     (1, 1, NULL, '路过的小白', 'reader@example.com', '写得很实在，正好最近也在纠结要不要自建博客，受教了！', NULL, 'APPROVED'),
     (2, 1, NULL, '数码控', NULL, '请问 AI 润色用的什么模型？费用怎么样？', 1, 'APPROVED'),
     (3, 2, NULL, 'Java 学习中', 'student@example.com', 'jjwt 0.12 的 API 变化这个坑我也踩过，哈哈', NULL, 'APPROVED')
-AS new ON DUPLICATE KEY UPDATE content = new.content;
+AS new ON DUPLICATE KEY UPDATE content = new.content, nickname = new.nickname;
