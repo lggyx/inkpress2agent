@@ -8,9 +8,12 @@ import 'element-plus/theme-chalk/dark/css-vars.css'
 import 'highlight.js/styles/github-dark.css'
 import App from './App.vue'
 import router from './router'
+import { tilt } from './directives/tilt'
 import './styles/global.css'
 
 const app = createApp(App)
+
+app.directive('tilt', tilt)
 
 for (const [name, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(name, component)

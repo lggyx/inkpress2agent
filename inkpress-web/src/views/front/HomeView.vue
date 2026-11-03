@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { frontPage, hot } from '@/api/article'
 import { list as listCategories } from '@/api/category'
 import { list as listTags } from '@/api/tag'
+import DecryptedText from '@/components/DecryptedText.vue'
 import { formatDate } from '@/utils/format'
 
 const route = useRoute()
@@ -99,7 +100,9 @@ loadSidebar()
   <div class="home">
     <!-- ============ HERO ============ -->
     <section class="hero">
-      <p class="hero-kicker mono">// PERSONAL BLOG &amp; ARTICLE SYSTEM — EST. 2026</p>
+      <p class="hero-kicker mono">
+        <DecryptedText text="// PERSONAL BLOG & ARTICLE SYSTEM — EST. 2026" />
+      </p>
       <h1 class="hero-title">
         写作是<span class="acid">思考</span>的<br />显影液<span class="cursor">_</span>
       </h1>
@@ -145,6 +148,7 @@ loadSidebar()
             v-for="(item, index) in articles"
             :key="item.id"
             class="post-card"
+            v-tilt="7"
             @click="$router.push(`/article/${item.id}`)"
           >
             <div class="card-media" v-if="(item.cover || item.firstImage) && !failedMedia[item.id]">
@@ -395,11 +399,29 @@ loadSidebar()
   padding: 22px 24px;
   margin-bottom: 16px;
   cursor: pointer;
-  transition: border-color 0.15s, transform 0.15s;
+  transition: border-color 0.15s;
+  position: relative;
+  will-change: transform;
 }
 .post-card:hover {
   border-color: var(--acid);
-  transform: translateX(4px);
+}
+/* 3D 视差光泽层：跟随鼠标（--tilt-x / --tilt-y 由 v-tilt 指令实时更新） */
+.post-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    520px circle at var(--tilt-x, 50%) var(--tilt-y, 50%),
+    rgba(204, 255, 0, 0.07),
+    transparent 45%
+  );
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.post-card:hover::after {
+  opacity: 1;
 }
 
 .card-media {
