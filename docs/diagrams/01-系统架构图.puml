@@ -14,12 +14,12 @@ package "浏览器" {
   [Pinia 状态管理\nAxios 请求封装] as store
 }
 
-package "Nginx（80）" {
+package "Nginx（280）" {
   [静态资源服务] as nginx
   [反向代理 /api] as proxy
 }
 
-package "Spring Boot 应用（8080）" {
+package "Spring Boot 应用（28080）" {
   [Controller 接口层] as ctrl
   [Service 业务层] as svc
   [Spring Security\n+ JWT 过滤器] as sec

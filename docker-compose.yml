@@ -7,7 +7,8 @@ services:
       MYSQL_ROOT_PASSWORD: root123
       TZ: Asia/Shanghai
     ports:
-      - "3306:3306"
+      # 宿主机端口统一加前缀 2，容器内仍监听 3306
+      - "23306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       # 首次启动自动执行建表脚本
@@ -24,7 +25,8 @@ services:
     container_name: inkpress-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      # 宿主机端口统一加前缀 2，容器内仍监听 6379
+      - "26376:6379"
     volumes:
       - redis-data:/data
 
@@ -50,7 +52,7 @@ services:
       AI_MODEL: glm-4-flash
       JWT_SECRET: change-this-to-a-random-secret-in-production
     ports:
-      - "8080:8080"
+      - "28080:28080"
 
   web:
     image: nginx:alpine
@@ -59,7 +61,7 @@ services:
     depends_on:
       - server
     ports:
-      - "80:80"
+      - "280:80"
     volumes:
       # 先在 inkpress-web 下执行 npm run build 生成 dist
       - ./inkpress-web/dist:/usr/share/nginx/html:ro

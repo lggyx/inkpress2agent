@@ -6,20 +6,20 @@ title InkPress 部署图（Docker Compose）
 
 node "宿主机 / 云服务器" {
 
-  node "inkpress-web（Nginx: 80）" as web {
+  node "inkpress-web（Nginx: 280）" as web {
     [前端静态资源\ninkpress-web/dist] as static
     [反向代理 /api\nSSE 关闭缓冲] as ngproxy
   }
 
-  node "inkpress-server（8080）" as server {
+  node "inkpress-server（28080）" as server {
     [inkpress-server.jar\nSpring Boot 3\nJRE 17] as app
   }
 
-  node "inkpress-mysql（3306）" as mysql {
+  node "inkpress-mysql（23306）" as mysql {
     database "MySQL 8.0\nmysql-data 数据卷" as db
   }
 
-  node "inkpress-redis（6379）" as redis {
+  node "inkpress-redis（26376）" as redis {
     database "Redis 7\nredis-data 数据卷" as cache
   }
 }
@@ -27,7 +27,7 @@ node "宿主机 / 云服务器" {
 cloud "浏览器用户" as client
 cloud "大模型 API\nOpenAI 兼容协议" as llm
 
-client --> web : HTTP 80
+client --> web : HTTP 280
 static --> client : HTML/JS/CSS
 ngproxy --> app : 转发 /api
 app --> db : JDBC 3306

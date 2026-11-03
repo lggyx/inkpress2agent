@@ -1,18 +1,18 @@
 server:
-  port: 8080
+  port: 28080
 
 spring:
   application:
     name: inkpress
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/inkpress?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:23306}/inkpress?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
     username: ${MYSQL_USERNAME:root}
     password: ${MYSQL_PASSWORD:root123}
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      port: ${REDIS_PORT:26376}
       password: ${REDIS_PASSWORD:}
 
 mybatis-plus:

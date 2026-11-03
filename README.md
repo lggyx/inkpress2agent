@@ -65,7 +65,7 @@ cd inkpress-server
 mvn spring-boot:run
 ```
 
-- 接口文档：http://localhost:8080/doc.html
+- 接口文档：http://localhost:28080/doc.html
 - 首次启动自动创建管理员：`admin / admin123`
 
 ### 3. 启动前端
@@ -76,8 +76,8 @@ npm install
 npm run dev
 ```
 
-- 前台：http://localhost:5173
-- 后台：http://localhost:5173/login
+- 前台：http://localhost:25173
+- 后台：http://localhost:25173/login
 
 ### 4. 配置 AI（可选）
 
@@ -98,7 +98,7 @@ cd inkpress-web && npm run build && cd ..
 docker compose up -d --build
 ```
 
-访问 http://localhost（Nginx 统一入口）。详见 [docs/部署文档.md](docs/部署文档.md)。
+访问 http://localhost:280（Nginx 统一入口）。详见 [docs/部署文档.md](docs/部署文档.md)。
 
 ## 项目结构
 

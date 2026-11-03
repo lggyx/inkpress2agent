@@ -1,7 +1,7 @@
 ﻿# InkPress 接口冒烟测试脚本
 # 用法：powershell -ExecutionPolicy Bypass -File scripts\smoke-test.ps1 [-BaseUrl http://localhost:8080]
 param(
-    [string]$BaseUrl = "http://localhost:8080"
+    [string]$BaseUrl = "http://localhost:28080"
 )
 
 $ErrorActionPreference = "Stop"
