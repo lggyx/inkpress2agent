@@ -2,7 +2,6 @@
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, Lock } from '@element-plus/icons-vue'
 import { login, register } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 
@@ -54,39 +53,41 @@ function switchMode(target) {
     <div class="login-card">
       <div class="login-brand">
         <span class="logo-mark">墨</span>
-        <h1>InkPress 管理后台</h1>
-        <p>基于 Spring Boot + Vue 的个人博客与文章管理系统</p>
+        <h1>INK<em>//</em>PRESS</h1>
+        <p class="mono">ADMIN CONSOLE — SPRING BOOT × VUE 3</p>
       </div>
 
-      <div class="mode-tabs">
-        <span class="tab" :class="{ active: mode === 'login' }" @click="switchMode('login')">登录</span>
-        <span class="tab" :class="{ active: mode === 'register' }" @click="switchMode('register')">注册</span>
+      <div class="mode-tabs mono">
+        <span class="tab" :class="{ active: mode === 'login' }" @click="switchMode('login')">[ LOGIN ]</span>
+        <span class="tab" :class="{ active: mode === 'register' }" @click="switchMode('register')">[ REGISTER ]</span>
       </div>
 
-      <el-form @submit.prevent="submit">
-        <el-form-item>
-          <el-input v-model="form.username" placeholder="用户名（3-20 位字母数字下划线）" :prefix-icon="User" size="large" />
-        </el-form-item>
-        <el-form-item v-if="mode === 'register'">
-          <el-input v-model="form.nickname" placeholder="昵称（选填）" :prefix-icon="User" size="large" maxlength="20" />
-        </el-form-item>
-        <el-form-item>
-          <el-input
-            v-model="form.password"
-            type="password"
-            :placeholder="mode === 'register' ? '密码（6-32 位）' : '密码'"
-            :prefix-icon="Lock"
-            size="large"
-            show-password
-            @keyup.enter="submit"
-          />
-        </el-form-item>
-        <el-button type="primary" size="large" class="login-btn" :loading="loading" @click="submit">
-          {{ mode === 'register' ? '注 册' : '登 录' }}
-        </el-button>
-      </el-form>
+      <div class="form-item">
+        <label class="mono">USERNAME</label>
+        <input v-model="form.username" class="mono" :placeholder="mode === 'register' ? '3-20 位字母数字下划线' : '请输入用户名'" maxlength="20" />
+      </div>
 
-      <p class="login-hint">首次启动自动创建管理员：admin / admin123</p>
+      <div class="form-item" v-if="mode === 'register'">
+        <label class="mono">NICKNAME <span class="optional">(OPTIONAL)</span></label>
+        <input v-model="form.nickname" class="mono" placeholder="昵称" maxlength="20" />
+      </div>
+
+      <div class="form-item">
+        <label class="mono">PASSWORD</label>
+        <input
+          v-model="form.password"
+          type="password"
+          :placeholder="mode === 'register' ? '6-32 位' : '请输入密码'"
+          maxlength="32"
+          @keyup.enter="submit"
+        />
+      </div>
+
+      <button class="login-btn mono" :disabled="loading" @click="submit">
+        {{ loading ? 'PLEASE WAIT…' : mode === 'register' ? 'CREATE ACCOUNT →' : 'SIGN IN →' }}
+      </button>
+
+      <p class="login-hint mono">// DEFAULT ADMIN: admin / admin123</p>
     </div>
   </div>
 </template>
@@ -97,74 +98,149 @@ function switchMode(target) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1f2d3d 0%, #2b3a4b 60%, #3a4a5c 100%);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    var(--bg);
+  background-size: 44px 44px;
+  padding: 24px;
 }
 
 .login-card {
-  width: 380px;
-  background: #fff;
-  border-radius: 12px;
-  padding: 36px 32px 24px;
+  width: 400px;
+  max-width: 100%;
+  background: var(--surface);
+  border: 2px solid var(--text);
+  padding: 40px 38px 28px;
+  position: relative;
+}
+.login-card::after {
+  content: "+";
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  color: var(--acid);
 }
 
 .login-brand {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 26px;
 }
-
 .login-brand .logo-mark {
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
-  background: #303133;
-  color: #fff;
+  width: 48px;
+  height: 48px;
+  background: var(--acid);
+  color: #000;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 26px;
+  font-size: 24px;
+  font-weight: 800;
 }
-
 .login-brand h1 {
-  font-size: 20px;
-  margin: 12px 0 4px;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin: 14px 0 6px;
+  color: var(--text);
 }
-
+.login-brand h1 em {
+  font-style: normal;
+  color: var(--acid);
+}
 .login-brand p {
-  color: #909399;
-  font-size: 12px;
   margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--text-faint);
 }
 
 .mode-tabs {
   display: flex;
-  justify-content: center;
-  gap: 24px;
-  margin-bottom: 18px;
+  gap: 10px;
+  margin-bottom: 24px;
 }
-
 .tab {
-  font-size: 15px;
-  color: #909399;
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 9px 0;
+  border: 1px solid var(--line-bright);
+  color: var(--text-dim);
   cursor: pointer;
-  padding-bottom: 6px;
-  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+.tab:hover {
+  color: var(--acid);
+  border-color: var(--acid);
+}
+.tab.active {
+  background: var(--acid);
+  border-color: var(--acid);
+  color: #000;
 }
 
-.tab.active {
-  color: #409eff;
-  font-weight: 600;
-  border-bottom-color: #409eff;
+.form-item {
+  margin-bottom: 16px;
+}
+.form-item label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--text-faint);
+  margin-bottom: 7px;
+}
+.form-item .optional {
+  color: var(--line-bright);
+}
+.form-item input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 11px 13px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-item input:focus {
+  border-color: var(--acid);
+}
+.form-item input::placeholder {
+  color: var(--text-faint);
 }
 
 .login-btn {
   width: 100%;
-  margin-top: 4px;
+  margin-top: 8px;
+  background: var(--acid);
+  border: none;
+  color: #000;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  padding: 13px 0;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.login-btn:hover {
+  opacity: 0.86;
+}
+.login-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .login-hint {
   text-align: center;
-  color: #c0c4cc;
-  font-size: 12px;
-  margin-top: 16px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--text-faint);
+  margin: 20px 0 0;
 }
 </style>

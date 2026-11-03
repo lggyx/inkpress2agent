@@ -44,6 +44,7 @@ function initEditor() {
   vditor = new Vditor(editorRef.value, {
     height: 560,
     mode: 'ir',
+    theme: 'dark',
     placeholder: '使用 Markdown 书写正文…（支持所见即所得）',
     cache: { enable: false },
     counter: { enable: true },

@@ -79,13 +79,14 @@ function logout() {
 </template>
 
 <style scoped>
-.admin-layout {
+.el-container {
   min-height: 100vh;
+  background: var(--bg);
 }
 
 .admin-aside {
-  background: #fff;
-  border-right: 1px solid #ebeef5;
+  background: var(--bg-soft);
+  border-right: 2px solid var(--text);
   display: flex;
   flex-direction: column;
 }
@@ -96,30 +97,52 @@ function logout() {
   gap: 10px;
   height: 60px;
   padding: 0 20px;
-  font-weight: 700;
+  font-weight: 900;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
 }
 
 .logo-mark {
   width: 30px;
   height: 30px;
-  border-radius: 7px;
-  background: #303133;
-  color: #fff;
+  background: var(--acid);
+  color: #000;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 15px;
 }
 
 .admin-menu {
   border-right: none;
   flex: 1;
+  background: transparent;
+}
+
+.admin-menu :deep(.el-menu-item) {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  border-left: 3px solid transparent;
+}
+.admin-menu :deep(.el-menu-item:hover) {
+  background: var(--surface);
+  color: var(--acid);
+}
+.admin-menu :deep(.el-menu-item.is-active) {
+  background: var(--surface);
+  color: var(--acid);
+  border-left-color: var(--acid);
+  font-weight: 700;
 }
 
 .admin-header {
-  background: #fff;
-  border-bottom: 1px solid #ebeef5;
+  background: rgba(11, 11, 12, 0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 2px solid var(--text);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -130,7 +153,7 @@ function logout() {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #909399;
+  color: var(--text-dim);
 }
 
 .user-chip {
@@ -143,14 +166,17 @@ function logout() {
 
 .nickname {
   font-size: 14px;
+  color: var(--text);
 }
 
 .admin-main {
-  background: #f6f7f9;
+  background: var(--bg);
 }
 
 .muted {
-  color: #909399;
-  font-size: 13px;
+  color: var(--text-faint);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
 }
 </style>

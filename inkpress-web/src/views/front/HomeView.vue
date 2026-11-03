@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { frontPage, hot } from '@/api/article'
 import { list as listCategories } from '@/api/category'
 import { list as listTags } from '@/api/tag'
-import { View, Star, CollectionTag } from '@element-plus/icons-vue'
 import { formatDate } from '@/utils/format'
 
 const route = useRoute()
@@ -27,12 +26,16 @@ const activeCategoryName = computed(() =>
 )
 const activeTagName = computed(() => tags.value.find(t => t.id === activeTagId.value)?.name)
 
+const hotTotalViews = computed(() =>
+  hotList.value.reduce((sum, item) => sum + (item.views || 0), 0)
+)
+
 async function loadArticles() {
   loading.value = true
   try {
     const { data } = await frontPage({
       pageNum: pageNum.value,
-      pageSize: 8,
+      pageSize: 6,
       keyword: keyword.value || undefined,
       categoryId: activeCategoryId.value || undefined,
       tagId: activeTagId.value || undefined
@@ -74,6 +77,10 @@ function goTagByName(name) {
   }
 }
 
+function scrollToList() {
+  document.querySelector('.post-list')?.scrollIntoView({ behavior: 'smooth' })
+}
+
 watch(
   () => [route.query.keyword, route.query.categoryId, route.query.tagId],
   () => {
@@ -88,281 +95,496 @@ loadSidebar()
 
 <template>
   <div class="home">
-    <div class="home-main">
-      <!-- 筛选状态提示 -->
-      <div v-if="keyword || activeCategoryId || activeTagId" class="filter-bar">
-        <el-tag closable type="info" @close="setQuery({ keyword: undefined })" v-if="keyword">
-          搜索：{{ keyword }}
-        </el-tag>
-        <el-tag closable type="info" @close="setQuery({ categoryId: undefined })" v-if="activeCategoryId">
-          分类：{{ activeCategoryName }}
-        </el-tag>
-        <el-tag closable type="info" @close="setQuery({ tagId: undefined })" v-if="activeTagId">
-          标签：{{ activeTagName }}
-        </el-tag>
+    <!-- ============ HERO ============ -->
+    <section class="hero">
+      <p class="hero-kicker mono">// PERSONAL BLOG &amp; ARTICLE SYSTEM — EST. 2026</p>
+      <h1 class="hero-title">
+        写作是<span class="acid">思考</span>的<br />显影液<span class="cursor">_</span>
+      </h1>
+      <p class="hero-desc">
+        基于 Spring Boot + Vue 3 的个人博客与文章管理系统，内置 AI 写作辅助。
+        数据自有，样式自定，Markdown 工作流，评论与点赞互动。
+      </p>
+      <div class="hero-actions">
+        <span class="hero-btn" @click="scrollToList">[ READ POSTS ]</span>
+        <span class="hero-btn ghost" @click="$router.push('/archive')">[ ARCHIVE ]</span>
       </div>
+      <div class="hero-stats mono">
+        <span><b>{{ total }}</b> POSTS</span>
+        <span class="sep">/</span>
+        <span><b>{{ categories.length }}</b> CATEGORIES</span>
+        <span class="sep">/</span>
+        <span><b>{{ tags.length }}</b> TAGS</span>
+        <span class="sep">/</span>
+        <span><b>{{ hotTotalViews }}</b> VIEWS</span>
+      </div>
+    </section>
 
-      <div v-loading="loading" class="article-list">
-        <el-empty v-if="!loading && articles.length === 0" description="暂无文章" />
-        <article v-for="item in articles" :key="item.id" class="article-card">
-          <div class="card-body">
-            <h2 class="card-title">
-              <el-tag v-if="item.isTop" type="danger" size="small" effect="dark" class="top-tag">置顶</el-tag>
-              <router-link :to="`/article/${item.id}`">{{ item.title }}</router-link>
-            </h2>
-            <p class="card-summary">{{ item.summary || '（暂无摘要）' }}</p>
-            <div class="card-meta">
-              <el-tag size="small" effect="plain">{{ item.categoryName || '未分类' }}</el-tag>
-              <span class="meta-item">{{ formatDate(item.publishedAt || item.createdAt) }}</span>
-              <span class="meta-item"><el-icon><View /></el-icon>{{ item.views }}</span>
-              <span class="meta-item"><el-icon><Star /></el-icon>{{ item.likes }}</span>
-              <el-tag
-                v-for="tag in item.tags"
-                :key="tag"
-                size="small"
-                type="warning"
-                effect="plain"
-                class="card-tag"
-                @click="goTagByName(tag)"
-              >
-                # {{ tag }}
-              </el-tag>
-            </div>
-          </div>
-          <img v-if="item.cover" :src="item.cover" class="card-cover" alt="封面" />
-        </article>
-      </div>
-
-      <div class="pagination-wrap" v-if="total > 8">
-        <el-pagination
-          background
-          layout="prev, pager, next"
-          :total="total"
-          :page-size="8"
-          :current-page="pageNum"
-          @current-change="changePage"
-        />
-      </div>
+    <!-- ============ 筛选状态 ============ -->
+    <div v-if="keyword || activeCategoryId || activeTagId" class="filter-bar">
+      <span class="filter-label mono">FILTER //</span>
+      <span v-if="keyword" class="tag-chip" @click="setQuery({ keyword: undefined })">KEY: {{ keyword }} ✕</span>
+      <span v-if="activeCategoryId" class="tag-chip" @click="setQuery({ categoryId: undefined })">CAT: {{ activeCategoryName }} ✕</span>
+      <span v-if="activeTagId" class="tag-chip" @click="setQuery({ tagId: undefined })">TAG: {{ activeTagName }} ✕</span>
+      <span class="bracket" @click="setQuery({ keyword: undefined, categoryId: undefined, tagId: undefined })">clear all</span>
     </div>
 
-    <aside class="home-aside">
-      <section class="side-card">
-        <h3 class="side-title"><el-icon><CollectionTag /></el-icon> 热门文章</h3>
-        <ol class="hot-list">
-          <li v-for="item in hotList" :key="item.id">
-            <router-link :to="`/article/${item.id}`">{{ item.title }}</router-link>
-            <span class="hot-views">{{ item.views }} 次浏览</span>
-          </li>
-          <li v-if="hotList.length === 0" class="muted">暂无数据</li>
-        </ol>
-      </section>
+    <div class="home-body">
+      <!-- ============ 文章列表 ============ -->
+      <div class="home-main">
+        <h2 class="block-title">
+          <span class="idx mono">02</span> LATEST POSTS
+        </h2>
 
-      <section class="side-card">
-        <h3 class="side-title"><el-icon><CollectionTag /></el-icon> 分类</h3>
-        <div class="chip-group">
-          <span
-            class="chip"
-            :class="{ active: !activeCategoryId }"
-            @click="setQuery({ categoryId: undefined })"
-          >
-            全部
-          </span>
-          <span
-            v-for="cat in categories"
-            :key="cat.id"
-            class="chip"
-            :class="{ active: cat.id === activeCategoryId }"
-            @click="setQuery({ categoryId: cat.id })"
-          >
-            {{ cat.name }}
-          </span>
-        </div>
-      </section>
+        <div v-loading="loading" class="post-list">
+          <el-empty v-if="!loading && articles.length === 0" description="NO POSTS FOUND" />
 
-      <section class="side-card">
-        <h3 class="side-title"><el-icon><CollectionTag /></el-icon> 标签</h3>
-        <div class="chip-group">
-          <span
-            v-for="tag in tags"
-            :key="tag.id"
-            class="chip"
-            :class="{ active: tag.id === activeTagId }"
-            @click="setQuery({ tagId: tag.id })"
+          <article
+            v-for="(item, index) in articles"
+            :key="item.id"
+            class="post-card"
+            @click="$router.push(`/article/${item.id}`)"
           >
-            # {{ tag.name }}
-          </span>
+            <div class="card-media" v-if="item.cover">
+              <img :src="item.cover" :alt="item.title" loading="lazy" />
+            </div>
+            <div class="card-media placeholder" v-else>
+              <span class="mono">{{ String(index + 1 + (pageNum - 1) * 6).padStart(2, '0') }}</span>
+            </div>
+
+            <div class="card-body">
+              <div class="card-top">
+                <span class="idx mono">{{ String(index + 1 + (pageNum - 1) * 6).padStart(2, '0') }}</span>
+                <span v-if="item.isTop" class="pin mono">[ PIN ]</span>
+              </div>
+              <h3 class="card-title">
+                <a @click.stop="$router.push(`/article/${item.id}`)">{{ item.title }}</a>
+              </h3>
+              <p class="card-summary">{{ item.summary || 'NO SUMMARY.' }}</p>
+              <div class="card-tags">
+                <span class="tag-chip" @click.stop="setQuery({ categoryId: item.categoryId })" v-if="item.categoryName">
+                  {{ item.categoryName }}
+                </span>
+                <span
+                  v-for="tag in item.tags"
+                  :key="tag"
+                  class="tag-chip"
+                  @click.stop="goTagByName(tag)"
+                ># {{ tag }}</span>
+              </div>
+              <div class="card-meta mono">
+                <span>{{ formatDate(item.publishedAt || item.createdAt) }}</span>
+                <span class="dot">·</span>
+                <span>{{ item.views }} VIEWS</span>
+                <span class="dot">·</span>
+                <span>{{ item.likes }} LIKES</span>
+              </div>
+            </div>
+          </article>
         </div>
-      </section>
-    </aside>
+
+        <div class="pagination-wrap" v-if="total > 6">
+          <el-pagination
+            background
+            layout="prev, pager, next"
+            :total="total"
+            :page-size="6"
+            :current-page="pageNum"
+            @current-change="changePage"
+          />
+        </div>
+      </div>
+
+      <!-- ============ 侧栏 ============ -->
+      <aside class="home-aside">
+        <section class="side-card">
+          <h3 class="side-title"><span class="idx mono">01</span> HOT POSTS</h3>
+          <ol class="hot-list">
+            <li v-for="(item, index) in hotList" :key="item.id">
+              <span class="hot-idx mono">{{ String(index + 1).padStart(2, '0') }}</span>
+              <router-link :to="`/article/${item.id}`" class="hot-title">{{ item.title }}</router-link>
+              <span class="hot-views mono">{{ item.views }}</span>
+            </li>
+            <li v-if="hotList.length === 0" class="muted mono">— EMPTY —</li>
+          </ol>
+        </section>
+
+        <section class="side-card">
+          <h3 class="side-title"><span class="idx mono">02</span> CATEGORIES</h3>
+          <div class="chip-group">
+            <span
+              class="tag-chip"
+              :class="{ 'is-active': !activeCategoryId }"
+              @click="setQuery({ categoryId: undefined })"
+            >ALL</span>
+            <span
+              v-for="cat in categories"
+              :key="cat.id"
+              class="tag-chip"
+              :class="{ 'is-active': cat.id === activeCategoryId }"
+              @click="setQuery({ categoryId: cat.id })"
+            >{{ cat.name }}</span>
+          </div>
+        </section>
+
+        <section class="side-card">
+          <h3 class="side-title"><span class="idx mono">03</span> TAGS</h3>
+          <div class="chip-group">
+            <span
+              v-for="tag in tags"
+              :key="tag.id"
+              class="tag-chip"
+              :class="{ 'is-active': tag.id === activeTagId }"
+              @click="setQuery({ tagId: tag.id })"
+            ># {{ tag.name }}</span>
+            <span v-if="tags.length === 0" class="muted mono">— EMPTY —</span>
+          </div>
+        </section>
+      </aside>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.home {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
+/* ---------- HERO ---------- */
+.hero {
+  border: 2px solid var(--text);
+  background: var(--surface);
+  padding: 52px 48px 40px;
+  margin-bottom: 48px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::after {
+  content: "+";
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  color: var(--acid);
 }
 
+.hero-kicker {
+  margin: 0 0 18px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--acid);
+}
+
+.hero-title {
+  margin: 0 0 20px;
+  font-size: clamp(34px, 5vw, 54px);
+  font-weight: 900;
+  line-height: 1.14;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+.hero-title .acid {
+  color: var(--acid);
+}
+.hero-title .cursor {
+  color: var(--acid);
+  animation: blink 1.1s steps(2) infinite;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.hero-desc {
+  max-width: 560px;
+  margin: 0 0 28px;
+  color: var(--text-dim);
+  line-height: 1.8;
+  font-size: 15px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 30px;
+}
+.hero-btn {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 11px 22px;
+  background: var(--acid);
+  color: #000;
+  cursor: pointer;
+  border: 2px solid var(--acid);
+  transition: all 0.15s;
+}
+.hero-btn:hover {
+  background: transparent;
+  color: var(--acid);
+}
+.hero-btn.ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--text);
+}
+.hero-btn.ghost:hover {
+  background: var(--text);
+  color: #000;
+}
+
+.hero-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--text-faint);
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+.hero-stats b {
+  color: var(--acid);
+  font-size: 15px;
+  margin-right: 2px;
+}
+.hero-stats .sep {
+  color: var(--line-bright);
+}
+
+/* ---------- 筛选条 ---------- */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+.filter-label {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--text-faint);
+}
+
+/* ---------- 主体两栏 ---------- */
+.home-body {
+  display: flex;
+  gap: 36px;
+  align-items: flex-start;
+}
 .home-main {
   flex: 1;
   min-width: 0;
 }
 
-.filter-bar {
+/* ---------- 文章卡片 ---------- */
+.post-list {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+}
+.post-card {
+  display: flex;
+  gap: 22px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 22px 24px;
   margin-bottom: 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.post-card:hover {
+  border-color: var(--acid);
+  transform: translateX(4px);
 }
 
-.article-card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 20px 24px;
-  margin-bottom: 16px;
-  display: flex;
-  gap: 16px;
-  transition: box-shadow 0.2s;
+.card-media {
+  width: 190px;
+  height: 128px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
 }
-
-.article-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+.card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s;
+}
+.post-card:hover .card-media img {
+  transform: scale(1.06);
+}
+.card-media.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+}
+.card-media.placeholder span {
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--line-bright);
+}
+.post-card:hover .card-media.placeholder span {
+  color: var(--acid-dim);
 }
 
 .card-body {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.pin {
+  font-size: 11px;
+  color: #000;
+  background: var(--pink);
+  padding: 1px 7px;
+  font-weight: 700;
 }
 
 .card-title {
   margin: 0 0 8px;
-  font-size: 19px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.4;
 }
-
-.card-title a:hover {
-  color: #409eff;
+.card-title a {
+  color: var(--text);
+  transition: color 0.15s;
 }
-
-.top-tag {
-  margin-right: 8px;
-  vertical-align: 2px;
+.post-card:hover .card-title a {
+  color: var(--acid);
 }
 
 .card-summary {
-  color: #606266;
-  font-size: 14px;
-  line-height: 1.7;
-  margin: 0 0 12px;
+  margin: 0 0 14px;
+  color: var(--text-dim);
+  font-size: 13.5px;
+  line-height: 1.75;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
 .card-meta {
+  margin-top: auto;
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  color: #909399;
-  font-size: 13px;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
 }
-
-.meta-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.card-tag {
-  cursor: pointer;
-}
-
-.card-cover {
-  width: 180px;
-  height: 110px;
-  object-fit: cover;
-  border-radius: 8px;
-  flex-shrink: 0;
+.card-meta .dot {
+  color: var(--line-bright);
 }
 
 .pagination-wrap {
   display: flex;
   justify-content: center;
-  margin-top: 24px;
+  margin-top: 28px;
 }
 
+/* ---------- 侧栏 ---------- */
 .home-aside {
   width: 300px;
   flex-shrink: 0;
 }
-
 .side-card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 16px 20px;
-  margin-bottom: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 20px 22px;
+  margin-bottom: 18px;
 }
-
 .side-title {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 0 0 12px;
-  font-size: 15px;
+  gap: 10px;
+  margin: 0 0 16px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--text);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
 }
 
 .hot-list {
   margin: 0;
-  padding-left: 20px;
+  padding: 0;
+  list-style: none;
 }
-
 .hot-list li {
-  margin-bottom: 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 0;
+}
+.hot-idx {
+  font-size: 11px;
+  color: var(--acid);
+  flex-shrink: 0;
+}
+.hot-title {
+  flex: 1;
   font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
 }
-
-.hot-list a:hover {
-  color: #409eff;
+.hot-title:hover {
+  color: var(--acid);
 }
-
 .hot-views {
-  color: #c0c4cc;
-  margin-left: 6px;
-  font-size: 12px;
+  font-size: 10px;
+  color: var(--text-faint);
+  flex-shrink: 0;
 }
 
 .chip-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-}
-
-.chip {
-  padding: 3px 10px;
-  border-radius: 12px;
-  background: #f4f4f5;
-  color: #606266;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.chip.active {
-  background: #409eff;
-  color: #fff;
+  gap: 7px;
 }
 
 .muted {
-  color: #c0c4cc;
+  color: var(--text-faint);
+  font-size: 12px;
 }
 
-@media (max-width: 900px) {
-  .home {
+@media (max-width: 960px) {
+  .home-body {
     flex-direction: column;
   }
   .home-aside {
     width: 100%;
+  }
+  .hero {
+    padding: 36px 26px 28px;
+  }
+  .post-card {
+    flex-direction: column;
+  }
+  .card-media {
+    width: 100%;
+    height: 170px;
   }
 }
 </style>

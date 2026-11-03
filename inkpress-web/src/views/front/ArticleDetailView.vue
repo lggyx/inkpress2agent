@@ -2,7 +2,6 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { View, Star, ChatDotRound, User } from '@element-plus/icons-vue'
 import { detail, like as likeApi } from '@/api/article'
 import { listByArticle, create } from '@/api/comment'
 import { renderMarkdown, highlightIn } from '@/utils/markdown'
@@ -96,7 +95,6 @@ async function submitComment() {
       content: commentForm.value.content,
       parentId: commentForm.value.parentId
     })
-    // 按落库状态给出准确提示：管理员或未开启审核时直接可见
     ElMessage.success(status === 'PENDING' ? '评论提交成功，审核通过后将展示' : '评论已发布')
     commentForm.value.content = ''
     cancelReply()
@@ -115,75 +113,101 @@ watch(() => route.params.id, () => {
 
 <template>
   <div class="article-detail">
-    <el-empty v-if="notFound" description="文章不存在或未发布">
-      <el-button type="primary" @click="$router.push('/')">返回首页</el-button>
+    <!-- 404 空状态 -->
+    <el-empty v-if="notFound" description="404 // ARTICLE NOT FOUND OR UNPUBLISHED">
+      <span class="bracket" @click="$router.push('/')">back home</span>
     </el-empty>
 
-    <div class="detail-main" v-else-if="article">
+    <template v-else-if="article">
+      <!-- 面包屑 -->
+      <div class="crumb mono">
+        <span class="bracket" @click="$router.push('/')">home</span>
+        <span class="crumb-sep">//</span>
+        <span class="crumb-current">{{ article.categoryName || 'UNCATEGORIZED' }}</span>
+      </div>
+
       <article class="detail-card">
         <h1 class="detail-title">{{ article.title }}</h1>
-        <div class="detail-meta">
-          <span><el-icon><User /></el-icon> {{ article.authorName || '佚名' }}</span>
-          <el-tag size="small" effect="plain">{{ article.categoryName || '未分类' }}</el-tag>
+
+        <div class="detail-meta mono">
+          <span class="meta-author">{{ article.authorName || 'ANONYMOUS' }}</span>
+          <span class="dot">·</span>
           <span>{{ formatDate(article.publishedAt || article.createdAt) }}</span>
-          <span><el-icon><View /></el-icon> {{ article.views }} 次浏览</span>
+          <span class="dot">·</span>
+          <span>{{ article.views }} VIEWS</span>
+          <span class="dot">·</span>
+          <span>{{ article.likes }} LIKES</span>
+          <span class="dot">·</span>
+          <span class="meta-status" v-if="article.isTop">[ PIN ]</span>
         </div>
+
+        <div class="detail-tags">
+          <span class="tag-chip">{{ article.categoryName || '未分类' }}</span>
+          <span v-for="tag in article.tags" :key="tag" class="tag-chip"># {{ tag }}</span>
+        </div>
+
         <img v-if="article.cover" :src="article.cover" class="detail-cover" alt="封面" />
 
         <!-- Markdown 渲染（已做 XSS 净化） -->
         <div ref="contentRef" class="article-content" v-html="html"></div>
 
         <div class="like-bar">
-          <el-button :type="liked ? 'info' : 'danger'" round @click="doLike">
-            <el-icon style="margin-right: 6px"><Star /></el-icon>
-            {{ liked ? '已点赞' : '点赞' }} · {{ likeCount }}
-          </el-button>
+          <button class="like-btn" :class="{ liked }" @click="doLike">
+            <span class="like-icon">{{ liked ? '♥' : '♡' }}</span>
+            <span class="mono">{{ liked ? 'LIKED' : 'LIKE' }}</span>
+            <span class="like-count mono">{{ likeCount }}</span>
+          </button>
         </div>
       </article>
 
       <!-- 评论区 -->
-      <section class="detail-card comment-section">
-        <h3 class="section-title"><el-icon><ChatDotRound /></el-icon> 评论（{{ comments.length }}）</h3>
+      <section class="comment-section">
+        <h2 class="block-title">
+          <span class="idx mono">03</span> COMMENTS [ {{ comments.length }} ]
+        </h2>
 
         <div class="comment-form">
-          <div class="reply-tip" v-if="replyTo">
-            回复 @{{ replyTo.nickname }}：
-            <el-button link type="primary" size="small" @click="cancelReply">取消回复</el-button>
+          <div class="reply-tip mono" v-if="replyTo">
+            <span>REPLY TO @{{ replyTo.nickname }}</span>
+            <span class="bracket" @click="cancelReply">cancel</span>
           </div>
           <div class="guest-fields" v-if="!userStore.isLoggedIn">
-            <el-input v-model="commentForm.nickname" placeholder="昵称（必填）" maxlength="20" style="width: 160px" />
-            <el-input v-model="commentForm.email" placeholder="邮箱（选填）" maxlength="50" style="width: 220px" />
+            <input v-model="commentForm.nickname" class="mono" placeholder="NICKNAME *" maxlength="20" />
+            <input v-model="commentForm.email" class="mono" placeholder="EMAIL (OPTIONAL)" maxlength="50" />
           </div>
-          <el-input
+          <textarea
             v-model="commentForm.content"
-            type="textarea"
-            :rows="3"
+            class="comment-textarea mono"
+            rows="4"
             maxlength="1000"
-            show-word-limit
-            placeholder="写下你的评论…"
-          />
+            placeholder="WRITE YOUR COMMENT…"
+          ></textarea>
           <div class="form-actions">
-            <el-button type="primary" :loading="submitting" @click="submitComment">发表评论</el-button>
+            <span class="char-count mono">{{ commentForm.content.length }} / 1000</span>
+            <button class="submit-btn mono" :disabled="submitting" @click="submitComment">
+              {{ submitting ? 'SUBMITTING…' : 'SUBMIT' }}
+            </button>
           </div>
         </div>
 
-        <el-empty v-if="comments.length === 0" description="还没有评论，来抢沙发" :image-size="80" />
+        <el-empty v-if="comments.length === 0" description="NO COMMENTS YET — BE THE FIRST" />
+
         <div v-for="comment in rootComments" :key="comment.id" class="comment-item">
-          <el-avatar :size="36">{{ comment.nickname.slice(0, 1) }}</el-avatar>
+          <span class="comment-avatar mono">{{ comment.nickname.slice(0, 1) }}</span>
           <div class="comment-body">
             <div class="comment-head">
               <span class="comment-nick">{{ comment.nickname }}</span>
-              <span class="comment-time">{{ formatDate(comment.createdAt) }}</span>
-              <el-button link type="primary" size="small" @click="reply(comment)">回复</el-button>
+              <span class="comment-time mono">{{ formatDate(comment.createdAt) }}</span>
+              <span class="bracket reply-link" @click="reply(comment)">reply</span>
             </div>
             <p class="comment-content">{{ comment.content }}</p>
 
             <div v-for="child in repliesOf(comment.id)" :key="child.id" class="comment-item reply">
-              <el-avatar :size="28">{{ child.nickname.slice(0, 1) }}</el-avatar>
+              <span class="comment-avatar small mono">{{ child.nickname.slice(0, 1) }}</span>
               <div class="comment-body">
                 <div class="comment-head">
                   <span class="comment-nick">{{ child.nickname }}</span>
-                  <span class="comment-time">{{ formatDate(child.createdAt) }}</span>
+                  <span class="comment-time mono">{{ formatDate(child.createdAt) }}</span>
                 </div>
                 <p class="comment-content">{{ child.content }}</p>
               </div>
@@ -191,126 +215,280 @@ watch(() => route.params.id, () => {
           </div>
         </div>
       </section>
-    </div>
+    </template>
   </div>
 </template>
 
 <style scoped>
-.detail-main {
+.article-detail {
   max-width: 820px;
   margin: 0 auto;
 }
 
+/* ---------- 面包屑 ---------- */
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  margin-bottom: 22px;
+}
+.crumb-sep {
+  color: var(--acid);
+}
+.crumb-current {
+  color: var(--text-faint);
+}
+
+/* ---------- 文章主体 ---------- */
 .detail-card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 32px 36px;
-  margin-bottom: 20px;
+  border: 2px solid var(--text);
+  background: var(--surface);
+  padding: 44px 48px 36px;
+  margin-bottom: 40px;
 }
 
 .detail-title {
-  margin: 0 0 12px;
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1.4;
+  margin: 0 0 16px;
+  font-size: clamp(26px, 3.4vw, 36px);
+  font-weight: 900;
+  line-height: 1.32;
+  color: var(--text);
 }
 
 .detail-meta {
   display: flex;
   align-items: center;
-  gap: 16px;
   flex-wrap: wrap;
-  color: #909399;
-  font-size: 13px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f0f2f5;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.meta-author {
+  color: var(--acid);
+  font-weight: 700;
+}
+.meta-status {
+  color: #000;
+  background: var(--pink);
+  padding: 1px 6px;
+  font-weight: 700;
+}
+.dot {
+  color: var(--line-bright);
 }
 
-.detail-meta span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 16px 0 8px;
 }
 
 .detail-cover {
   width: 100%;
-  max-height: 360px;
+  max-height: 380px;
   object-fit: cover;
-  border-radius: 8px;
-  margin: 16px 0;
+  border: 1px solid var(--line);
+  margin: 14px 0 8px;
 }
 
+/* ---------- 点赞 ---------- */
 .like-bar {
   display: flex;
   justify-content: center;
-  margin-top: 32px;
-  padding-top: 20px;
-  border-top: 1px solid #f0f2f5;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 2px solid var(--text);
+}
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: 2px solid var(--text);
+  color: var(--text);
+  padding: 12px 30px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.like-btn:hover {
+  border-color: var(--acid);
+  color: var(--acid);
+}
+.like-btn.liked {
+  background: var(--acid);
+  border-color: var(--acid);
+  color: #000;
+}
+.like-icon {
+  font-size: 17px;
+}
+.like-count {
+  border-left: 1px solid currentColor;
+  padding-left: 12px;
+  opacity: 0.75;
 }
 
-.section-title {
+/* ---------- 评论区 ---------- */
+.comment-section {
+  margin-bottom: 40px;
+}
+
+.comment-form {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 22px 24px;
+  margin-bottom: 26px;
+}
+.reply-tip {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 0 0 16px;
+  justify-content: space-between;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--acid);
+  margin-bottom: 12px;
 }
-
-.comment-form .guest-fields {
+.guest-fields {
   display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.guest-fields input {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 9px 12px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  outline: none;
+  width: 220px;
+}
+.guest-fields input:focus {
+  border-color: var(--acid);
 }
 
-.reply-tip {
-  margin-bottom: 8px;
+.comment-textarea {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 12px 14px;
   font-size: 13px;
-  color: #909399;
+  line-height: 1.7;
+  resize: vertical;
+  outline: none;
+}
+.comment-textarea:focus {
+  border-color: var(--acid);
 }
 
 .form-actions {
-  margin-top: 8px;
-  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+.char-count {
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 0.1em;
+}
+.submit-btn {
+  background: var(--acid);
+  border: none;
+  color: #000;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding: 10px 26px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.submit-btn:hover {
+  opacity: 0.85;
+}
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
+/* ---------- 评论列表 ---------- */
 .comment-item {
   display: flex;
-  gap: 12px;
-  padding: 14px 0;
-  border-bottom: 1px solid #f5f7fa;
+  gap: 14px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
 }
-
 .comment-item.reply {
-  background: #fafbfc;
-  border-radius: 8px;
-  padding: 10px 12px;
-  margin-top: 8px;
   border-bottom: none;
+  border-left: 2px solid var(--acid);
+  padding: 12px 0 12px 16px;
+  margin-top: 10px;
 }
-
+.comment-avatar {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  border: 1px solid var(--line-bright);
+  color: var(--acid);
+  font-weight: 800;
+  font-size: 15px;
+}
+.comment-avatar.small {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
 .comment-body {
   flex: 1;
   min-width: 0;
 }
-
 .comment-head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
+  gap: 12px;
+  margin-bottom: 6px;
 }
-
 .comment-nick {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
 }
-
 .comment-time {
-  color: #c0c4cc;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
 }
-
+.reply-link {
+  margin-left: auto;
+  font-size: 11px;
+}
 .comment-content {
-  margin: 6px 0 0;
-  line-height: 1.7;
+  margin: 0;
+  line-height: 1.75;
+  color: var(--text-dim);
   white-space: pre-wrap;
   word-break: break-word;
+  font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  .detail-card {
+    padding: 28px 22px 24px;
+    border-width: 1px;
+  }
 }
 </style>
