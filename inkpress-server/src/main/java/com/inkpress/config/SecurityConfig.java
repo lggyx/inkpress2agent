@@ -51,6 +51,9 @@ public class SecurityConfig {
                         // 游客评论、游客点赞（点赞按 IP 去重）
                         .requestMatchers(HttpMethod.POST, "/api/comments").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/articles/*/like").permitAll()
+                        // 智能检索与站内问答（公开，AI 未配置时返回明确错误）
+                        .requestMatchers(HttpMethod.GET, "/api/search/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/ai/ask").permitAll()
                         // 接口文档
                         .requestMatchers("/doc.html", "/webjars/**", "/v3/api-docs/**",
                                 "/swagger-ui/**", "/swagger-ui.html", "/favicon.ico").permitAll()

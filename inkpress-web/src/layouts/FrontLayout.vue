@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import KnowledgeAsk from '@/components/KnowledgeAsk.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -98,6 +99,9 @@ function onSearch() {
         <p class="footer-copy mono">© {{ new Date().getFullYear() }} INKPRESS. ALL RIGHTS RESERVED.</p>
       </div>
     </footer>
+
+    <!-- 站内知识问答（RAG） -->
+    <KnowledgeAsk />
   </div>
 </template>
 

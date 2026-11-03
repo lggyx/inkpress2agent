@@ -103,6 +103,21 @@ public class AiServiceImpl implements AiService {
     }
 
     @Override
+    public void ask(String question, String knowledge, ChatStreamHandler handler) {
+        ensureAvailable();
+        List<ChatMessage> messages = List.of(
+                ChatMessage.system("你是博客站内的知识问答助手。请仅依据下面提供的站内文章资料回答用户问题："
+                        + "回答要准确、简洁，使用中文；如果资料不足以回答，直接说明站内暂无相关内容，不要编造。"
+                        + "回答中可以用 [1][2] 这类编号标注信息来自哪篇资料。"),
+                ChatMessage.user("站内文章资料：\n" + knowledge + "\n\n用户问题：" + question));
+        try {
+            adapter.stream(messages, handler);
+        } catch (BizException e) {
+            handler.onError(e);
+        }
+    }
+
+    @Override
     public List<String> suggestTitles(String content) {
         ensureAvailable();
         List<ChatMessage> messages = List.of(

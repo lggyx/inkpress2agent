@@ -2,8 +2,7 @@
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { detail, like as likeApi } from '@/api/article'
-import { adjacent } from '@/api/article'
+import { detail, like as likeApi, adjacent, related as relatedApi } from '@/api/article'
 import { listByArticle, create } from '@/api/comment'
 import { renderMarkdown, highlightIn } from '@/utils/markdown'
 import ArticleToc from '@/components/ArticleToc.vue'
@@ -26,6 +25,7 @@ const replyTo = ref(null)
 const tocRef = ref(null)
 const prevArticle = ref(null)
 const nextArticle = ref(null)
+const relatedArticles = ref([])
 const readProgress = ref(0)
 let progressRaf = null
 
@@ -42,15 +42,17 @@ async function load() {
   notFound.value = false
   article.value = null
   try {
-    const [detailRes, adjacentRes] = await Promise.all([
+    const [detailRes, adjacentRes, relatedRes] = await Promise.all([
       detail(route.params.id),
-      adjacent(route.params.id)
+      adjacent(route.params.id),
+      relatedApi(route.params.id, 4).catch(() => ({ data: [] }))
     ])
     article.value = detailRes.data
     likeCount.value = detailRes.data.likes
     liked.value = localStorage.getItem(likedKey()) === '1'
     prevArticle.value = adjacentRes.data.prev
     nextArticle.value = adjacentRes.data.next
+    relatedArticles.value = relatedRes.data || []
     await nextTick()
     if (contentRef.value) {
       highlightIn(contentRef.value)
@@ -229,6 +231,25 @@ watch(() => route.params.id, () => {
         </router-link>
         <span v-else class="nav-card nav-empty"></span>
       </nav>
+
+      <!-- 相关文章（语义推荐） -->
+      <section class="related-section" v-if="relatedArticles.length">
+        <h2 class="block-title">
+          <span class="idx mono">02</span> RELATED POSTS <span class="related-tag mono">// 语义推荐</span>
+        </h2>
+        <div class="related-grid">
+          <router-link
+            v-for="item in relatedArticles"
+            :key="item.id"
+            :to="`/article/${item.id}`"
+            class="related-card"
+          >
+            <span class="related-cat mono">{{ item.categoryName || 'UNC' }}</span>
+            <span class="related-title">{{ item.title }}</span>
+            <span class="related-meta mono">{{ item.views }} VIEWS</span>
+          </router-link>
+        </div>
+      </section>
 
       <!-- 评论区 -->
       <section class="comment-section">
@@ -645,6 +666,63 @@ watch(() => route.params.id, () => {
 }
 .nav-card:hover .nav-title {
   color: var(--acid);
+}
+
+/* ---------- 相关文章 ---------- */
+.related-section {
+  margin-bottom: 40px;
+}
+.related-tag {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--text-faint);
+}
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.related-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 16px 18px;
+  transition: border-color 0.15s;
+  min-width: 0;
+}
+.related-card:hover {
+  border-color: var(--acid);
+}
+.related-cat {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--acid);
+}
+.related-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.related-card:hover .related-title {
+  color: var(--acid);
+}
+.related-meta {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+}
+
+@media (max-width: 720px) {
+  .related-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {

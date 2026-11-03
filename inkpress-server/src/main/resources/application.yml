@@ -48,6 +48,12 @@ inkpress:
     model: ${AI_MODEL:glm-4-flash}
     temperature: 0.7
     timeout-seconds: 60
+    embedding:
+      # auto：配置了 api-key 用远程 embedding，否则本地哈希向量
+      provider: ${AI_EMBEDDING_PROVIDER:auto}
+      model: ${AI_EMBEDDING_MODEL:embedding-3}
+      # 本地向量维度（字符 bigram 特征哈希）
+      local-dim: 512
   comment:
     # 评论是否需要管理员审核后展示
     audit: true

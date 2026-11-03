@@ -26,4 +26,13 @@ public interface AiService {
 
     /** 生成标题候选，返回 5 个；失败返回空列表 */
     List<String> suggestTitles(String content);
+
+    /**
+     * RAG 站内知识问答：基于检索到的文章片段回答，流式输出
+     *
+     * @param question  用户问题
+     * @param knowledge 检索到的文章资料（已拼装为带编号的上下文块）
+     * @param handler   流式回调
+     */
+    void ask(String question, String knowledge, ChatStreamHandler handler);
 }

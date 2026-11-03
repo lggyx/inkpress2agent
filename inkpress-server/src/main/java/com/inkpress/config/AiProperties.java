@@ -25,6 +25,16 @@ public class AiProperties {
     private String model;
     private Double temperature = 0.7;
     private Integer timeoutSeconds = 60;
+    /** 向量化配置：本地哈希向量（无需外部服务）或远程 Embedding API */
+    private Embedding embedding = new Embedding();
+
+    @Data
+    public static class Embedding {
+        /** auto：有 api-key 用远程，否则本地；local：仅本地；remote：仅远程 */
+        private String provider = "auto";
+        private String model = "embedding-3";
+        private Integer localDim = 512;
+    }
 
     public boolean enabled() {
         return apiKey != null && !apiKey.isBlank();

@@ -130,6 +130,14 @@ Assert "重复点赞计数不变" ($null -ne $like1.data -and $like1.data -eq $l
 $big = Invoke-RestMethod "$BaseUrl/api/articles/page?pageSize=100000"
 Assert "超大 pageSize 被限制为 50" ($big.code -eq 200 -and $big.data.pageSize -le 50)
 
+# 15c. 相关文章推荐（语义+标签混合排序）
+$rel = Invoke-RestMethod "$BaseUrl/api/articles/1/related?limit=3"
+Assert "相关文章推荐返回且不超过 3 条" ($rel.code -eq 200 -and $rel.data.Count -le 3)
+
+# 15d. 语义检索（自然语言查询命中目标文章）
+$sem = Invoke-RestMethod "$BaseUrl/api/search/semantic?q=%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92&limit=5"
+Assert "语义检索返回结果" ($sem.code -eq 200 -and $null -ne $sem.data)
+
 # 16. AI 未配置返回明确错误码
 $ai = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/admin/ai/summary" -Headers $headers `
     -ContentType "application/json" -Body '{"content":"测试内容"}'

@@ -27,6 +27,7 @@ import com.inkpress.mapper.UserMapper;
 import com.inkpress.security.LoginUser;
 import com.inkpress.security.SecurityUtils;
 import com.inkpress.service.ArticleService;
+import com.inkpress.service.ArticleVectorService;
 import com.inkpress.vo.ArchiveVO;
 import com.inkpress.vo.ArticleDetailVO;
 import com.inkpress.vo.ArticleVO;
@@ -70,6 +71,7 @@ public class ArticleServiceImpl implements ArticleService {
     private final ArticleTagMapper articleTagMapper;
     private final UserMapper userMapper;
     private final CommentMapper commentMapper;
+    private final ArticleVectorService articleVectorService;
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
 
@@ -252,6 +254,12 @@ public class ArticleServiceImpl implements ArticleService {
             articleMapper.updateById(article);
         }
         saveArticleTags(article.getId(), dto.getTags());
+        // 发布/更新后增量重建该文章的语义向量（异步，失败不影响保存）
+        try {
+            articleVectorService.indexArticle(article.getId());
+        } catch (Exception e) {
+            log.warn("文章 {} 向量索引更新失败", article.getId(), e);
+        }
         return article.getId();
     }
 

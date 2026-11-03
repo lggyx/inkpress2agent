@@ -7,6 +7,10 @@ export const detail = id => request.get(`/articles/${id}`)
 
 export const adjacent = id => request.get(`/articles/${id}/adjacent`)
 
+export const related = (id, limit = 4) => request.get(`/articles/${id}/related`, { params: { limit } })
+
+export const semanticSearch = (q, limit = 8) => request.get('/search/semantic', { params: { q, limit } })
+
 export const hot = (limit = 5) => request.get('/articles/hot', { params: { limit } })
 
 export const archives = () => request.get('/articles/archives')
