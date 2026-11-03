@@ -129,14 +129,14 @@ function logout() {
   border-left: 3px solid transparent;
 }
 .admin-menu :deep(.el-menu-item:hover) {
-  background: var(--surface);
-  color: var(--acid);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--accent-hover);
 }
 .admin-menu :deep(.el-menu-item.is-active) {
-  background: var(--surface);
-  color: var(--acid);
-  border-left-color: var(--acid);
-  font-weight: 700;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 600;
 }
 
 .admin-header {

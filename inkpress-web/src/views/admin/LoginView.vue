@@ -175,13 +175,13 @@ function switchMode(target) {
   transition: all 0.15s;
 }
 .tab:hover {
-  color: var(--acid);
-  border-color: var(--acid);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 .tab.active {
-  background: var(--acid);
-  border-color: var(--acid);
-  color: #000;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .form-item {
@@ -218,18 +218,18 @@ function switchMode(target) {
 .login-btn {
   width: 100%;
   margin-top: 8px;
-  background: var(--acid);
+  background: var(--accent);
   border: none;
-  color: #000;
-  font-weight: 800;
+  color: var(--accent-ink);
+  font-weight: 700;
   font-size: 13px;
   letter-spacing: 0.14em;
   padding: 13px 0;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: background 0.15s;
 }
 .login-btn:hover {
-  opacity: 0.86;
+  background: var(--accent-hover);
 }
 .login-btn:disabled {
   opacity: 0.5;

@@ -295,9 +295,9 @@ onMounted(async () => {
 }
 
 .editor-wrap {
-  border: 1px solid #dcdfe6;
-  border-radius: 6px;
-  z-index: 1;
+  border: 1px solid #2c2c33;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .footer-actions {
@@ -316,14 +316,15 @@ onMounted(async () => {
   bottom: 28px;
   left: 50%;
   transform: translateX(-50%);
-  background: #303133;
-  color: #fff;
+  background: #26262c;
+  color: #e8e8ea;
   padding: 10px 18px;
   border-radius: 24px;
   display: flex;
   align-items: center;
   gap: 10px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  border: 1px solid #3a3a44;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   z-index: 2000;
 }
 

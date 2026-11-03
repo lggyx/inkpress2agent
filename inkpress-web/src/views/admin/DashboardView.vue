@@ -20,8 +20,8 @@ function initCharts(data) {
       xAxis: { type: 'category', data: data.trend.map(item => item.date.slice(5)) },
       yAxis: { type: 'value', minInterval: 1 },
       series: [
-        { name: '文章', type: 'line', smooth: true, data: data.trend.map(item => item.articles), itemStyle: { color: '#409eff' }, areaStyle: { opacity: 0.12 } },
-        { name: '评论', type: 'line', smooth: true, data: data.trend.map(item => item.comments), itemStyle: { color: '#67c23a' }, areaStyle: { opacity: 0.12 } }
+        { name: '文章', type: 'line', smooth: true, data: data.trend.map(item => item.articles), itemStyle: { color: '#a8cf4e' }, areaStyle: { opacity: 0.14 } },
+        { name: '评论', type: 'line', smooth: true, data: data.trend.map(item => item.comments), itemStyle: { color: '#7aa5d8' }, areaStyle: { opacity: 0.12 } }
       ]
     })
   }
@@ -36,6 +36,7 @@ function initCharts(data) {
           type: 'pie',
           radius: ['40%', '68%'],
           center: ['40%', '50%'],
+          color: ['#a8cf4e', '#7aa5d8', '#c9a35e', '#cf8494', '#9b8fc4', '#6fb3a8', '#c98f6f', '#8a9bb5'],
           data: data.categoryDistribution,
           label: { show: false }
         }
@@ -52,10 +53,10 @@ function onResize() {
 onMounted(async () => {
   const { data } = await stats()
   statCards.value = [
-    { label: '文章总数', value: `${data.articleCount}（已发布 ${data.publishedCount}）`, icon: Document, color: '#409eff' },
-    { label: '评论总数', value: data.commentCount, icon: ChatDotRound, color: '#67c23a' },
-    { label: '总浏览量', value: data.totalViews, icon: View, color: '#e6a23c' },
-    { label: '总点赞数', value: data.totalLikes, icon: Star, color: '#f56c6c' }
+    { label: '文章总数', value: `${data.articleCount}（已发布 ${data.publishedCount}）`, icon: Document, color: '#7aa5d8' },
+    { label: '评论总数', value: data.commentCount, icon: ChatDotRound, color: '#8fbf6f' },
+    { label: '总浏览量', value: data.totalViews, icon: View, color: '#c9a35e' },
+    { label: '总点赞数', value: data.totalLikes, icon: Star, color: '#cf8494' }
   ]
   initCharts(data)
   window.addEventListener('resize', onResize)
@@ -118,7 +119,7 @@ onBeforeUnmount(() => {
 }
 
 .stat-label {
-  color: #909399;
+  color: #8a8a94;
   font-size: 13px;
 }
 
