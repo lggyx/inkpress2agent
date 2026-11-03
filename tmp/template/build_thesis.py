@@ -68,7 +68,7 @@ def code_para(doc, text):
     p = doc.add_paragraph()
     run = p.add_run(text if text else ' ')
     run.font.name = 'Consolas'
-    run.font.size = Pt(10.5)
+    run.font.size = Pt(9)
     rpr = run._element.get_or_add_rPr()
     rfonts = OxmlElement('w:rFonts')
     rfonts.set(qn('w:eastAsia'), '宋体')
@@ -90,10 +90,20 @@ def add_picture_centered(doc, path, caption):
     if not os.path.exists(path):
         print(f'  [警告] 图片不存在: {path}')
         return
+    # 限制在版心内：宽 14.5cm，高不超过 20cm（版心高 22.9cm，留出题注空间）
+    from PIL import Image
+    with Image.open(path) as im:
+        iw, ih = im.size
+    max_w, max_h = 14.5, 20.0
+    w = max_w
+    h = w * ih / iw
+    if h > max_h:
+        h = max_h
+        w = h * iw / ih
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = p.add_run()
-    run.add_picture(path, width=Cm(14.5))
+    run.add_picture(path, width=Cm(w), height=Cm(h))
     p.paragraph_format.space_before = Pt(6)
     p.paragraph_format.space_after = Pt(2)
     cap = para(doc, caption, size=10.5, align=WD_ALIGN_PARAGRAPH.CENTER,
@@ -114,16 +124,31 @@ def set_cell_borders(cell):
 
 
 def add_table(doc, rows):
-    """rows: [[cell, ...], ...]，首行为表头"""
+    """rows: [[cell, ...], ...]，首行为表头。列宽按内容长度比例分配（版心 15cm）"""
     if not rows:
         return
     cols = max(len(r) for r in rows)
+    # 计算每列最大内容长度（CJK 按 2 计），按比例分配
+    weights = []
+    for j in range(cols):
+        max_len = 1
+        for r in rows:
+            text = r[j] if j < len(r) else ''
+            max_len = max(max_len, sum(2 if ord(ch) > 127 else 1 for ch in text))
+        weights.append(max_len)
+    total_w = sum(weights)
+    col_widths = [Cm(15.0 * w / total_w) for w in weights]
     table = doc.add_table(rows=len(rows), cols=cols)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    # python-docx 需要同时设置 gridCol（列宽）与 tcW（单元格宽）才生效
+    for j in range(cols):
+        table.columns[j].width = col_widths[j]
     for i, row in enumerate(rows):
         for j in range(cols):
             cell = table.cell(i, j)
             set_cell_borders(cell)
+            if j < len(col_widths):
+                cell.width = col_widths[j]
             text = row[j] if j < len(row) else ''
             cell.text = ''
             p = cell.paragraphs[0]
