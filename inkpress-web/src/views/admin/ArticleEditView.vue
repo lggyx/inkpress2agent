@@ -3,12 +3,13 @@ import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { MagicStick, Sunny } from '@element-plus/icons-vue'
+import { EditPen } from '@element-plus/icons-vue'
 import Vditor from 'vditor'
 import 'vditor/dist/index.css'
 import { adminDetail, save } from '@/api/article'
 import { list as listCategories } from '@/api/category'
 import { list as listTags } from '@/api/tag'
-import { summary as aiSummary, suggestTags } from '@/api/ai'
+import { summary as aiSummary, suggestTags, suggestTitles } from '@/api/ai'
 import { streamSse } from '@/utils/sse'
 
 const route = useRoute()
@@ -36,6 +37,89 @@ let vditor = null
 const polishing = ref(false)
 const polishInstruction = ref('')
 let polishAbort = null
+
+const continuing = ref(false)
+const titlesLoading = ref(false)
+const titleDialogVisible = ref(false)
+const titleCandidates = ref([])
+const selectedTitle = ref('')
+
+/** AI 续写：流式输出，优先插入光标处，失败则追加到末尾 */
+async function startContinue() {
+  const content = vditor?.getValue() || ''
+  if (!content.trim()) {
+    ElMessage.warning('请先输入一些正文内容')
+    return
+  }
+  continuing.value = true
+  polishAbort = new AbortController()
+  let acc = ''
+  let applied = 0
+  let lastApply = 0
+  const applyText = text => {
+    // Vditor 提供 insertValue 插入光标处；不可用时降级为 setValue 全量替换
+    if (typeof vditor?.insertValue === 'function') {
+      vditor.insertValue(text)
+    } else {
+      vditor.setValue(content + text)
+    }
+  }
+  await streamSse('/api/admin/ai/continue', {
+    content,
+    instruction: polishInstruction.value || undefined
+  }, {
+    signal: polishAbort.signal,
+    onMessage: delta => {
+      acc += delta
+      const now = Date.now()
+      if (now - lastApply > 150) {
+        lastApply = now
+        applyText(acc.slice(applied))
+        applied = acc.length
+      }
+    },
+    onError: err => ElMessage.error(err.message)
+  })
+  // 应用被节流跳过的剩余增量
+  if (acc.length > applied) {
+    applyText(acc.slice(applied))
+  }
+  continuing.value = false
+  polishAbort = null
+}
+
+function stopContinue() {
+  polishAbort?.abort()
+}
+
+/** AI 标题：生成 5 个候选，弹窗选择后填入标题框 */
+async function generateTitles() {
+  const content = vditor?.getValue() || ''
+  if (!content.trim()) {
+    ElMessage.warning('请先输入一些正文内容')
+    return
+  }
+  titlesLoading.value = true
+  try {
+    const { data } = await suggestTitles(content)
+    if (!data.length) {
+      ElMessage.warning('AI 暂未给出标题候选')
+      return
+    }
+    titleCandidates.value = data
+    selectedTitle.value = data[0]
+    titleDialogVisible.value = true
+  } finally {
+    titlesLoading.value = false
+  }
+}
+
+function applyTitle() {
+  if (selectedTitle.value) {
+    form.title = selectedTitle.value
+  }
+  titleDialogVisible.value = false
+}
 
 const summaryLoading = ref(false)
 const tagsLoading = ref(false)
@@ -234,10 +318,23 @@ onMounted(async () => {
         <el-input v-model="form.cover" placeholder="封面图 URL（选填）" style="width: 320px" />
         <el-input
           v-model="polishInstruction"
-          placeholder="润色要求（选填，如：更口语化一些）"
+          placeholder="AI 要求（选填，如：更口语化 / 续写论点）"
           style="width: 300px"
-          :disabled="polishing"
+          :disabled="polishing || continuing"
         />
+        <el-button :icon="MagicStick" :loading="titlesLoading" @click="generateTitles">AI 标题</el-button>
+      </div>
+
+      <div class="meta-row ai-row">
+        <el-button :icon="Sunny" :loading="summaryLoading" @click="generateSummary">AI 生成摘要</el-button>
+        <el-button :icon="MagicStick" :loading="tagsLoading" @click="generateTags">AI 推荐标签</el-button>
+        <el-button
+          type="primary"
+          plain
+          :icon="EditPen"
+          :loading="continuing"
+          @click="startContinue"
+        >AI 续写</el-button>
       </div>
 
       <el-input
@@ -247,10 +344,6 @@ onMounted(async () => {
         maxlength="500"
         placeholder="文章摘要（选填，可由 AI 生成）"
       />
-
-      <div class="summary-actions">
-        <el-button :icon="Sunny" :loading="summaryLoading" @click="generateSummary">AI 生成摘要</el-button>
-      </div>
 
       <div ref="editorRef" class="editor-wrap"></div>
 
@@ -264,12 +357,28 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- AI 润色悬浮控制条 -->
-      <div v-if="polishing" class="polish-bar">
+      <!-- AI 续写悬浮控制条 -->
+      <div v-if="polishing || continuing" class="polish-bar">
         <el-icon class="spin"><MagicStick /></el-icon>
-        AI 正在润色…
-        <el-button size="small" type="danger" plain @click="stopPolish">停止</el-button>
+        {{ polishing ? 'AI 正在润色…' : 'AI 正在续写…' }}
+        <el-button size="small" type="danger" plain @click="polishing ? stopPolish() : stopContinue()">停止</el-button>
       </div>
+
+      <!-- AI 标题候选弹窗 -->
+      <el-dialog v-model="titleDialogVisible" title="AI 标题候选" width="480px">
+        <el-radio-group v-model="selectedTitle" class="title-radio-group">
+          <el-radio
+            v-for="(title, index) in titleCandidates"
+            :key="index"
+            :value="title"
+            class="title-radio"
+          >{{ title }}</el-radio>
+        </el-radio-group>
+        <template #footer>
+          <el-button @click="titleDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="applyTitle">使用所选标题</el-button>
+        </template>
+      </el-dialog>
     </el-card>
   </div>
 </template>
@@ -309,6 +418,26 @@ onMounted(async () => {
 .right {
   display: flex;
   gap: 10px;
+}
+
+.ai-row {
+  gap: 10px;
+}
+
+.title-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title-radio {
+  margin-right: 0;
+  padding: 8px 10px;
+  border-radius: 4px;
+}
+
+.title-radio:hover {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .polish-bar {

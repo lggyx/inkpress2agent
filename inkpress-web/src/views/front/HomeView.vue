@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { frontPage, hot } from '@/api/article'
 import { list as listCategories } from '@/api/category'
@@ -16,6 +16,8 @@ const loading = ref(false)
 const hotList = ref([])
 const categories = ref([])
 const tags = ref([])
+/** 图片加载失败的文章 id（外链图失效时回退编号占位） */
+const failedMedia = reactive({})
 
 const activeCategoryId = computed(() => (route.query.categoryId ? Number(route.query.categoryId) : null))
 const activeTagId = computed(() => (route.query.tagId ? Number(route.query.tagId) : null))
@@ -145,8 +147,13 @@ loadSidebar()
             class="post-card"
             @click="$router.push(`/article/${item.id}`)"
           >
-            <div class="card-media" v-if="item.cover">
-              <img :src="item.cover" :alt="item.title" loading="lazy" />
+            <div class="card-media" v-if="(item.cover || item.firstImage) && !failedMedia[item.id]">
+              <img
+                :src="item.cover || item.firstImage"
+                :alt="item.title"
+                loading="lazy"
+                @error="failedMedia[item.id] = true"
+              />
             </div>
             <div class="card-media placeholder" v-else>
               <span class="mono">{{ String(index + 1 + (pageNum - 1) * 6).padStart(2, '0') }}</span>

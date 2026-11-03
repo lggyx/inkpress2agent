@@ -15,6 +15,8 @@ public class ArticleVO {
     private String title;
     private String summary;
     private String cover;
+    /** 正文首图 URL（无封面时前端列表用作缩略图，运行时从 content 提取） */
+    private String firstImage;
     private Long views;
     private Long likes;
     private Boolean isTop;

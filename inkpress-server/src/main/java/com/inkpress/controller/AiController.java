@@ -67,6 +67,34 @@ public class AiController {
         return emitter;
     }
 
+    @Operation(summary = "AI 续写（SSE 流式输出）")
+    @PostMapping(value = "/continue", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter continueWriting(@Valid @RequestBody AiPolishDTO dto) {
+        aiService.ensureAvailable();
+        SseEmitter emitter = new SseEmitter(0L);
+        aiExecutor.execute(() -> aiService.continueWriting(dto.getContent(), dto.getInstruction(), new ChatStreamHandler() {
+            @Override
+            public void onDelta(String delta) {
+                try {
+                    emitter.send(SseEmitter.event().data(delta));
+                } catch (Exception e) {
+                    emitter.complete();
+                }
+            }
+
+            @Override
+            public void onDone() {
+                emitter.complete();
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                emitter.completeWithError(t);
+            }
+        }));
+        return emitter;
+    }
+
     @Operation(summary = "生成文章摘要")
     @PostMapping("/summary")
     public ApiResponse<String> summary(@Valid @RequestBody AiContentDTO dto) {
@@ -80,5 +108,11 @@ public class AiController {
                 .map(com.inkpress.entity.Tag::getName)
                 .toList();
         return ApiResponse.ok(aiService.suggestTags(dto.getContent(), candidates));
+    }
+
+    @Operation(summary = "生成标题候选（5 个）")
+    @PostMapping("/titles")
+    public ApiResponse<List<String>> suggestTitles(@Valid @RequestBody AiContentDTO dto) {
+        return ApiResponse.ok(aiService.suggestTitles(dto.getContent()));
     }
 }

@@ -47,6 +47,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 文章业务：前台浏览、管理端维护、点赞与浏览计数、归档
@@ -57,6 +59,9 @@ import java.util.Set;
 public class ArticleServiceImpl implements ArticleService {
 
     private static final Duration HOT_CACHE_TTL = Duration.ofMinutes(5);
+
+    /** Markdown 图片语法：![alt](url) */
+    private static final Pattern IMG_PATTERN = Pattern.compile("!\\[[^\\]]*\\]\\(([^)\\s]+)\\)");
 
     private final ArticleMapper articleMapper;
     private final CategoryMapper categoryMapper;
@@ -323,12 +328,22 @@ public class ArticleServiceImpl implements ArticleService {
     private ArticleVO toVO(Article article) {
         ArticleVO vo = new ArticleVO();
         BeanUtils.copyProperties(article, vo);
+        vo.setFirstImage(extractFirstImage(article.getContent()));
         if (article.getCategoryId() != null) {
             Category category = categoryMapper.selectById(article.getCategoryId());
             vo.setCategoryName(category == null ? null : category.getName());
         }
         vo.setTags(articleTagMapper.selectTagNames(article.getId()));
         return vo;
+    }
+
+    /** 提取 Markdown 正文中的第一张图片 URL，用作列表缩略图 */
+    private String extractFirstImage(String content) {
+        if (content == null || content.isBlank()) {
+            return null;
+        }
+        Matcher matcher = IMG_PATTERN.matcher(content);
+        return matcher.find() ? matcher.group(1) : null;
     }
 
     private ArticleDetailVO toDetail(Article article) {

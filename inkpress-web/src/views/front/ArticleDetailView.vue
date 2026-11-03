@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 import { detail, like as likeApi } from '@/api/article'
 import { listByArticle, create } from '@/api/comment'
 import { renderMarkdown, highlightIn } from '@/utils/markdown'
+import ArticleToc from '@/components/ArticleToc.vue'
 import { useUserStore } from '@/stores/user'
 import { formatDate } from '@/utils/format'
 
@@ -21,6 +22,7 @@ const comments = ref([])
 const submitting = ref(false)
 const commentForm = ref({ nickname: '', email: '', content: '', parentId: null })
 const replyTo = ref(null)
+const tocRef = ref(null)
 
 const html = computed(() => renderMarkdown(article.value?.content))
 
@@ -42,6 +44,8 @@ async function load() {
     await nextTick()
     if (contentRef.value) {
       highlightIn(contentRef.value)
+      // 正文渲染后刷新目录锚点
+      tocRef.value?.refresh()
     }
     await loadComments()
   } catch (e) {
@@ -126,7 +130,9 @@ watch(() => route.params.id, () => {
         <span class="crumb-current">{{ article.categoryName || 'UNCATEGORIZED' }}</span>
       </div>
 
-      <article class="detail-card">
+      <div class="detail-layout">
+        <div class="detail-main">
+          <article class="detail-card">
         <h1 class="detail-title">{{ article.title }}</h1>
 
         <div class="detail-meta mono">
@@ -215,14 +221,47 @@ watch(() => route.params.id, () => {
           </div>
         </div>
       </section>
+        </div>
+
+        <!-- 目录大纲（宽屏右侧悬浮 / 窄屏顶部折叠） -->
+        <aside class="toc-aside">
+          <ArticleToc ref="tocRef" :contentEl="contentRef" />
+        </aside>
+      </div>
     </template>
   </div>
 </template>
 
 <style scoped>
 .article-detail {
-  max-width: 820px;
+  max-width: 1120px;
   margin: 0 auto;
+}
+
+.detail-layout {
+  display: flex;
+  gap: 44px;
+  align-items: flex-start;
+}
+
+.detail-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.toc-aside {
+  width: 230px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1279px) {
+  .detail-layout {
+    flex-direction: column;
+  }
+  .toc-aside {
+    width: 100%;
+    order: -1;
+  }
 }
 
 /* ---------- 面包屑 ---------- */

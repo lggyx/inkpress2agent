@@ -53,6 +53,19 @@ public class AiServiceImpl implements AiService {
     }
 
     @Override
+    public void continueWriting(String content, String instruction, ChatStreamHandler handler) {
+        ensureAvailable();
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("你是一位中文写作助手。用户正在写一篇博客文章，请顺着上文续写 200~400 字：")
+                .append("保持与上文一致的语气、观点和结构，自然衔接，不要重复上文已有内容。")
+                .append("直接输出续写内容，不要任何解释或前缀。");
+        if (instruction != null && !instruction.isBlank()) {
+            prompt.append("用户的额外要求：").append(instruction.trim());
+        }
+        adapter.stream(List.of(ChatMessage.system(prompt.toString()), ChatMessage.user(content)), handler);
+    }
+
+    @Override
     public String summary(String content) {
         ensureAvailable();
         List<ChatMessage> messages = List.of(
@@ -89,7 +102,45 @@ public class AiServiceImpl implements AiService {
         }
     }
 
+    @Override
+    public List<String> suggestTitles(String content) {
+        ensureAvailable();
+        List<ChatMessage> messages = List.of(
+                ChatMessage.system("你是标题助手。根据文章内容生成 5 个中文标题候选："
+                        + "要求有信息量、不标题党、长度 8~25 字，风格可多样（直述/悬念/数字型）。"
+                        + "只输出 JSON 字符串数组，例如 [\"标题一\",\"标题二\"]，不要输出任何其他内容。"),
+                ChatMessage.user(truncate(content)));
+        try {
+            return parseStringArray(adapter.complete(messages));
+        } catch (Exception e) {
+            log.warn("生成标题失败", e);
+            return List.of();
+        }
+    }
+
     /** 从模型输出中提取 JSON 数组，容忍代码块包裹等噪音；解析失败返回空列表 */
+    private List<String> parseStringArray(String answer) {
+        int start = answer.indexOf('[');
+        int end = answer.lastIndexOf(']');
+        if (start < 0 || end <= start) {
+            return List.of();
+        }
+        try {
+            List<String> items = objectMapper.readValue(answer.substring(start, end + 1),
+                    new TypeReference<List<String>>() {
+                    });
+            return items.stream()
+                    .filter(t -> t != null && !t.isBlank())
+                    .map(String::trim)
+                    .limit(8)
+                    .toList();
+        } catch (JsonProcessingException e) {
+            log.warn("数组解析失败: {}", answer);
+            return List.of();
+        }
+    }
+
+    /** 从模型输出中提取标签 JSON 数组；解析失败返回空列表 */
     private List<String> parseTagArray(String answer) {
         int start = answer.indexOf('[');
         int end = answer.lastIndexOf(']');
