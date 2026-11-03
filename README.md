@@ -134,3 +134,4 @@ inkpress
 - [测试报告](docs/测试报告.md)
 - [工程制图](docs/diagrams/README.md)（9 张 PlantUML 图纸，PNG/SVG 双格式）
 - [接口冒烟测试脚本](scripts/smoke-test.ps1)（后端启动后执行，覆盖认证/文章/评论/点赞/边界/AI 降级）
+- [文章批量导入脚本](scripts/import-posts.mjs)（从 Astro 博客仓库导入历史文章，图片自动转为 GitHub Pages 外链）

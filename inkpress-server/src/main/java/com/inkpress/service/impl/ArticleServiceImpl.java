@@ -40,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -207,17 +208,31 @@ public class ArticleServiceImpl implements ArticleService {
         article.setStatus(dto.getStatus());
         article.setIsTop(Boolean.TRUE.equals(dto.getIsTop()));
         boolean publishing = Constants.ARTICLE_PUBLISHED.equals(dto.getStatus());
+        // 发布时间：补录历史文章时可指定（yyyy-MM-dd），否则取当前时间
+        LocalDateTime publishTime = parsePublishTime(dto.getPublishedAt());
         if (dto.getId() == null) {
-            article.setPublishedAt(publishing ? LocalDateTime.now() : null);
+            article.setPublishedAt(publishing ? (publishTime != null ? publishTime : LocalDateTime.now()) : null);
             articleMapper.insert(article);
         } else {
             if (publishing && article.getPublishedAt() == null) {
-                article.setPublishedAt(LocalDateTime.now());
+                article.setPublishedAt(publishTime != null ? publishTime : LocalDateTime.now());
             }
             articleMapper.updateById(article);
         }
         saveArticleTags(article.getId(), dto.getTags());
         return article.getId();
+    }
+
+    /** 解析补录文章的发布日期（yyyy-MM-dd），非法格式返回 null */
+    private LocalDateTime parsePublishTime(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(value.trim()).atStartOfDay();
+        } catch (Exception e) {
+            throw BizException.of("发布时间格式应为 yyyy-MM-dd");
+        }
     }
 
     @Override

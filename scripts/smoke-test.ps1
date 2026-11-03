@@ -20,7 +20,7 @@ function Assert($name, $condition) {
 
 # 1. 前台文章分页（公开）
 $articles = Invoke-RestMethod "$BaseUrl/api/articles/page?pageSize=5"
-Assert "前台文章分页返回 3 篇种子文章" ($articles.code -eq 200 -and $articles.data.total -eq 3)
+Assert "前台文章分页返回文章（含导入的历史文章）" ($articles.code -eq 200 -and $articles.data.total -ge 3)
 
 # 2. 热门文章
 $hot = Invoke-RestMethod "$BaseUrl/api/articles/hot?limit=3"
@@ -67,12 +67,12 @@ Assert "无 token 访问管理端返回 401" ($adminNoAuth.code -eq 401)
 
 # 8. 看板统计
 $stats = Invoke-RestMethod "$BaseUrl/api/admin/dashboard/stats" -Headers $headers
-Assert "看板统计文章数=3" ($stats.code -eq 200 -and $stats.data.articleCount -eq 3)
+Assert "看板统计文章数与库中一致（>=3）" ($stats.code -eq 200 -and $stats.data.articleCount -ge 3)
 Assert "看板趋势包含近 7 天" ($stats.data.trend.Count -eq 7)
 
 # 9. 管理端文章分页（含草稿）
 $adminArticles = Invoke-RestMethod "$BaseUrl/api/admin/articles/page?pageSize=10" -Headers $headers
-Assert "管理端文章分页" ($adminArticles.code -eq 200 -and $adminArticles.data.total -eq 3)
+Assert "管理端文章分页（>=3）" ($adminArticles.code -eq 200 -and $adminArticles.data.total -ge 3)
 
 # 10. 保存文章（草稿）
 $saveBody = @{

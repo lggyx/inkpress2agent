@@ -38,4 +38,10 @@ public class ArticleSaveDTO {
     private String status;
 
     private Boolean isTop = false;
+
+    /**
+     * 发布时间（可选，yyyy-MM-dd 格式）。
+     * 补录历史文章时传入以保留原始发布日期；不传则取当前时间。
+     */
+    private String publishedAt;
 }
