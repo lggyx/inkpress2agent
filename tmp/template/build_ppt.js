@@ -57,6 +57,46 @@ function bullet(items, color) {
   }))
 }
 
+/**
+ * 行列表表格（替代 addTable）：原生文本框 + 细线分隔。
+ * addTable 在跨渲染器时表头/数据行列宽会错位，此方案布局完全确定。
+ */
+function rowList(slide, c, opt) {
+  const { x, y, widths, header, rows, rowH = 0.46, highlight = -1 } = opt
+  const totalW = widths.reduce((a, b) => a + b, 0)
+  // 表头
+  let cx = x
+  header.forEach((h, i) => {
+    txt(slide, h, {
+      x: cx, y, w: widths[i] - 0.12, h: 0.32, fontSize: 12.5, bold: true, color: c.text
+    })
+    cx += widths[i]
+  })
+  // 表头下粗线
+  slide.addShape(pres.shapes.LINE, {
+    x, y: y + 0.36, w: totalW, h: 0, line: { color: c.text, width: 1.5 }
+  })
+  // 数据行
+  rows.forEach((row, ri) => {
+    const ry = y + 0.48 + ri * rowH
+    const isHi = ri === highlight
+    let cx2 = x
+    row.forEach((cell, ci) => {
+      txt(slide, cell, {
+        x: cx2, y: ry, w: widths[ci] - 0.12, h: rowH - 0.08,
+        fontSize: 12, bold: isHi,
+        color: isHi ? c.accent : (ci === 0 ? c.text : c.dim)
+      })
+      cx2 += widths[ci]
+    })
+    // 行间细线
+    slide.addShape(pres.shapes.LINE, {
+      x, y: ry + rowH - 0.07, w: totalW, h: 0, line: { color: c.line, width: 0.75 }
+    })
+  })
+  return y + 0.48 + rows.length * rowH
+}
+
 /** 图片按比例 contain 放入指定区域并居中 */
 function addImageContain(slide, file, x, y, maxW, maxH) {
   // 读取实际尺寸
@@ -161,28 +201,18 @@ function notes(slide, text) {
   const s = pres.addSlide()
   s.background = { color: LIGHT.bg }
   pageTitle(s, LIGHT, '02', '国内外研究现状', '现有方案解决了"发布"，但各有短板')
-  const rows = [
-    [
-      { text: '方案', options: { bold: true, color: 'FFFFFF', fill: { color: '3A3A42' } } },
-      { text: '技术形态', options: { bold: true, color: 'FFFFFF', fill: { color: '3A3A42' } } },
-      { text: '优势', options: { bold: true, color: 'FFFFFF', fill: { color: '3A3A42' } } },
-      { text: '短板', options: { bold: true, color: 'FFFFFF', fill: { color: '3A3A42' } } }
+  rowList(s, LIGHT, {
+    x: M, y: 1.75,
+    widths: [1.8, 2.7, 3.5, 4.33],
+    header: ['方案', '技术形态', '优势', '短板'],
+    rows: [
+      ['WordPress', 'PHP + MySQL 单体', '生态庞大，插件齐全', '架构偏重，加载同步'],
+      ['Ghost', 'Node.js 订阅制', '编辑体验好', '定制需学模板语言'],
+      ['Hugo / Hexo', '静态站点生成', '速度快、成本低', '无后台，动态功能靠第三方'],
+      ['Halo', 'Java 插件化', '现代化，社区活跃', 'AI 支持停留在插件层面'],
+      ['本系统', '前后端分离 + AI 一体化', '数据自有 · AI 内建 · 检索增强', '面向个人创作者的轻量方案']
     ],
-    ['WordPress', 'PHP + MySQL 单体', '生态庞大，插件齐全', '架构偏重，加载同步'],
-    ['Ghost', 'Node.js 订阅制', '编辑体验好', '定制需学模板语言'],
-    ['Hugo / Hexo', '静态站点生成', '速度快、成本低', '无后台，动态功能靠第三方'],
-    ['Halo', 'Java 插件化', '现代化，社区活跃', 'AI 支持停留在插件层面'],
-    [
-      { text: '本系统', options: { bold: true, color: LIGHT.accent } },
-      { text: '前后端分离 + AI 一体化', options: { bold: true } },
-      { text: '数据自有 · AI 内建 · 检索增强', options: { bold: true } },
-      { text: '面向个人创作者的轻量方案', options: { bold: true } }
-    ]
-  ]
-  s.addTable(rows, {
-    x: M, y: 1.75, w: W - 2 * M, colW: [1.7, 2.9, 3.5, 4.23],
-    fontSize: 12.5, fontFace: F, border: { pt: 0.75, color: 'D8D8DE' },
-    fill: { color: 'FFFFFF' }, rowH: 0.52, valign: 'middle'
+    highlight: 4
   })
   txt(s, '调研结论：把"前后端分离技术栈、数据自有、AI 一体化"三者结合的轻量系统仍然少见，这是本课题的空间。', {
     x: M, y: 5.35, w: W - 2 * M, h: 0.6, fontSize: 13.5, bold: true, color: LIGHT.text
@@ -410,23 +440,18 @@ function notes(slide, text) {
   txt(s, '项接口冒烟断言\n全部通过', { x: M, y: 2.85, w: 2.6, h: 0.75, fontSize: 13, color: LIGHT.dim })
   txt(s, '31', { x: M, y: 3.75, w: 2.6, h: 1.1, fontSize: 62, bold: true, color: LIGHT.accent })
   txt(s, '项功能测试用例\n含边界与安全', { x: M, y: 4.9, w: 2.6, h: 0.7, fontSize: 13, color: LIGHT.dim })
-  const rows = [
-    [
-      { text: '测试类型', options: { bold: true, color: 'FFFFFF', fill: { color: '3A3A42' } } },
-      { text: '覆盖内容', options: { bold: true, color: 'FFFFFF', fill: { color: '3A3A42' } } },
-      { text: '结果', options: { bold: true, color: 'FFFFFF', fill: { color: '3A3A42' } } }
-    ],
-    ['认证授权', '登录/越权/角色，401 与 403 分流', '通过'],
-    ['文章模块', '分页/草稿隔离/删除级联/计数回写', '通过'],
-    ['边界参数', '超大 pageSize 限制 50；超长标签名 400 拦截', '通过'],
-    ['内容安全', 'Markdown 白名单净化；评论长度限制；邮箱不暴露', '通过'],
-    ['检索实验', '5 组查询 Top-1 命中率 100%', '通过'],
-    ['AI 降级', '未配置 Key 返回 2001 明确提示，主流程无感', '通过']
-  ]
-  s.addTable(rows, {
-    x: 3.5, y: 1.75, w: 9.3, colW: [2.1, 5.4, 1.8],
-    fontSize: 12, fontFace: F, border: { pt: 0.75, color: 'D8D8DE' },
-    fill: { color: 'FFFFFF' }, rowH: 0.5, valign: 'middle'
+  rowList(s, LIGHT, {
+    x: 3.5, y: 1.75,
+    widths: [2.1, 5.6, 1.6],
+    header: ['测试类型', '覆盖内容', '结果'],
+    rows: [
+      ['认证授权', '登录 / 越权 / 角色，401 与 403 分流', '通过'],
+      ['文章模块', '分页 / 草稿隔离 / 删除级联 / 计数回写', '通过'],
+      ['边界参数', '超大 pageSize 限制 50；超长标签名 400 拦截', '通过'],
+      ['内容安全', 'Markdown 白名单净化；评论长度限制；邮箱不暴露', '通过'],
+      ['检索实验', '5 组查询 Top-1 命中率 100%', '通过'],
+      ['AI 降级', '未配置 Key 返回 2001 明确提示，主流程无感', '通过']
+    ]
   })
   txt(s, '冒烟测试脚本每轮代码迭代后回归，开发期间实际拦下过点赞权限配置错误、过时断言等问题。', {
     x: 3.5, y: 5.85, w: 9.3, h: 0.6, fontSize: 12, color: LIGHT.dim
