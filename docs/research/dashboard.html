@@ -248,6 +248,41 @@
       <div class="num-note" style="margin-top:10px">热态 &lt;200ms 满足交互需求；冷热差异指明优化方向（向量常驻内存）。</div>
     </div>
 
+    <!-- 安全维度 -->
+    <div class="card col-12">
+      <h2><span class="dim">安全</span>安全建站：攻击面论证 + OWASP 对照</h2>
+      <div class="src">NVD 官方 API 实时查询 · 2026-11-05 <span class="g-a">[A]</span> · 详见 security.md</div>
+      <div style="display:flex; gap:24px; margin-top:4px">
+        <div style="flex:1">
+          <table>
+            <tr><th>系统</th><th>相关 CVE 数</th><th>架构含义</th></tr>
+            <tr><td>WordPress</td><td><b style="color:#c62828">22,370</b></td><td rowspan="2" style="background:#fdf2ea">93.6% 来自插件——<b>插件生态 = 最大攻击面</b></td></tr>
+            <tr><td>　└ 含 plugin 关键词</td><td style="color:#c62828">20,923</td></tr>
+            <tr><td>Ghost</td><td>3</td><td rowspan="3">极简内建架构历史包袱小</td></tr>
+            <tr><td>Halo</td><td>6</td></tr>
+            <tr><td style="background:#fdf2ea"><b>InkPress</b></td><td style="background:#fdf2ea"><b>0</b>（新系统）</td></tr>
+          </table>
+          <div class="num-note" style="margin-top:8px">论证：AI/检索/RAG 全部内建而非插件化——<b>从源头砍掉最大漏洞来源</b>。不是"更会修漏洞"，是"漏洞来源更少"。NVD 查询命令可复现（见 security.md）。</div>
+        </div>
+        <div style="flex:1.15">
+          <div style="font-size:13px;font-weight:800;margin-bottom:8px">OWASP Top 10 (2021) 防御对照（源码可验证）</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:11.5px">
+            <div>✓ A01 访问控制：JWT 角色分流</div>
+            <div>✓ A02 加密：BCrypt + 密钥环境变量</div>
+            <div>✓ A03 注入：参数化 + DOMPurify</div>
+            <div>✓ A04 设计：破坏性输入全覆盖</div>
+            <div>✓ A05 配置：生产关文档</div>
+            <div>✓ A06 组件：仅 4 个主要三方依赖</div>
+            <div>✓ A07 认证：签名验证 + 7 天有效期</div>
+            <div>✓ A08 完整性：统一响应 + AI 容错</div>
+            <div>✓ A09 日志：AOP 全量操作日志</div>
+            <div>✓ A10 SSRF：AI 仅发往配置地址</div>
+          </div>
+          <div class="num-note" style="margin-top:10px">另有纵深三层（Nginx/应用/数据）+ 5 项真实攻防测试记录（注入/篡改/越界，git log 可溯）。</div>
+        </div>
+      </div>
+    </div>
+
     <!-- 竞争优势矩阵 -->
     <div class="card col-12">
       <h2><span class="dim">优势</span>功能矩阵：InkPress vs 主流方案</h2>
