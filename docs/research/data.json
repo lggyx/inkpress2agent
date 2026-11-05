@@ -1,0 +1,74 @@
+{
+  "meta": {
+    "fetched_at": "2026-11-05T07:30:00+08:00",
+    "purpose": "InkPress 开题答辩数据支撑",
+    "data_grades": {
+      "A": "本次调研实时抓取验证",
+      "B": "公开文献记录值，未能实时验证（已标注）"
+    }
+  },
+  "sources": {
+    "w3techs": "https://w3techs.com/technologies/overview/content_management",
+    "github_api": "https://api.github.com/repos/{owner}/{repo}",
+    "semantic_scholar": "https://api.semanticscholar.org/graph/v1/paper/arXiv:{id}",
+    "bigmodel_pricing": "https://docs.bigmodel.cn/cn/guide/start/pricing.md",
+    "endoflife": "https://endoflife.date/{product}"
+  },
+  "cms_market": {
+    "grade": "A",
+    "source": "W3Techs",
+    "fetched": "2026-11-05",
+    "wordpress": { "all_websites": 39.5, "cms_market_share": 58.2 },
+    "shopify": { "all_websites": 5.3, "cms_market_share": 7.9 },
+    "wix": { "all_websites": 4.2, "cms_market_share": 6.1 },
+    "squarespace": { "all_websites": 2.4, "cms_market_share": 3.6 },
+    "joomla": { "all_websites": 1.1, "cms_market_share": 1.6 },
+    "note": "Ghost/Jekyll/Halo 等市场份额各不足 0.1%~0.5%"
+  },
+  "github_ecosystem": {
+    "grade": "A",
+    "source": "GitHub REST API",
+    "fetched": "2026-11-05",
+    "ghost": {
+      "stars": 55679, "forks": 12105, "language": "TypeScript",
+      "license": "MIT", "created_at": "2013-05-04"
+    },
+    "halo": {
+      "stars": 40113, "forks": 10313, "language": "Java",
+      "license": "GPL-3.0", "created_at": "2018-03-21"
+    }
+  },
+  "paper_citations": {
+    "grade_A": {
+      "source": "Semantic Scholar API",
+      "fetched": "2026-11-05",
+      "attention_is_all_you_need": { "arxiv": "1706.03762", "year": 2017, "citations": 201377 },
+      "gpt3_few_shot_learners": { "arxiv": "2005.14165", "year": 2020, "citations": 66129 }
+    },
+    "grade_B_unverified": {
+      "reason": "Semantic Scholar 匿名限流（HTTP 429），引用数未写入 PPT/论文正文",
+      "rag_lewis_2020": { "arxiv": "2005.11401", "year": 2020, "qualitative": "RAG 范式起源，主流产品广泛采用" },
+      "feature_hashing_weinberger_2009": { "year": 2009, "qualitative": "特征哈希原始论文，ICML 2009" }
+    }
+  },
+  "ai_pricing": {
+    "grade": "A",
+    "source": "智谱 BigModel 定价文档",
+    "fetched": "2026-11-05",
+    "glm_4_flash": { "price": "免费（输入输出均 0 元）", "context": "128K" },
+    "embedding_3": { "price_per_million_tokens": 0.5, "batch_price": 0.25 },
+    "project_cost_estimate": {
+      "corpus_tokens": 600000,
+      "vectorization_cost_yuan": 0.3,
+      "note": "38 篇文章全量向量化约 0.3 元；对话功能用免费模型，开发期 AI 成本 < 1 元"
+    }
+  },
+  "tech_versions": {
+    "grade": "A",
+    "source": "endoflife.date",
+    "fetched": "2026-10-23~11-05",
+    "spring_boot": { "project_uses": "3.3.x", "oss_support_ended": "2025-06-30", "latest": "4.1" },
+    "vue": { "project_uses": "3.3+", "latest": "3.5.44", "latest_date": "2026-10-13" },
+    "nodejs": { "project_uses": "20+", "latest_lts": "26.13.0", "latest_date": "2026-10-28" }
+  }
+}
