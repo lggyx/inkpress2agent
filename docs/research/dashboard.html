@@ -248,6 +248,58 @@
       <div class="num-note" style="margin-top:10px">热态 &lt;200ms 满足交互需求；冷热差异指明优化方向（向量常驻内存）。</div>
     </div>
 
+    <!-- 竞争优势矩阵 -->
+    <div class="card col-12">
+      <h2><span class="dim">优势</span>功能矩阵：InkPress vs 主流方案</h2>
+      <div class="src">竞品侧：各官网功能页 2026-11-05 查证 · InkPress 侧：源码可验证（git grep） <span class="g-a">[A]</span></div>
+      <table>
+        <tr>
+          <th style="width:23%">能力</th>
+          <th>WordPress</th><th>Ghost</th><th>Halo</th><th>Hexo</th>
+          <th style="background:#c2571a">InkPress</th>
+        </tr>
+        <tr><td>现代 Java/TS 后端</td><td>✗ PHP 单体</td><td>✓</td><td>✓</td><td>✗ 纯静态</td><td style="background:#fdf2ea;font-weight:700;color:#c2571a">✓</td></tr>
+        <tr><td>前后端分离（SPA）</td><td>✗</td><td>部分</td><td>✓</td><td>✗</td><td style="background:#fdf2ea;font-weight:700;color:#c2571a">✓</td></tr>
+        <tr><td>AI 写作辅助内建</td><td>插件</td><td>✗</td><td>插件</td><td>✗</td><td style="background:#fdf2ea;font-weight:700;color:#c2571a">✓ 五项</td></tr>
+        <tr><td>SSE 流式输出</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td style="background:#fdf2ea;font-weight:700;color:#c2571a">✓ 全链路</td></tr>
+        <tr><td>站内语义搜索</td><td>外置服务</td><td>✗</td><td>✗</td><td>✗</td><td style="background:#fdf2ea;font-weight:700;color:#c2571a">✓ 自研</td></tr>
+        <tr><td>相关文章语义排序</td><td>插件</td><td>简单规则</td><td>简单规则</td><td>✗</td><td style="background:#fdf2ea;font-weight:700;color:#c2571a">✓ 0.85+0.15 加权</td></tr>
+        <tr><td>RAG 问答（引用溯源）</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td style="background:#fdf2ea;font-weight:700;color:#c2571a">✓</td></tr>
+        <tr><td>JWT 无状态认证</td><td>Session</td><td>Session</td><td>Session</td><td>—</td><td style="background:#fdf2ea;font-weight:700;color:#c2571a">✓</td></tr>
+        <tr><td>计数缓存（Redis 回写）</td><td>插件</td><td>✗ 直写库</td><td>✗ 直写库</td><td>—</td><td style="background:#fdf2ea;font-weight:700;color:#c2571a">✓ 81,845 ops/s</td></tr>
+        <tr><td>一键容器化部署</td><td>手工</td><td>✓</td><td>✓</td><td>✓</td><td style="background:#fdf2ea;font-weight:700;color:#c2571a">✓</td></tr>
+      </table>
+      <div class="num-note" style="margin-top:10px">10 项能力中 InkPress 为唯一满格列（9✓+1✓）。劣势不回避：WordPress 插件生态 5.8 万+、React 生态差距——口径见 advantages.md 第三节。</div>
+    </div>
+
+    <!-- 五大优势卡片 -->
+    <div class="card col-12">
+      <h2><span class="dim">优势</span>五大差异化优势（每条有数据背书）</h2>
+      <div class="src">详见 advantages.md</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px">
+        <div class="kpi" style="border-left:3px solid #c2571a">
+          <div style="font-size:12.5px;font-weight:800;color:#c2571a">① AI 内建工程化完整</div>
+          <div class="num-note" style="margin-top:4px">六大方案 29 万 star 无一家内建；五项辅助+RAG，流式全链路；成本 0 元+0.3 元</div>
+        </div>
+        <div class="kpi" style="border-left:3px solid #c2571a">
+          <div style="font-size:12.5px;font-weight:800;color:#c2571a">② 检索自研可讲原理</div>
+          <div class="num-note" style="margin-top:4px">混合排序公式可解释；512 维零依赖；实测热态 180ms，答辩现场可跑</div>
+        </div>
+        <div class="kpi" style="border-left:3px solid #c2571a">
+          <div style="font-size:12.5px;font-weight:800;color:#c2571a">③ 高频写架构解法</div>
+          <div class="num-note" style="margin-top:4px">Redis INCR 81,845 ops/s（p50 0.33ms）；1 分钟可承接 485 万次浏览</div>
+        </div>
+        <div class="kpi" style="border-left:3px solid #c2571a">
+          <div style="font-size:12.5px;font-weight:800;color:#c2571a">④ 安全设计超毕设水准</div>
+          <div class="num-note" style="margin-top:4px">JWT+角色分流、DOMPurify 净化、隐私分层；17 个真实缺陷全程修复可溯</div>
+        </div>
+        <div class="kpi" style="border-left:3px solid #c2571a">
+          <div style="font-size:12.5px;font-weight:800;color:#c2571a">⑤ 数据自有可迁移</div>
+          <div class="num-note" style="margin-top:4px">38 篇真实文章一键脚本迁移验证；AI 厂商/向量/部署三处可插拔</div>
+        </div>
+      </div>
+    </div>
+
     <!-- 评述链 -->
     <div class="card col-12">
       <h2><span class="dim">结论</span>文献综述评述链（PPT 现状页直接引用）</h2>
