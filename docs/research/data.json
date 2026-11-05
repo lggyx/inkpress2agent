@@ -1,9 +1,9 @@
 {
   "meta": {
-    "fetched_at": "2026-11-05T07:30:00+08:00",
-    "purpose": "InkPress 开题答辩数据支撑",
+    "fetched_at": "2026-11-05T08:30:00+08:00",
+    "purpose": "InkPress 开题答辩数据支撑（8 维度）",
     "data_grades": {
-      "A": "本次调研实时抓取验证",
+      "A": "本次调研实时抓取或本地实测验证",
       "B": "公开文献记录值，未能实时验证（已标注）"
     }
   },
@@ -12,63 +12,116 @@
     "github_api": "https://api.github.com/repos/{owner}/{repo}",
     "semantic_scholar": "https://api.semanticscholar.org/graph/v1/paper/arXiv:{id}",
     "bigmodel_pricing": "https://docs.bigmodel.cn/cn/guide/start/pricing.md",
-    "endoflife": "https://endoflife.date/{product}"
+    "endoflife": "https://endoflife.date/{product}",
+    "stackoverflow_2025": "https://survey.stackoverflow.co/2025/technology",
+    "npm_api": "https://api.npmjs.org/downloads/point/last-month/{package}",
+    "cnnic_57th": "https://www.cnnic.net.cn/n4/2026/0304/c88-11549.html"
   },
-  "cms_market": {
-    "grade": "A",
-    "source": "W3Techs",
-    "fetched": "2026-11-05",
+
+  "dim1_cms_market": {
+    "grade": "A", "source": "W3Techs", "fetched": "2026-11-05",
     "wordpress": { "all_websites": 39.5, "cms_market_share": 58.2 },
-    "shopify": { "all_websites": 5.3, "cms_market_share": 7.9 },
-    "wix": { "all_websites": 4.2, "cms_market_share": 6.1 },
-    "squarespace": { "all_websites": 2.4, "cms_market_share": 3.6 },
-    "joomla": { "all_websites": 1.1, "cms_market_share": 1.6 },
-    "note": "Ghost/Jekyll/Halo 等市场份额各不足 0.1%~0.5%"
+    "shopify": { "cms_market_share": 7.9 },
+    "wix": { "cms_market_share": 6.1 },
+    "squarespace": { "cms_market_share": 3.6 },
+    "joomla": { "cms_market_share": 1.6 },
+    "note": "Ghost/Jekyll/Halo 等各不足 0.1%~0.5%"
   },
-  "github_ecosystem": {
-    "grade": "A",
-    "source": "GitHub REST API",
-    "fetched": "2026-11-05",
-    "ghost": {
-      "stars": 55679, "forks": 12105, "language": "TypeScript",
-      "license": "MIT", "created_at": "2013-05-04"
-    },
-    "halo": {
-      "stars": 40113, "forks": 10313, "language": "Java",
-      "license": "GPL-3.0", "created_at": "2018-03-21"
-    }
+
+  "dim2_blog_ecosystem_github": {
+    "grade": "A", "source": "GitHub API", "fetched": "2026-11-05",
+    "ghost": { "stars": 55679, "forks": 12105, "language": "TypeScript", "license": "MIT", "created": "2013-05" },
+    "halo": { "stars": 40113, "forks": 10313, "language": "Java", "license": "GPL-3.0", "created": "2018-03" },
+    "hugo": { "stars": 90380, "forks": 8441, "language": "Go" },
+    "hexo": { "stars": 41779, "forks": 55, "language": "TypeScript" },
+    "jekyll": { "stars": 51745, "forks": 10302, "language": "Ruby" },
+    "typecho": { "stars": 12458, "forks": 2122, "language": "PHP" }
   },
-  "paper_citations": {
+
+  "dim3_paper_citations": {
     "grade_A": {
-      "source": "Semantic Scholar API",
-      "fetched": "2026-11-05",
+      "source": "Semantic Scholar API", "fetched": "2026-11-05",
       "attention_is_all_you_need": { "arxiv": "1706.03762", "year": 2017, "citations": 201377 },
       "gpt3_few_shot_learners": { "arxiv": "2005.14165", "year": 2020, "citations": 66129 }
     },
     "grade_B_unverified": {
-      "reason": "Semantic Scholar 匿名限流（HTTP 429），引用数未写入 PPT/论文正文",
-      "rag_lewis_2020": { "arxiv": "2005.11401", "year": 2020, "qualitative": "RAG 范式起源，主流产品广泛采用" },
+      "reason": "Semantic Scholar 匿名限流（429），引用数不写入 PPT/论文正文",
+      "rag_lewis_2020": { "arxiv": "2005.11401", "year": 2020, "qualitative": "RAG 范式起源" },
       "feature_hashing_weinberger_2009": { "year": 2009, "qualitative": "特征哈希原始论文，ICML 2009" }
     }
   },
-  "ai_pricing": {
-    "grade": "A",
-    "source": "智谱 BigModel 定价文档",
-    "fetched": "2026-11-05",
+
+  "dim4_ai_cost": {
+    "grade": "A", "source": "智谱 BigModel 定价文档", "fetched": "2026-11-05",
     "glm_4_flash": { "price": "免费（输入输出均 0 元）", "context": "128K" },
     "embedding_3": { "price_per_million_tokens": 0.5, "batch_price": 0.25 },
-    "project_cost_estimate": {
-      "corpus_tokens": 600000,
-      "vectorization_cost_yuan": 0.3,
-      "note": "38 篇文章全量向量化约 0.3 元；对话功能用免费模型，开发期 AI 成本 < 1 元"
-    }
+    "project_cost": { "corpus_tokens": 600000, "vectorization_cost_yuan": 0.3, "dev_period_total_estimate": "低于 1 元" }
   },
-  "tech_versions": {
-    "grade": "A",
-    "source": "endoflife.date",
-    "fetched": "2026-10-23~11-05",
-    "spring_boot": { "project_uses": "3.3.x", "oss_support_ended": "2025-06-30", "latest": "4.1" },
-    "vue": { "project_uses": "3.3+", "latest": "3.5.44", "latest_date": "2026-10-13" },
-    "nodejs": { "project_uses": "20+", "latest_lts": "26.13.0", "latest_date": "2026-10-28" }
-  }
+
+  "dim5_tech_stack_versions": {
+    "grade": "A", "source": "endoflife.date", "fetched": "2026-10/11",
+    "spring_boot": { "project": "3.3.x", "latest": "4.1", "oss_eol": "2025-06-30" },
+    "vue": { "project": "3.3+", "latest": "3.5.44 (2026-10-13)" },
+    "nodejs": { "project": "20+", "latest_lts": "26.13.0 (2026-10-28)" }
+  },
+
+  "dim6_so_survey_2025": {
+    "grade": "A", "source": "Stack Overflow Developer Survey 2025", "fetched": "2026-11-05",
+    "web_frameworks": {
+      "nodejs": 48.7, "react": 44.7, "jquery": 23.4, "nextjs": 20.8, "express": 19.9,
+      "aspnet_core": 19.7, "angular": 18.2, "vue": 17.6, "fastapi": 14.8, "spring_boot": 14.7
+    },
+    "languages": { "javascript": 66.0, "typescript": 43.6, "python": 57.9, "sql": 58.6 },
+    "databases": { "postgresql": 55.6, "mysql": 40.5, "sqlite": 37.5, "redis": 28.0 },
+    "tools": { "docker": 71.1, "npm": 56.8, "vite": 25.4 }
+  },
+
+  "dim7_npm_monthly_downloads": {
+    "grade": "A", "source": "npm registry API", "fetched": "2026-11-05", "window": "2026-10-05 ~ 2026-11-03",
+    "react": 757020076,
+    "vite": 780701798,
+    "express": 590925414,
+    "vue": 72357074
+  },
+
+  "dim8_cnnic_china": {
+    "grade": "A", "source": "CNNIC 第57次报告（截至2025-12）", "fetched": "2026-11-05",
+    "netizens": 1125000000,
+    "penetration": 80.1,
+    "genai_users": 602000000,
+    "genai_growth_yoy": "141.7%",
+    "genai_penetration": 42.8
+  },
+
+  "local_benchmark_redis": {
+    "grade": "A-本地实测", "date": "2026-11-05",
+    "env": "Redis 7 (Docker) + Python redis-py 管线模式, N=50000",
+    "set_ops_per_sec": 50489,
+    "get_ops_per_sec": 71159,
+    "incr_ops_per_sec": 81845,
+    "single_get_p50_ms": 0.33,
+    "single_get_p99_ms": 0.96,
+    "significance": "浏览量计数走 Redis 的方案依据：INCR 吞吐 8.1 万 ops/s，单次延迟亚毫秒"
+  },
+
+  "local_benchmark_semantic": {
+    "grade": "A-本地实测", "date": "2026-11-05",
+    "env": "本项目后端 28080 运行中, 38 篇文章, 512 维本地向量, 含 HTTP 网络往返",
+    "article_page_mysql_ms": "76~118",
+    "semantic_search_cold_ms": 332,
+    "semantic_search_warm_ms": "172~197",
+    "related_recommend_ms": "161~180",
+    "cold_warm_ratio": "首轮约 332ms（含 Redis 向量逐篇加载），热态降至 ~180ms",
+    "significance": "语义检索热态延迟 <200ms，满足个人博客场景交互需求；冷热差异来自向量按需加载"
+  },
+
+  "conclusion_chain": [
+    "市场存在：WordPress 58.2% 份额，发布需求已被满足",
+    "方向正确：Ghost+Halo 合计 9.5 万 star，现代化架构是共识",
+    "缺口明确：两者 AI 均非内建",
+    "技术成熟：核心论文 26.7 万引用 + 中国生成式 AI 用户 6.02 亿（增 141.7%）",
+    "成本趋零：GLM-4-Flash 免费，全库向量化 0.3 元",
+    "性能可行：Redis INCR 8.1 万 ops/s，语义检索热态 <200ms",
+    "切入空间：前后端分离 + AI 一体化的轻量博客系统"
+  ]
 }
