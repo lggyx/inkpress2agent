@@ -1,4 +1,4 @@
-"""InkPress 毕业论文 docx 生成脚本
+﻿"""InkPress 毕业论文 docx 生成脚本
 以学校模板为底稿（继承样式与页面设置），按 thesis-template.md 格式写入全部章节。
 用法：python tmp/template/build_thesis.py
 """
@@ -316,7 +316,7 @@ def main():
          align=WD_ALIGN_PARAGRAPH.CENTER, space_before=12, space_after=30)
     cover_rows = [
         ('题  目', TITLE),
-        ('学  院', '信息学院'),
+        ('学  院', '大数据与智能信息工程学院'),
         ('专  业', '软件工程'),
         ('学  号', '2505396'),
         ('学  生', '张德鑫'),
