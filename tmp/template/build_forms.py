@@ -15,6 +15,15 @@ from docx.oxml import OxmlElement
 OUT_DIR = 'tmp/template/filled'
 TITLE = '基于Spring Boot+Vue的个人博客与文章管理系统的设计与实现'
 
+# 学生信息（来自正式任务书）
+STUDENT = {
+    '学院': '信息学院',
+    '专业': '软件工程',
+    '校号': '2505396',
+    '学生': '张德鑫',
+    '指导教师': '王婧',
+}
+
 os.makedirs(OUT_DIR, exist_ok=True)
 
 
@@ -72,6 +81,27 @@ def fill_cell(cell, text, east='宋体', size=12, bold=False, align=None):
     if align is not None:
         p.alignment = align
     p.paragraph_format.line_spacing = 1.25
+
+
+def fill_cover(doc, date_text):
+    """填充报告封面：学院/专业/校号/学生/指导教师/日期"""
+    label_map = {'学    院': '学院', '专    业': '专业', '校    号': '校号',
+                 '学    生': '学生', '指导教师': '指导教师', '日    期': 'date'}
+    for p in doc.paragraphs:
+        text = p.text
+        matched = None
+        for label, key in label_map.items():
+            if text.startswith(label) and text.strip() == label:
+                matched = key
+                break
+        if matched:
+            value = date_text if matched == 'date' else STUDENT[matched]
+            label_clean = matched if matched != 'date' else '日    期'
+            for r in p.runs:
+                r.text = ''
+            run = p.add_run(f'{label_clean}    {value}')
+            set_run_font(run, '宋体', 'Times New Roman', 12)
+            p.paragraph_format.line_spacing = 1.25
 
 
 # ---------- 1. 任务书 ----------
@@ -266,6 +296,7 @@ def build_kaiti():
         p.paragraph_format.first_line_indent = Pt(0)
 
     out = os.path.join(OUT_DIR, '2.开题报告-已填写.docx')
+    fill_cover(doc, '2026 年 11 月')
     doc.save(out)
     print('开题报告 ->', out)
 
@@ -373,12 +404,14 @@ def build_midterm():
         p.paragraph_format.line_spacing = 1.25
 
     out = os.path.join(OUT_DIR, '4.中期报告-已填写.docx')
+    fill_cover(doc, '2027 年 3 月')
     doc.save(out)
     print('中期报告 ->', out)
 
 
 if __name__ == '__main__':
-    build_renwu()
+    # 任务书不再由脚本生成：正式签字版（张德鑫/王婧）为最终材料，
+    # 手工放置于 filled/1.任务书-已填写.docx，脚本不得覆盖
     build_kaiti()
     build_midterm()
-    print('全部完成')
+    print('全部完成（任务书为正式签字版，跳过生成）')

@@ -316,13 +316,13 @@ def main():
          align=WD_ALIGN_PARAGRAPH.CENTER, space_before=12, space_after=30)
     cover_rows = [
         ('题  目', TITLE),
-        ('学  院', ''),
-        ('专  业', ''),
-        ('学  号', ''),
-        ('学  生', ''),
-        ('指导教师', ''),
-        ('答辩日期', ''),
-        ('完成日期', ''),
+        ('学  院', '信息学院'),
+        ('专  业', '软件工程'),
+        ('学  号', '2505396'),
+        ('学  生', '张德鑫'),
+        ('指导教师', '王婧'),
+        ('答辩日期', '2027年5月'),
+        ('完成日期', '2027年3月'),
     ]
     cover = doc.add_table(rows=8, cols=2)
     for idx, (label, value) in enumerate(cover_rows):

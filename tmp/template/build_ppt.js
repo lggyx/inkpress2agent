@@ -134,7 +134,12 @@ function notes(slide, text) {
   txt(s, 'INK // PRESS', {
     x: 0, y: 4.5, w: W, h: 0.45, fontSize: 14, color: DARK.accent, align: 'center', charSpacing: 10
   })
-  const info = [['答  辩  人', '（待填）'], ['学      号', '（待填）'], ['专      业', '计算机科学与技术'], ['指导教师', '（待填）']]
+  const info = [
+    ['答 辩 人', '张德鑫'],
+    ['学      号', '2505396'],
+    ['专业班级', '软件工程 · 2027专升本2班'],
+    ['指导教师', '王婧']
+  ]
   info.forEach(([k, v], i) => {
     const x = 1.7 + i * 2.55
     txt(s, k, { x, y: 5.5, w: 2.3, h: 0.3, fontSize: 11, color: DARK.faint, align: 'center' })
