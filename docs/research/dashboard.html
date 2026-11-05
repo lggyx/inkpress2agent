@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -228,7 +228,7 @@
     <!-- 本地实测 Redis -->
     <div class="card col-6">
       <h2><span class="dim">实测</span>Redis 基准（本地）</h2>
-      <div class="src">redis_benchmark.py 可复现 · 2026-11-05 <span class="g-l">[A·本地实测]</span></div>
+      <div class="src">RedisBenchmarkTest（mvn test）可复现 · 2026-11-05 <span class="g-l">[A·本地实测]</span></div>
       <div class="kpi-strip" style="grid-template-columns: repeat(2,1fr)">
         <div class="kpi"><div class="v">81,845<span class="u"> ops/s</span></div><div class="l">INCR 计数吞吐（管线 5 万次）</div></div>
         <div class="kpi"><div class="v">0.33<span class="u"> ms</span></div><div class="l">单次 GET p50（p99 0.96ms）</div></div>
@@ -239,7 +239,7 @@
     <!-- 本地实测 语义检索 -->
     <div class="card col-6">
       <h2><span class="dim">实测</span>语义检索基准（本地）</h2>
-      <div class="src">semantic_benchmark.py 可复现 · 38 篇 / 512 维本地向量 <span class="g-l">[A·本地实测]</span></div>
+      <div class="src">SemanticSearchBenchmarkTest（mvn test）可复现 · 38 篇 / 512 维本地向量 <span class="g-l">[A·本地实测]</span></div>
       <div class="kpi-strip" style="grid-template-columns: repeat(3,1fr)">
         <div class="kpi"><div class="v">~180<span class="u"> ms</span></div><div class="l">检索热态（含 HTTP 往返）</div></div>
         <div class="kpi"><div class="v">332<span class="u"> ms</span></div><div class="l">冷启动首轮（向量按需加载）</div></div>
@@ -251,7 +251,7 @@
     <!-- 安全维度 -->
     <div class="card col-12">
       <h2><span class="dim">安全</span>安全建站：攻击面论证 + OWASP 对照 + AI 审计与限流</h2>
-      <div class="src">NVD API 实时 · 本地实测（security_test.py 可复现）<span class="g-a">[A]</span> · 详见 security.md</div>
+      <div class="src">NVD API 实时 · 本地实测（SecurityFlowTest（mvn test）可复现）<span class="g-a">[A]</span> · 详见 security.md</div>
       <div style="display:flex; gap:24px; margin-top:4px">
         <div style="flex:1">
           <table>
@@ -273,7 +273,7 @@
             <div>✓ AI 审计日志：端点/调用者/IP/风险/状态/耗时</div>
             <div>✓ 失败路径也审计（RATE_LIMITED/ERROR 可追溯）</div>
           </div>
-          <div class="num-note" style="margin-top:8px">实测记录：注入输入 risk=2 落库（user=admin, ip 可见）；爆破第 5 次 429。脚本 docs/research/security_test.py。</div>
+          <div class="num-note" style="margin-top:8px">实测记录：注入输入 risk=2 落库（user=admin, ip 可见）；爆破第 5 次 429。脚本 src/test/java/com/inkpress/benchmark/SecurityFlowTest.java。</div>
         </div>
       </div>
     </div>
@@ -347,7 +347,7 @@
 
   </div>
 
-  <footer>原始数据 data.json · 复现脚本 redis_benchmark.py / semantic_benchmark.py · 来源清单见 README.md</footer>
+  <footer>原始数据 data.json · 复现：mvn test -Dtest="RedisBenchmarkTest,SemanticSearchBenchmarkTest,SecurityFlowTest" · 来源清单见 README.md</footer>
 </div>
 </body>
 </html>

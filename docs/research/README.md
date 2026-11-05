@@ -1,4 +1,4 @@
-# InkPress 开题调研数据集（8 维度）
+﻿# InkPress 开题调研数据集（8 维度）
 
 > 调研时间：2026-11-05 · 用途：开题答辩 PPT / 论文第 1、2 章 / 可行性论证
 > 数据分级：A=实时抓取或本地实测；B=文献记录值（未能实时验证，已注明）
@@ -53,12 +53,12 @@ Vite 7.81 亿、React 7.57 亿、Express 5.91 亿、Vue 7236 万。**Vue 与 Rea
 ### 8. 中国互联网与 AI（CNNIC 第 57 次报告，截至 2025-12）
 网民 11.25 亿（普及率 80.1%）；**生成式 AI 用户 6.02 亿、同比增长 141.7%、普及率 42.8%**——选题时代背景的最权威背书：AI 应用已从尝鲜进入大众普及阶段。
 
-### 本地实测 A：Redis 基准（docs/research/redis_benchmark.py）
+### 本地实测 A：Redis 基准（src/test/java/com/inkpress/benchmark/RedisBenchmarkTest.java）
 - 管线批量：SET 50,489 / GET 71,159 / **INCR 81,845 ops/s**
 - 单次 GET：p50 = 0.33ms，p99 = 0.96ms
 - **意义**：浏览量高频写走 Redis 的设计依据——计数吞吐 8 万级，单次亚毫秒，1 分钟回写周期内可承接 485 万次浏览（81845×60）
 
-### 本地实测 B：语义检索基准（docs/research/semantic_benchmark.py）
+### 本地实测 B：语义检索基准（src/test/java/com/inkpress/benchmark/SemanticSearchBenchmarkTest.java）
 - 文章分页（MySQL 直查）：76~118ms
 - 语义检索：首轮 332ms（含 Redis 逐篇加载向量的冷启动），热态 172~197ms
 - 相关推荐：热态 161~180ms
@@ -72,5 +72,4 @@ Vite 7.81 亿、React 7.57 亿、Express 5.91 亿、Vue 7236 万。**Vue 与 Rea
 
 - `data.json`：全部结构化数据（含来源与时间戳）
 - `dashboard.html`：可视化看板（8 维度）
-- `redis_benchmark.py`：Redis 实测脚本（可复现）
-- `semantic_benchmark.py`：语义检索实测脚本（可复现）
+- Java 基准与安全测试：`inkpress-server/src/test/java/com/inkpress/benchmark/`（RedisBenchmarkTest / SemanticSearchBenchmarkTest / SecurityFlowTest，`mvn test` 可复现）
