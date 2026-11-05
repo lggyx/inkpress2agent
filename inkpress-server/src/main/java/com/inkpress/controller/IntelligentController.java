@@ -1,10 +1,13 @@
 package com.inkpress.controller;
 
 import com.inkpress.ai.ChatStreamHandler;
+import com.inkpress.ai.PromptInjectionDetector;
 import com.inkpress.common.ApiResponse;
 import com.inkpress.dto.AiContentDTO;
 import com.inkpress.entity.Article;
 import com.inkpress.mapper.ArticleMapper;
+import com.inkpress.security.RateLimit;
+import com.inkpress.service.AiAuditService;
 import com.inkpress.service.AiService;
 import com.inkpress.service.ArticleVectorService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -40,16 +43,19 @@ public class IntelligentController {
 
     private final ArticleVectorService vectorService;
     private final AiService aiService;
+    private final AiAuditService aiAuditService;
     private final ArticleMapper articleMapper;
     private final ThreadPoolTaskExecutor aiExecutor;
 
     public IntelligentController(ArticleVectorService vectorService,
                                  AiService aiService,
+                                 AiAuditService aiAuditService,
                                  ArticleMapper articleMapper,
                                  @org.springframework.beans.factory.annotation.Qualifier("aiExecutor")
                                  ThreadPoolTaskExecutor aiExecutor) {
         this.vectorService = vectorService;
         this.aiService = aiService;
+        this.aiAuditService = aiAuditService;
         this.articleMapper = articleMapper;
         this.aiExecutor = aiExecutor;
     }
@@ -81,11 +87,16 @@ public class IntelligentController {
     }
 
     @Operation(summary = "站内知识问答（RAG，SSE 流式，首事件为引用来源 JSON）")
+    @RateLimit(times = 10, windowSeconds = 300, message = "问答请求过于频繁，请 5 分钟后再试")
     @PostMapping(value = "/ai/ask", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter ask(@Valid @RequestBody AiContentDTO dto) {
         aiService.ensureAvailable();
+        long start = System.currentTimeMillis();
+        // 提示注入检测：游客输入直接拼入 RAG 提示词，是 OWASP LLM01 的直接暴露面
+        int risk = PromptInjectionDetector.inspect(dto.getContent());
+        String guarded = risk > 0 ? dto.getContent() + PromptInjectionDetector.guardSuffix() : dto.getContent();
         // 检索 Top-K 文章，拼装带编号的资料块
-        List<Map<String, Object>> hits = vectorService.semanticSearch(dto.getContent(), RAG_TOP_K);
+        List<Map<String, Object>> hits = vectorService.semanticSearch(guarded, RAG_TOP_K);
         if (hits.isEmpty()) {
             SseEmitter empty = new SseEmitter(0L);
             try {
@@ -94,6 +105,8 @@ public class IntelligentController {
                 empty.send(SseEmitter.event().data("站内暂无与该问题相关的文章，无法回答。"));
             } catch (Exception ignored) {
             }
+            aiAuditService.record("/api/ai/ask", dto.getContent().length(), risk,
+                    "OK", 0, System.currentTimeMillis() - start);
             empty.complete();
             return empty;
         }
@@ -130,6 +143,7 @@ public class IntelligentController {
             sourcesJson = "{\"type\":\"sources\",\"items\":[]}";
         }
         final String firstEvent = sourcesJson;
+        final String question = guarded;
         aiExecutor.execute(() -> {
             try {
                 emitter.send(SseEmitter.event().data(firstEvent));
@@ -137,7 +151,7 @@ public class IntelligentController {
                 emitter.complete();
                 return;
             }
-            aiService.ask(dto.getContent(), knowledge.toString(), new ChatStreamHandler() {
+            aiService.ask(question, knowledge.toString(), new ChatStreamHandler() {
                 @Override
                 public void onDelta(String delta) {
                     try {
@@ -149,11 +163,15 @@ public class IntelligentController {
 
                 @Override
                 public void onDone() {
+                    aiAuditService.record("/api/ai/ask", dto.getContent().length(), risk,
+                            "OK", 0, System.currentTimeMillis() - start);
                     emitter.complete();
                 }
 
                 @Override
                 public void onError(Throwable t) {
+                    aiAuditService.record("/api/ai/ask", dto.getContent().length(), risk,
+                            "ERROR", 0, System.currentTimeMillis() - start);
                     emitter.completeWithError(t);
                 }
             });

@@ -5,6 +5,7 @@ import com.inkpress.common.ApiResponse;
 import com.inkpress.common.PageResult;
 import com.inkpress.dto.CommentDTO;
 import com.inkpress.dto.StatusDTO;
+import com.inkpress.security.RateLimit;
 import com.inkpress.service.CommentService;
 import com.inkpress.vo.CommentVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,6 +39,7 @@ public class CommentController {
     }
 
     @Operation(summary = "发表评论（游客或登录用户），返回落库状态 PENDING/APPROVED")
+    @RateLimit(times = 5, windowSeconds = 300, message = "评论提交过于频繁，请 5 分钟后再试")
     @PostMapping("/comments")
     public ApiResponse<String> create(@Valid @RequestBody CommentDTO dto) {
         return ApiResponse.ok(commentService.create(dto));

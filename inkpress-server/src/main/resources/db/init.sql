@@ -99,6 +99,23 @@ CREATE TABLE IF NOT EXISTS operation_log (
     KEY idx_created (created_at)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '操作日志表';
 
+CREATE TABLE IF NOT EXISTS ai_audit_log (
+    id             BIGINT      NOT NULL AUTO_INCREMENT COMMENT '审计ID',
+    endpoint       VARCHAR(100) NOT NULL COMMENT 'AI调用端点',
+    user_id        BIGINT      DEFAULT NULL COMMENT '用户ID（游客为空）',
+    username       VARCHAR(50) DEFAULT 'anonymous' COMMENT '用户名（游客为 anonymous）',
+    ip             VARCHAR(50) DEFAULT NULL COMMENT '来源IP',
+    prompt_length  INT         DEFAULT NULL COMMENT '输入长度（字符）',
+    injection_risk TINYINT     NOT NULL DEFAULT 0 COMMENT '提示注入风险：0无 1中 2高',
+    status         VARCHAR(20) NOT NULL DEFAULT 'OK' COMMENT 'OK/TIMEOUT/ERROR/RATE_LIMITED',
+    output_length  INT         DEFAULT NULL COMMENT '输出长度（字符）',
+    cost_ms        BIGINT      DEFAULT NULL COMMENT '耗时（毫秒）',
+    created_at     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (id),
+    KEY idx_risk_created (injection_risk, created_at),
+    KEY idx_status (status)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = 'AI调用审计日志表';
+
 -- ============ 种子数据 ============
 
 INSERT INTO category (id, name, description, sort) VALUES

@@ -15,6 +15,7 @@ public enum ErrorCode {
     UNAUTHORIZED(401, "未登录或登录已过期"),
     FORBIDDEN(403, "没有操作权限"),
     NOT_FOUND(404, "资源不存在"),
+    TOO_MANY_REQUESTS(429, "请求过于频繁"),
     FAIL(500, "系统繁忙，请稍后再试"),
 
     USERNAME_EXISTS(1001, "用户名已被占用"),
