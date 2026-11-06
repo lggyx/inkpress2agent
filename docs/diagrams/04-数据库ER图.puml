@@ -75,6 +75,35 @@ entity "operation_log（操作日志）" as log {
   cost_ms : BIGINT
 }
 
+entity "ai_audit_log（AI 调用审计）" as audit {
+  * id : BIGINT <<PK>>
+  --
+  * endpoint : VARCHAR(100)
+  user_id : BIGINT
+  username : VARCHAR(50)
+  ip : VARCHAR(50)
+  prompt_length / output_length : INT
+  * injection_risk : TINYINT
+  * status : VARCHAR(20)
+  cost_ms : BIGINT
+  * created_at : DATETIME
+}
+
+entity "ai_config（AI 服务配置·单行）" as cfg {
+  * id : TINYINT <<PK>>
+  --
+  * base_url : VARCHAR(255)
+  * api_key : VARCHAR(255)
+  * model : VARCHAR(100)
+  * temperature : DECIMAL(3,2)
+  * timeout_seconds : INT
+  * embedding_provider : VARCHAR(20)
+  * embedding_model : VARCHAR(100)
+  * local_dim : INT
+  updated_by : VARCHAR(50)
+  updated_at : DATETIME
+}
+
 user ||--o{ article : "1:N 撰写"
 category ||--o{ article : "1:N 归类"
 article ||--|{ article_tag : "1:N"
@@ -83,4 +112,5 @@ article ||--o{ comment : "1:N"
 comment |o--o| comment : "parent_id 自关联\n（一级回复）"
 user ||--o{ comment : "0:N 登录评论"
 user ||--o{ log : "0:N 操作"
+user ||--o{ audit : "0:N AI 调用"
 @enduml

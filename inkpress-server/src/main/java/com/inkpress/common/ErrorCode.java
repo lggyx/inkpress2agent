@@ -22,7 +22,7 @@ public enum ErrorCode {
     USERNAME_OR_PASSWORD_ERROR(1002, "用户名或密码错误"),
     ACCOUNT_DISABLED(1003, "账号已被禁用"),
 
-    AI_NOT_CONFIGURED(2001, "AI 服务未配置，请在 application.yml 中配置 inkpress.ai.api-key"),
+    AI_NOT_CONFIGURED(2001, "AI 服务未配置，请在管理端「AI 服务配置」中填写 API Key"),
     AI_CALL_FAILED(2002, "AI 服务调用失败，请稍后重试或检查配置"),
     AI_RESPONSE_INVALID(2003, "AI 返回内容解析失败");
 

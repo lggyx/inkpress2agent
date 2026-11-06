@@ -29,6 +29,7 @@ const routes = [
       { path: 'tags', name: 'tag-manage', component: () => import('@/views/admin/TagManageView.vue'), meta: { requiresAdmin: true } },
       { path: 'comments', name: 'comment-manage', component: () => import('@/views/admin/CommentManageView.vue'), meta: { requiresAdmin: true } },
       { path: 'users', name: 'user-manage', component: () => import('@/views/admin/UserManageView.vue'), meta: { requiresAdmin: true } },
+      { path: 'ai-config', name: 'ai-config', component: () => import('@/views/admin/AiConfigView.vue'), meta: { requiresAdmin: true } },
       { path: 'logs', name: 'log-manage', component: () => import('@/views/admin/LogManageView.vue'), meta: { requiresAdmin: true } }
     ]
   },

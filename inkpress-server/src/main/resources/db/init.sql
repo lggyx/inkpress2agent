@@ -116,6 +116,22 @@ CREATE TABLE IF NOT EXISTS ai_audit_log (
     KEY idx_status (status)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = 'AI调用审计日志表';
 
+-- AI 服务配置（单行表）：管理端动态维护，优先级 数据库 > 环境变量 > 默认值
+CREATE TABLE IF NOT EXISTS ai_config (
+    id                 TINYINT      NOT NULL COMMENT '固定为1，单行配置',
+    base_url           VARCHAR(255) NOT NULL COMMENT 'OpenAI 兼容协议 base-url',
+    api_key            VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'API 密钥（接口返回时脱敏）',
+    model              VARCHAR(100) NOT NULL COMMENT '对话模型名',
+    temperature        DECIMAL(3,2) NOT NULL DEFAULT 0.70 COMMENT '采样温度',
+    timeout_seconds    INT          NOT NULL DEFAULT 60 COMMENT '调用超时（秒）',
+    embedding_provider VARCHAR(20)  NOT NULL DEFAULT 'auto' COMMENT 'auto/local/remote',
+    embedding_model    VARCHAR(100) NOT NULL DEFAULT 'embedding-3' COMMENT '远程向量模型名',
+    local_dim          INT          NOT NULL DEFAULT 512 COMMENT '本地向量维度',
+    updated_by         VARCHAR(50)  DEFAULT NULL COMMENT '最后修改人',
+    updated_at         DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+    PRIMARY KEY (id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = 'AI服务配置表（单行）';
+
 -- ============ 种子数据 ============
 
 INSERT INTO category (id, name, description, sort) VALUES
@@ -154,3 +170,6 @@ INSERT INTO comment (id, article_id, user_id, nickname, email, content, parent_i
     (2, 1, NULL, '数码控', NULL, '请问 AI 润色用的什么模型？费用怎么样？', 1, 'APPROVED'),
     (3, 2, NULL, 'Java 学习中', 'student@example.com', 'jjwt 0.12 的 API 变化这个坑我也踩过，哈哈', NULL, 'APPROVED')
 AS new ON DUPLICATE KEY UPDATE content = new.content, nickname = new.nickname;
+
+-- 注意：ai_config 不种子化。无行 = 尚未经管理端接管，回落环境变量（application.yml / AI_API_KEY）；
+-- 管理端首次保存即创建该行，此后以数据库配置为准；“恢复默认”删除该行重新回落环境变量。

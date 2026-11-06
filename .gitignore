@@ -26,6 +26,10 @@ Thumbs.db
 # 本地工具（plantuml.jar 等，见 docs/diagrams/README.md）
 tools/
 
+# 学校过程材料模板原件与本地临时目录（禁止入库，见 scripts/forms/README.md）
+scripts/forms/templates/
+tmp/
+
 # 工具与会话缓存（禁止入库）
 .zcode/
 __pycache__/

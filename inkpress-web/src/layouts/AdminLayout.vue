@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   DataAnalysis, Document, Collection, PriceTag, ChatDotRound,
-  User, Tickets, Reading
+  User, Tickets, Reading, MagicStick
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
@@ -19,6 +19,7 @@ const menuItems = [
   { index: '/admin/tags', icon: PriceTag, label: '标签管理' },
   { index: '/admin/comments', icon: ChatDotRound, label: '评论管理' },
   { index: '/admin/users', icon: User, label: '用户管理' },
+  { index: '/admin/ai-config', icon: MagicStick, label: 'AI 服务配置' },
   { index: '/admin/logs', icon: Tickets, label: '操作日志' }
 ]
 

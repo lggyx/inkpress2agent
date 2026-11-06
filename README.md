@@ -55,7 +55,10 @@ AI 模块基于 **OpenAI 兼容协议** 实现，修改三个配置项即可切�
 | 通义千问 | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-turbo` |
 | Ollama（本地） | `http://localhost:11434/v1` | `llama3.1` |
 
-配置项：`inkpress.ai.base-url / api-key / model`（支持环境变量 `AI_BASE_URL / AI_API_KEY / AI_MODEL` 覆盖）。
+配置方式（优先级从高到低）：
+
+1. **管理端「AI 服务配置」页（推荐）**：后台 → AI 服务配置，填写 base-url / api-key / model 保存即生效（无需重启），支持厂商预设一键填充、连通性测试、密钥脱敏回显；修改行为记入操作日志。
+2. **环境变量**：`AI_BASE_URL / AI_API_KEY / AI_MODEL`（或 `application.yml` 的 `inkpress.ai.*`），适合 Docker 部署注入；管理端未保存过配置时以此为准。
 
 ## 快速开始
 
@@ -90,7 +93,9 @@ npm run dev
 
 ### 4. 配置 AI（可选）
 
-在 `inkpress-server/src/main/resources/application.yml` 或环境变量中设置：
+推荐方式：启动后端后登录后台 → **AI 服务配置** 页，填入 API Key 与厂商参数，保存即生效（无需重启），并可先用「测试连接」验证。
+
+也可以提前用环境变量注入（管理端未保存配置时生效，适合 Docker 部署）：
 
 ```bash
 AI_API_KEY=你的APIKey
@@ -98,7 +103,7 @@ AI_BASE_URL=https://open.bigmodel.cn/api/paas/v4
 AI_MODEL=glm-4-flash
 ```
 
-未配置 Key 时系统其余功能不受影响，调用 AI 接口会得到明确提示。
+未配置 Key 时系统其余功能不受影响，调用 AI 接口会得到明确提示（code=2001）。
 
 ### 5. Docker 一键部署（生产）
 
@@ -116,13 +121,14 @@ inkpress
 ├── docs/                       # 毕设文档（开题报告、部署、数据库设计、接口、测试）
 ├── inkpress-server/            # 后端（Spring Boot 3）
 │   └── src/main/java/com/inkpress
-│       ├── ai/                 # AI 适配层（ChatModelAdapter SPI + OpenAI 兼容实现）
+│       ├── ai/                 # AI 适配层（ChatModelAdapter SPI + OpenAI 兼容实现 + 动态向量化）
 │       ├── aspect/             # 操作日志切面
 │       ├── bootstrap/          # 首次启动初始化
 │       ├── common/             # 统一响应 / 异常 / 常量 / 工具
 │       ├── config/             # 安全、MyBatis-Plus、线程池、Knife4j 配置
 │       ├── controller/         # 接口层
 │       ├── dto / vo / entity / mapper / service(.impl)
+│       ├── event/              # 领域事件（AI 配置变更 → 向量索引异步重建）
 │       └── security/           # JWT 过滤器、工具、配置属性
 ├── inkpress-web/               # 前端（Vue 3 + Vite）
 │   └── src
@@ -141,6 +147,8 @@ inkpress
 - [数据库设计](docs/数据库设计.md)
 - [接口文档](docs/接口文档.md)（在线版：启动后端访问 `/doc.html`）
 - [测试报告](docs/测试报告.md)
+- [过程材料](docs/过程材料/)（任务书/开题报告/中期报告等已填写 docx + PDF，由 [scripts/forms/](scripts/forms/) 生成）
 - [工程制图](docs/diagrams/README.md)（9 张 PlantUML 图纸，PNG/SVG 双格式）
 - [接口冒烟测试脚本](scripts/smoke-test.ps1)（后端启动后执行，覆盖认证/文章/评论/点赞/边界/AI 降级）
 - [文章批量导入脚本](scripts/import-posts.mjs)（从 Astro 博客仓库导入历史文章，图片自动转为 GitHub Pages 外链）
+- [演示语料](inkpress-server/src/main/resources/db/seed_extra.sql)（38 篇文章，语义检索实验语料，可选加载）

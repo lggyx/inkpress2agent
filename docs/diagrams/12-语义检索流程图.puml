@@ -1,0 +1,47 @@
+@startuml 12-语义检索流程图
+skinparam dpi 200
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+title 语义检索与相关文章推荐流程
+
+start
+
+:用户请求（语义搜索 q / 文章详情页推荐）;
+
+:IntelligentController\n/search/semantic 或 /articles/{id}/related;
+
+:AiConfigService.getEffective()\n实时解析向量化配置（DB → env → 默认）;
+
+if (向量化方式？) then (local / auto 无 Key)
+  :HashingEmbeddingProvider\n字符 bigram 特征哈希 512 维\nL2 归一化;
+else (remote / auto 有 Key)
+  :OpenAiCompatibleEmbeddingProvider\n调用 /embeddings 接口\nL2 归一化;
+endif
+
+:向量化查询词 / 当前文章\n（标题 + 摘要 + 正文前 2000 字）;
+
+if (Redis 中已有该向量？) then (有)
+  :读取 inkpress:emb:{id}（JSON 数组）;
+else (无)
+  :即时向量化并写回 Redis\n（TTL 30 天）;
+endif
+
+if (向量维度一致？) then (不一致)
+  :跳过该文章\n（防止切换向量化方案后\n不同维度向量混用）;
+else (一致)
+  :余弦相似度计算\n（全库遍历，个人博客百篇级\n内存计算毫秒完成）;
+endif
+
+if (请求类型？) then (语义搜索)
+  :按相似度降序，过滤 score < 0.02\n取 Top-K 返回（含 score）;
+else (相关文章推荐)
+  :标签重合度计算\nJaccard(当前文章标签, 候选文章标签);
+  :混合打分\nscore = 语义相似度 × 0.85 + 标签重合 × 0.15;
+  :按混合分降序取 Top-K;
+endif
+
+:返回文章列表（含分类名与标签）;
+
+stop
+
+@enduml

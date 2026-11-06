@@ -1,0 +1,76 @@
+@startuml 10-AI子系统组件图
+skinparam dpi 200
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+skinparam packageStyle rectangle
+title AI 子系统组件图（可插拔适配 + 动态配置）
+
+package "接入层" {
+  [AiController\n润色 / 续写 / 摘要 / 标签 / 标题\nSSE 流式 + 非流式] as aictrl
+  [AiConfigController\n配置查询 / 保存 / 恢复 / 测试连接] as cfgctrl
+  [IntelligentController\n语义搜索 / 相关推荐 / RAG 问答] as intctrl
+  [AiAuditController\n调用审计查询] as auditctrl
+}
+
+package "服务层" {
+  [AiService\n提示词模板 / 结果解析 / 失败降级] as aisvc
+  [AiConfigService\n三级配置解析 / 密钥脱敏\nupsert / 变更事件] as cfg
+  [PromptInjectionDetector\n注入特征检测] as inject
+  [AiAuditService\n审计落库（异步）] as audit
+  [ArticleVectorService\n索引 / 余弦 / 混合排序] as vec
+}
+
+package "适配层（SPI）" {
+  () "ChatModelAdapter" as cma
+  [OpenAiCompatibleAdapter\n/chat/completions\n流式逐段解析] as oai
+
+  () "EmbeddingProvider" as ep
+  [DynamicEmbeddingProvider\n签名缓存动态委派] as dyn
+  [HashingEmbeddingProvider\n本地 512 维 bigram] as hash
+  [OpenAiCompatibleEmbeddingProvider\n远程 /embeddings] as remotemb
+}
+
+database "ai_config\n（单行配置表）" as dbcfg
+database "ai_audit_log\n（调用审计表）" as dbaudit
+database "Redis 向量索引\ninkpress:emb:{id}" as redisemb
+cloud "大模型 API\nOpenAI 兼容协议" as llm
+
+aictrl --> aisvc
+aictrl ..> inject : 调用前检测
+aictrl ..> audit : 异步记录
+intctrl --> vec
+intctrl --> aisvc : RAG 问答
+cfgctrl --> cfg
+auditctrl --> audit
+
+aisvc --> cma
+cma <|.. oai
+oai --> cfg : 每次调用实时解析
+oai --> llm
+
+vec --> ep
+ep <|.. dyn
+dyn ..> hash : local / auto 无 Key
+dyn ..> remotemb : remote / auto 有 Key
+remotemb --> llm
+vec --> redisemb
+
+cfg --> dbcfg
+audit --> dbaudit
+inject ..> audit : risk 等级
+
+note right of cfg
+  **配置优先级**
+  数据库（ai_config 有行）> 环境变量 > 默认值
+  管理端保存后即时生效，无需重启
+end note
+
+note bottom of dyn
+  **向量化切换**
+  local ↔ remote 变化时发事件，
+  异步重建全站向量索引，
+  避免不同维度向量混用
+end note
+
+@enduml

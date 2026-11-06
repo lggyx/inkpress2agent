@@ -3,35 +3,53 @@ skinparam dpi 200
 skinparam componentStyle rectangle
 skinparam shadowing false
 skinparam defaultFontName Microsoft YaHei
-title InkPress 系统总体架构图
+skinparam packageStyle rectangle
+title InkPress 系统总体架构图（2026-11）
 
-actor 访客 as guest
+actor "访客" as guest
 actor "管理员（作者）" as admin
 
-package "浏览器" {
-  [前台页面\nVue Router + Element Plus] as front
-  [后台管理\nECharts 看板 / Vditor 编辑器] as backui
-  [Pinia 状态管理\nAxios 请求封装] as store
+package "浏览器（Vue 3 + Vite）" {
+  [前台页面\nVue Router + Element Plus\n目录大纲 / 阅读进度 / 3D 视差] as front
+  [后台管理\nECharts 看板 / Vditor 编辑器\nAI 服务配置页] as backui
+  [Pinia 状态 + Axios 封装\nSSE 流式解析（fetch + ReadableStream）] as store
 }
 
-package "Nginx（280）" {
-  [静态资源服务] as nginx
-  [反向代理 /api] as proxy
+package "Nginx（:280）" {
+  [静态资源服务\ninkpress-web/dist] as nginx
+  [反向代理 /api\nSSE 关闭缓冲] as proxy
 }
 
-package "Spring Boot 应用（28080）" {
-  [Controller 接口层] as ctrl
-  [Service 业务层] as svc
-  [Spring Security\n+ JWT 过滤器] as sec
-  [MyBatis-Plus\nMapper 持久层] as mapper
-  [AI 适配层\nChatModelAdapter SPI] as ai
-  [AOP 操作日志] as aop
-  [定时任务\n浏览量回写] as sched
+package "Spring Boot 3.3（:28080）" {
+
+  package "横切关注点" {
+    [Spring Security + JWT 过滤器\n无状态认证 / 角色授权] as sec
+    [AOP 操作日志切面\n管理端写操作审计] as aop
+    [RateLimitAspect\n登录 / AI 接口 IP 限流] as limit
+    [GlobalExceptionHandler\n统一 JSON 响应] as exh
+  }
+
+  package "三层主体" {
+    [Controller 接口层\n12 个控制器] as ctrl
+    [Service 业务层\n12 个服务] as svc
+    [MyBatis-Plus Mapper\n持久层] as mapper
+  }
+
+  package "AI 子系统（可插拔）" {
+    [ChatModelAdapter SPI\nOpenAI 兼容实现] as adapter
+    [AiService\n提示词 / 解析 / 降级] as aisvc
+    [DynamicEmbeddingProvider\n按配置动态委派] as emb
+    [AiConfigService\nDB → env → 默认] as cfg
+    [PromptInjectionDetector\n注入检测 risk 0/1/2] as inject
+  }
+
+  [ArticleVectorService\n向量索引 / 余弦检索 / 混合排序] as vec
+  [定时任务\n浏览量回写 / 索引重建] as sched
 }
 
-database "MySQL 8.0" as mysql
-database "Redis 7" as redis
-cloud "大模型 API\nOpenAI 兼容协议\n(智谱/DeepSeek/通义/Kimi)" as llm
+database "MySQL 8.0（:23306）\n9 张表" as mysql
+database "Redis 7（:26376）\n计数 / 去重 / 缓存 / 向量" as redis
+cloud "大模型 API\nOpenAI 兼容协议\n智谱 / DeepSeek / Kimi / 通义 / Ollama" as llm
 
 guest --> front
 admin --> backui
@@ -43,10 +61,21 @@ proxy --> sec
 sec --> ctrl
 ctrl --> svc
 svc --> mapper
-svc --> ai
-ctrl --> aop
-svc --> redis
-sched --> mysql
 mapper --> mysql
-ai --> llm
+svc --> vec
+vec --> emb
+vec --> redis
+svc --> aisvc
+aisvc --> adapter
+adapter --> cfg
+adapter --> llm
+emb --> llm
+cfg --> mysql
+ctrl ..> aop
+ctrl ..> limit
+ctrl ..> exh
+sched --> mysql
+sched --> redis
+cfg ..> vec : 配置变更事件\n触发索引重建
+
 @enduml

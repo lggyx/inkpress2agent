@@ -138,10 +138,10 @@ Assert "相关文章推荐返回且不超过 3 条" ($rel.code -eq 200 -and $rel
 $sem = Invoke-RestMethod "$BaseUrl/api/search/semantic?q=%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92&limit=5"
 Assert "语义检索返回结果" ($sem.code -eq 200 -and $null -ne $sem.data)
 
-# 16. AI 未配置返回明确错误码
+# 16. AI 摘要：未配置返回明确错误码 2001；已配置则正常返回 200（管理端「AI 服务配置」维护）
 $ai = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/admin/ai/summary" -Headers $headers `
     -ContentType "application/json" -Body '{"content":"测试内容"}'
-Assert "AI 未配置返回 code=2001" ($ai.code -eq 2001)
+Assert "AI 摘要返回明确状态（2001=未配置 / 200=已配置）" ($ai.code -eq 2001 -or $ai.code -eq 200)
 
 # 17. 清理：删除测试文章与测试用户
 $del = Invoke-RestMethod -Method Delete -Uri "$BaseUrl/api/admin/articles/$newId" -Headers $headers

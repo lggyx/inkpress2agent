@@ -1,6 +1,7 @@
 package com.inkpress.service;
 
 import com.inkpress.ai.ChatStreamHandler;
+import com.inkpress.vo.AiTestResultVO;
 
 import java.util.List;
 
@@ -35,4 +36,7 @@ public interface AiService {
      * @param handler   流式回调
      */
     void ask(String question, String knowledge, ChatStreamHandler handler);
+
+    /** 连通性测试：用当前生效配置发起一次最小调用，验证密钥与网络（管理端保存后使用） */
+    AiTestResultVO testConnection();
 }

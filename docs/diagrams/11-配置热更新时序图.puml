@@ -1,0 +1,47 @@
+@startuml 11-配置热更新时序图
+skinparam dpi 200
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+title AI 服务配置热更新时序图（管理端）
+
+actor "管理员" as admin
+participant "AiConfigView\n配置页" as view
+participant "AiConfigController" as ctrl
+participant "AiConfigService" as svc
+participant "ai_config 表\n（MySQL）" as db
+participant "OperationLogAspect\n操作日志切面" as oplog
+participant "AiConfigChangedListener" as listener
+participant "ArticleVectorService" as vec
+database "Redis 向量索引" as redis
+
+admin -> view : 填写 base-url / api-key / model\n向量化方式，点击「保存配置」
+view -> ctrl : PUT /api/admin/ai-config\n（apiKey: 新值 / 省略=保持 / 空串=清除）
+
+ctrl -> oplog : 切面拦截，记录模块+操作+IP+耗时
+ctrl -> svc : update(dto, operator)
+
+svc -> svc : 记录变更前的向量化签名\n（provider + 模型 + 维度）
+svc -> db : upsert 单行（id=1）\n密钥原文仅落服务端
+svc --> ctrl : 保存成功
+
+ctrl --> view : code=200 + 成功提示
+view -> ctrl : GET /api/admin/ai-config
+ctrl -> svc : getForAdmin()
+svc -> db : 查询配置行
+svc --> view : source=db + 脱敏密钥\n（前 6 后 4）+ 当前向量化实现
+
+== 若向量化配置发生变化 ==
+
+svc -> listener : publishEvent(AiConfigChangedEvent,\n embeddingChanged=true)
+listener -> vec : rebuildAll()【taskExecutor 异步线程】
+vec -> redis : 逐篇重新向量化写入\n（旧维度向量被覆盖）
+
+== 后续 AI 调用（无需重启） ==
+
+view -> ctrl : POST /api/admin/ai/summary
+ctrl -> svc : getEffective() 实时读库
+svc -> db : 查询配置行
+svc --> ctrl : 新配置生效
+ctrl -> ctrl : 用新 base-url / api-key / model 调用
+
+@enduml

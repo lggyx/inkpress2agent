@@ -8,8 +8,9 @@ import com.inkpress.ai.ChatModelAdapter;
 import com.inkpress.ai.ChatStreamHandler;
 import com.inkpress.common.BizException;
 import com.inkpress.common.ErrorCode;
-import com.inkpress.config.AiProperties;
+import com.inkpress.service.AiConfigService;
 import com.inkpress.service.AiService;
+import com.inkpress.vo.AiTestResultVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,12 +29,12 @@ public class AiServiceImpl implements AiService {
     private static final int MAX_INPUT = 8000;
 
     private final ChatModelAdapter adapter;
-    private final AiProperties properties;
+    private final AiConfigService aiConfigService;
     private final ObjectMapper objectMapper;
 
     @Override
     public void ensureAvailable() {
-        if (!properties.enabled()) {
+        if (!aiConfigService.getEffective().enabled()) {
             throw new BizException(ErrorCode.AI_NOT_CONFIGURED);
         }
     }
@@ -131,6 +132,29 @@ public class AiServiceImpl implements AiService {
             log.warn("生成标题失败", e);
             return List.of();
         }
+    }
+
+    @Override
+    public AiTestResultVO testConnection() {
+        AiTestResultVO result = new AiTestResultVO();
+        long start = System.currentTimeMillis();
+        try {
+            ensureAvailable();
+            String reply = adapter.complete(List.of(
+                    ChatMessage.system("你是连通性测试助手，只需回复两个字：正常。"),
+                    ChatMessage.user("测试")));
+            result.setSuccess(true);
+            result.setReply(reply.length() > 50 ? reply.substring(0, 50) + "…" : reply);
+        } catch (BizException e) {
+            result.setSuccess(false);
+            result.setMessage(e.getMessage());
+        } catch (Exception e) {
+            log.warn("AI 连通性测试失败", e);
+            result.setSuccess(false);
+            result.setMessage(ErrorCode.AI_CALL_FAILED.getMessage());
+        }
+        result.setLatencyMs(System.currentTimeMillis() - start);
+        return result;
     }
 
     /** 从模型输出中提取 JSON 数组，容忍代码块包裹等噪音；解析失败返回空列表 */

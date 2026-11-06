@@ -2,7 +2,7 @@
 
 按学校《毕业论文（设计）稿模板（2025）》格式编写。
 
-- 模板：`tmp/template/docx/thesis-template.md`（pandoc 提取自学校模板）
+- 模板：`scripts/forms/templates/docx/thesis-template.md`（pandoc 提取自学校模板，原件不入库）
 - 格式要求：章标题黑体小2号、节标题黑体小三、条标题黑体4号、正文宋体小4号1.25倍行距；摘要黑体小二号居中；关键词宋体小四；目录黑体小4+宋体小4；参考文献 GB/T 7714
 - 章节文件：`01-摘要.md` ~ `10-致谢.md`
 - 工程图：`docs/diagrams/png/`（论文插图用）

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inkpress.common.BizException;
 import com.inkpress.common.ErrorCode;
 import com.inkpress.config.AiProperties;
+import com.inkpress.service.AiConfigService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,13 +29,14 @@ import java.util.Map;
 /**
  * OpenAI 兼容协议适配器（默认实现）。
  * 通过 base-url / api-key / model 三个配置项即可切换 DeepSeek、智谱、通义千问、Kimi、Ollama 等服务。
+ * 配置经 AiConfigService 实时解析（数据库 > 环境变量），管理端保存后无需重启即生效。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OpenAiCompatibleAdapter implements ChatModelAdapter {
 
-    private final AiProperties properties;
+    private final AiConfigService aiConfigService;
     private final ObjectMapper objectMapper;
     private HttpClient httpClient;
 
@@ -107,6 +109,8 @@ public class OpenAiCompatibleAdapter implements ChatModelAdapter {
     }
 
     private HttpRequest buildRequest(List<ChatMessage> messages, boolean stream) {
+        // 每次调用实时解析配置：管理端修改后即时生效，无需重启
+        AiProperties properties = aiConfigService.getEffective();
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", properties.getModel());
         body.put("messages", messages);
