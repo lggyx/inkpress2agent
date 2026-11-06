@@ -59,8 +59,9 @@ function addImageContain(slide, file, x, y, maxW, maxH) {
 {
   const s = pres.addSlide()
   s.background = { color: DARK.bg }
-  txt(s, '青岛恒星科技学院', { x: 0, y: 1.15, w: W, h: 0.5, fontSize: 18, color: DARK.dim, align: 'center', charSpacing: 6 })
-  txt(s, '毕业论文（设计）开题答辩', { x: 0, y: 1.78, w: W, h: 0.5, fontSize: 15, color: DARK.accent, align: 'center', charSpacing: 8 })
+  txt(s, '青岛恒星科技学院', { x: 0, y: 1.05, w: W, h: 0.45, fontSize: 16, color: DARK.dim, align: 'center', charSpacing: 6 })
+  txt(s, '大数据与智能信息工程学院', { x: 0, y: 1.5, w: W, h: 0.35, fontSize: 12.5, color: DARK.faint, align: 'center', charSpacing: 3 })
+  txt(s, '毕业论文（设计）开题答辩', { x: 0, y: 1.95, w: W, h: 0.5, fontSize: 15, color: DARK.accent, align: 'center', charSpacing: 8 })
   txt(s, '基于Spring Boot+Vue的个人博客与\n文章管理系统的设计与实现', {
     x: 1.0, y: 2.6, w: W - 2, h: 1.7, fontSize: 32, bold: true, color: DARK.text, align: 'center'
   })
@@ -185,7 +186,7 @@ function addImageContain(slide, file, x, y, maxW, maxH) {
   txt(s, '研究重点：智能检索模块——向量模型选型、混合排序、RAG 流程的设计与实验验证。', {
     x: M, y: 6.35, w: W - 2 * M, h: 0.5, fontSize: 13.5, bold: true, color: LIGHT.accent
   })
-  s.addNotes('研究内容分三块：前台给访客，核心是读和互动；后台给作者，覆盖内容生产管理；第三块 AI 和智能检索是研究重点——特别是向量模型选型、混合排序和 RAG 问答，这是本课题区别于普通博客系统的部分。')
+  s.addNotes('需求获取上，计划对博主和访客两类角色做访谈加问卷调研，再用 UML 用例图和活动图梳理功能边界。研究内容分三块：前台给访客，核心是读和互动；后台给作者，覆盖内容生产管理；第三块 AI 和智能检索是研究重点——特别是向量模型选型、混合排序和 RAG 问答，这是本课题区别于普通博客系统的部分。')
 }
 
 // ============ S6 技术路线（浅，架构图） ============
@@ -226,10 +227,10 @@ function addImageContain(slide, file, x, y, maxW, maxH) {
     txt(s, t, { x: M + 1.1, y: y + 0.02, w: 4.2, h: 0.45, fontSize: 17, bold: true, color: DARK.text })
     txt(s, d, { x: M + 1.1, y: y + 0.52, w: 11.0, h: 0.8, fontSize: 12.5, color: DARK.dim })
   })
-  txt(s, '验证方式：检索实验（多组查询测 Top-K 命中）+ 冒烟回归断言，数据进论文实验章节。', {
+  txt(s, '验证方式：检索实验（多组查询测 Top-K 命中）+ 冒烟回归断言 + 关键接口性能压测，数据进论文实验章节。', {
     x: M, y: 6.4, w: W - 2 * M, h: 0.45, fontSize: 12.5, color: DARK.faint
   })
-  s.addNotes('预期三个创新点。第一是适配层设计，换厂商不改代码；第二是混合排序，语义为主标签微调，公式可解释；第三是 RAG 问答带引用溯源，回答可验证。验证方式是检索实验加冒烟断言，实验数据会进论文。')
+  s.addNotes('预期三个创新点。第一是适配层设计，换厂商不改代码；第二是混合排序，语义为主标签微调，公式可解释；第三是 RAG 问答带引用溯源，回答可验证。验证方式是检索实验、冒烟断言加性能压测，实验数据会进论文。')
 }
 
 // ============ S8 进度安排（浅） ============
@@ -241,7 +242,7 @@ function addImageContain(slide, file, x, y, maxW, maxH) {
     ['1-4', '2026.11', '调研与开题', '文献阅读、开题报告、开题答辩'],
     ['5-8', '2026.12', '分析与设计', '需求分析、数据库与架构设计'],
     ['9-16', '2027.01-02', '编码实现', '后端模块、前端页面、AI 与检索'],
-    ['17-20', '2027.03', '联调与测试', '系统集成、检索实验、论文初稿'],
+    ['17-20', '2027.03', '联调与测试', '系统集成、检索实验、功能与性能测试、论文初稿'],
     ['21-24', '2027.04', '定稿准备', '论文修改查重、材料整理'],
     ['25-26', '2027.05', '答辩', 'PPT 制作、预演、正式答辩']
   ]
@@ -255,7 +256,7 @@ function addImageContain(slide, file, x, y, maxW, maxH) {
       s.addShape(pres.shapes.LINE, { x: M, y: y + 0.68, w: W - 2 * M, h: 0, line: { color: LIGHT.line, width: 0.5 } })
     }
   })
-  s.addNotes('进度 26 周分六段：11 月开题调研；12 月设计；一到二月集中编码，这是最长的阶段；三月联调测试加论文初稿；四月定稿；五月答辩。目前处在第一阶段，开题通过后立即进入设计。')
+  s.addNotes('进度 26 周分六段：11 月开题调研；12 月设计；一到二月集中编码，这是最长的阶段；三月联调测试，包括功能、性能和检索实验，加论文初稿；四月定稿；五月答辩。目前处在第一阶段，开题通过后立即进入设计。')
 }
 
 // ============ S9 已具备条件（暗） ============

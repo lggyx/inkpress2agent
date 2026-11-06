@@ -25,3 +25,7 @@ Thumbs.db
 
 # 本地工具（plantuml.jar 等，见 docs/diagrams/README.md）
 tools/
+
+# 工具与会话缓存（禁止入库）
+.zcode/
+__pycache__/
