@@ -320,18 +320,27 @@ Body: { "routes": ["/article/123", "/", "/archive"], "reason": "ARTICLE_PUBLISHE
 
 ### 8.1 容器与端口
 
-| 服务 | 容器内端口 | 宿主机绑定 | 可达范围 |
+**端口纪律（2026-11-07 修订）：除 Nginx 外，所有服务一律使用默认端口，且只在容器内网可达——宿主机不映射任何数据层/应用层端口。**
+
+| 服务 | 容器内端口（默认） | 宿主机绑定 | 可达范围 |
 |---|---|---|---|
-| Nginx（本地） | 80 | **127.0.0.1:8912** | 只听本机——对外通道是 FRP |
+| Nginx（本地） | 80 | **127.0.0.1:8912** | 宿主机唯一出口——frpc 与 CLI 从本机连它 |
 | frpc | — | 出站连接 | 主动连 VPS:7000，穿透 NAT |
-| MySQL | 3306 | 127.0.0.1:23306 | 仅本机工具 |
-| Redis | 6379 | 127.0.0.1:26376 | 仅本机 |
-| Elasticsearch | 9200 | 127.0.0.1:29200 | 仅本机（调试） |
-| RabbitMQ | 5672 / 15672 | 127.0.0.1:25672 / 127.0.0.1:25673 | 仅本机（AMQP / 管理 UI） |
+| Nuxt / Nitro | 3000 | 不映射 | 仅 compose 内网 |
+| Spring Boot | 28080 | 不映射 | 仅 compose 内网 |
+| MySQL | 3306 | 不映射 | 仅 compose 内网 |
+| Redis | 6379 | 不映射 | 仅 compose 内网 |
+| Elasticsearch | 9200 | 不映射 | 仅 compose 内网 |
+| RabbitMQ | 5672 / 15672 | 不映射 | 仅 compose 内网 |
 | VPS Nginx | 80/443 | 0.0.0.0:80/443 | **真正的公网入口** |
 | frps | 7000 | 0.0.0.0:7000 | 收 frpc 连接 |
 
-Nuxt（容器内 3000）与 Spring Boot（容器内 28080）**不映射宿主机端口**——生产藏 Nginx 后，开发期宿主机直跑（25173/28080）。生产共 **7 个容器**：nginx / nuxt / server / mysql / redis / elasticsearch / rabbitmq。
+**这套纪律解决的问题**：
+1. **端口冲突为零**——宿主机上只有 8912 一个口属于本项目；campus-errand 等项目各自占用的 3306/6379 等与本项目互不干扰（Docker 容器内网端口互相隔离，同端口不同容器网络各自生效）
+2. **攻击面最小**——数据层与管理 UI 不监听宿主机，外网扫不到；排查用 `docker exec`（`mysql -uroot -p` / `redis-cli` / `curl localhost:9200` 进容器内执行），这是运维标准做法
+3. **开发期同构**——开发也跑 `docker compose up`（卷挂载实现 HMR 与热重启），不使用宿主端口映射，开发环境与生产环境结构一致
+
+生产共 **7 个容器**：nginx / nuxt / server / mysql / redis / elasticsearch / rabbitmq。
 
 ### 8.2 FRP 隧道
 

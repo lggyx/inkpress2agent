@@ -18,25 +18,25 @@ cloud "VPS（公网 IP · 仅做邮差，不存数据）" {
 package "本地机器（无公网 IP · FRP 穿透 · 服务与数据都在这）" {
 
   package "边缘层" {
-    [Nginx :127.0.0.1:8912\n静态 · 反代 /api · SSE 关缓冲] as NG
+    [Nginx :127.0.0.1:8912\n宿主机唯一出口\n静态 · 反代 /api · SSE 关缓冲] as NG
   }
 
-  package "渲染层" {
+  package "渲染层（容器内网）" {
     [Nuxt 3 / Nitro :3000\n内容页 ISR（SEO + agent 可读 + 热更新）\n管理端 SPA] as NUXT
   }
 
-  package "应用层" {
+  package "应用层（容器内网）" {
     rectangle "Spring Boot 3 :28080\n双轨鉴权（JWT + api_token scope）\n横切：审计 · 限流 · 入站合规\n业务模块 ×20" as SB
   }
 
-  package "异步任务层（绑 127.0.0.1）" {
-    [RabbitMQ :25672\n持久队列 · ACK · 退避重试 · DLQ\n（管理 UI :25673）] as MQ
+  package "异步任务层（容器内网）" {
+    [RabbitMQ :5672\n持久队列 · ACK · 退避重试 · DLQ\n（管理 UI :15672）] as MQ
   }
 
-  package "数据层（均绑 127.0.0.1，仅本机可达）" {
-    database "MySQL 8 :23306\n唯一权威数据源" as MY
-    database "Redis 7 :26376\n计数 · 去重 · 缓存" as RD
-    database "Elasticsearch 8 + IK :29200\nBM25 · kNN · RRF 混合\n（投影，可重建）" as ES
+  package "数据层（容器内网 · 全默认端口）" {
+    database "MySQL 8 :3306\n唯一权威数据源" as MY
+    database "Redis 7 :6379\n计数 · 去重 · 缓存" as RD
+    database "Elasticsearch 8 + IK :9200\nBM25 · kNN · RRF 混合\n（投影，可重建）" as ES
     database "对象存储\n本地 ↔ 七牛 SPI" as OSS
   }
 
@@ -74,8 +74,8 @@ AG ..> SB : MCP 只读工具（stretch，经域名）
 
 note bottom of NG
   **端口纪律**
-  本地服务零公网暴露：Nginx 只听 127.0.0.1:8912，
-  数据层与 MQ 绑 127.0.0.1；对外通道只有 VPS:443 + frps:7000
+  除 Nginx 外全部默认端口且只在容器内网：宿主机仅 127.0.0.1:8912 一个口，
+  数据层不映射宿主（排查用 docker exec）；对外通道只有 VPS:443 + frps:7000
 end note
 
 @enduml
