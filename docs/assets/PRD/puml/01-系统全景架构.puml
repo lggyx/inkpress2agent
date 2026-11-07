@@ -26,7 +26,7 @@ package "本地机器（无公网 IP · FRP 穿透 · 服务与数据都在这�
   }
 
   package "应用层（容器内网）" {
-    rectangle "Spring Boot 3 :28080\n双轨鉴权（JWT + api_token scope）\n横切：审计 · 限流 · 入站合规\n业务模块 ×20" as SB
+    rectangle "Spring Boot 3 :8080\n双轨鉴权（JWT + api_token scope）\n横切：审计 · 限流 · 入站合规\n业务模块 ×20" as SB
   }
 
   package "异步任务层（容器内网）" {

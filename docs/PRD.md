@@ -327,7 +327,7 @@ Body: { "routes": ["/article/123", "/", "/archive"], "reason": "ARTICLE_PUBLISHE
 | Nginx（本地） | 80 | **127.0.0.1:8912** | 宿主机唯一出口——frpc 与 CLI 从本机连它 |
 | frpc | — | 出站连接 | 主动连 VPS:7000，穿透 NAT |
 | Nuxt / Nitro | 3000 | 不映射 | 仅 compose 内网 |
-| Spring Boot | 28080 | 不映射 | 仅 compose 内网 |
+| Spring Boot | 8080 | 不映射 | 仅 compose 内网 |
 | MySQL | 3306 | 不映射 | 仅 compose 内网 |
 | Redis | 6379 | 不映射 | 仅 compose 内网 |
 | Elasticsearch | 9200 | 不映射 | 仅 compose 内网 |
