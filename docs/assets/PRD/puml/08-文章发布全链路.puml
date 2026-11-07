@@ -1,0 +1,29 @@
+@startuml 08-文章发布全链路
+skinparam dpi 300
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+title 文章发布全链路（M2 + M5 + M11）
+
+actor "博主" as U
+participant "后台 SPA" as SPA
+participant "Spring Boot" as SB
+database "MySQL（权威）" as MY
+database "Redis（版本戳）" as RD
+participant "Elasticsearch（投影）" as ES
+participant "Nuxt revalidate（投影）" as NV
+
+U -> SPA : 编辑文章，点击发布
+SPA -> SB : PUT /api/author/articles/{id}/status
+SB -> MY : status=PUBLISHED, published_at=NOW()
+SB -> RD : 写入版本戳（文章 ID 到 版本号）
+
+== 以下两条为异步链路，互不阻断，失败均可重试 ==
+SB -> ES : reindex 文章向量与索引
+Note right of ES : 失败重试 2 次；仍失败记审计——\nES 是投影，可从 MySQL 全量重建
+SB -> NV : POST /api/_internal/revalidate
+Note right of NV : 失败重试 3 次；最坏缓存旧一个周期，\n数据不丢（MySQL 是权威）
+
+SB --> SPA : 发布成功
+Note over MY, NV : **权威与投影**：MySQL=事实源；\nES 与缓存=投影，丢失均可重建
+
+@enduml

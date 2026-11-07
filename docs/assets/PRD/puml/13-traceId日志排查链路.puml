@@ -1,0 +1,27 @@
+@startuml 13-traceId日志排查链路
+skinparam dpi 300
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+title traceId 日志排查链路（M19）
+
+actor "用户" as U
+participant "Nginx" as NG
+participant "TraceFilter" as TF
+participant "Service 层" as SV
+participant "Logback（JSON 文件）" as LB
+participant "管理端日志页" as ADM
+
+U -> NG : 请求（无 X-Trace-Id）
+NG -> TF : 生成 16 位 traceId，注入请求头
+TF -> SV : MDC 放入 traceId
+SV -> LB : 所有日志行自动携带（参数摘要/SQL/AI 调用/错误堆栈）
+SV --> U : 响应头 X-Trace-Id；（出错时）body.traceId
+
+Note over U : 报障只需一句：\n「traceId=abc123，上传图片失败了」
+
+U -> ADM : 日志查询：traceId=abc123
+ADM -> LB : 按 traceId 检索
+LB --> ADM : 全链日志一次拉全
+Note right of ADM : 按 级别/时间/模块/traceId 过滤分页\n保留 30 天，按日轮转
+
+@enduml

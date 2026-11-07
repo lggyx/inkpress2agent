@@ -1,0 +1,37 @@
+@startuml 10-评论审核全流程
+skinparam dpi 300
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+title 评论审核全流程（M3 + M9 + M15 + M18）
+
+actor "访客" as G
+participant "前台" as FE
+participant "Spring Boot" as SB
+participant "入站审计" as AUD
+actor "管理员" as AD
+participant "通知服务" as NT
+
+G -> FE : 提交评论（文字 ± 图片）
+FE -> SB : POST /api/comments
+
+SB -> SB : 信任闸门校验
+Note right of SB : TL0：禁外链/禁图 → 400 + 升级提示\nTL1+：放行
+
+SB -> AUD : 启发式预筛（关键词/频率/链接/图片特征）
+
+alt 命中可疑特征
+  AUD --> SB : risk≥1 → PENDING
+  SB --> G : 已提交，审核后展示
+  AD -> SB : 审核队列处理（通过/拒绝）
+  SB -> NT : 审核结果通知（站内 + 邮件）
+  NT --> G : 「你的评论已通过/未通过」
+else 文本干净
+  SB -> SB : APPROVED 直接展示
+  SB -> NT : 被回复时通知原作者
+else TL3 熟客
+  SB -> SB : 免审直发（信任红利）
+end
+
+Note over SB, NT : 过审事件 → 信任指标 +1（M18）\n图片评论走人工队列（视觉预审为 stretch）
+
+@enduml

@@ -1,0 +1,163 @@
+@startuml 04-数据模型ER
+skinparam dpi 300
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+skinparam linetype ortho
+hide circle
+hide empty members
+title InkPress 数据模型 E-R 图（MySQL 9 张表 + ES 投影）
+
+entity "user 用户" as user {
+  * id : bigint PK
+  --
+  * username : varchar
+  * password : varchar
+  * role : varchar "任命角色 VISITOR-OWNER"
+  * is_owner : boolean
+  * trust_level : tinyint "TL0-TL4"
+  * comments_approved : int "信任指标"
+  * likes_received : int "信任指标"
+  * flags_accepted : int "信任指标"
+  email : varchar "绑定邮箱"
+  status : tinyint
+}
+
+entity "article 文章" as article {
+  * id : bigint PK
+  --
+  * title : varchar
+  summary : varchar
+  * content : longtext
+  cover : varchar
+  * category_id : bigint IDX
+  * author_id : bigint IDX
+  * status : varchar "DRAFT-PUBLISHED"
+  is_top : boolean
+  views : bigint
+  likes : bigint
+}
+
+entity "category 分类" as category {
+  * id : bigint PK
+  --
+  * name : varchar
+  sort : int
+}
+
+entity "tag 标签" as tag {
+  * id : bigint PK
+  --
+  * name : varchar
+}
+
+entity "article_tag 文章标签" as article_tag {
+  * article_id : bigint PK,FK
+  * tag_id : bigint PK,FK
+}
+
+entity "comment 评论" as comment {
+  * id : bigint PK
+  --
+  * article_id : bigint IDX
+  user_id : bigint IDX "游客为空"
+  * nickname : varchar
+  images : json "图片评论"
+  * content : text
+  parent_id : bigint IDX "回复"
+  * status : varchar "PENDING-APPROVED-REJECTED"
+}
+
+entity "comment_like 评论点赞" as comment_like {
+  * id : bigint PK
+  --
+  * comment_id : bigint IDX
+  liker : varchar "用户ID或游客IP"
+}
+
+entity "notification 通知" as notification {
+  * id : bigint PK
+  --
+  * user_id : bigint IDX
+  * type : varchar "REPLY-AUDIT-LEVEL_UP"
+  * title : varchar
+  is_read : boolean
+  email_status : varchar
+}
+
+entity "publish_record 发布记录" as publish_record {
+  * id : bigint PK
+  --
+  * article_id : bigint IDX
+  * platform : varchar
+  * platform_url : varchar
+  * status : varchar
+  meta : json
+}
+
+entity "report 举报" as report {
+  * id : bigint PK
+  --
+  * comment_id : bigint IDX
+  * reporter_id : bigint IDX
+  * reason : varchar
+  * status : varchar "PENDING-ACCEPTED-REJECTED"
+}
+
+entity "api_token 机器令牌" as api_token {
+  * id : bigint PK
+  --
+  * name : varchar
+  * token_hash : varchar
+  token_prefix : varchar
+  * scopes : varchar
+  expires_at : datetime
+  revoked_at : datetime
+}
+
+entity "operation_log 操作日志" as operation_log {
+  * id : bigint PK
+  --
+  * module : varchar
+  * operation : varchar
+  params : varchar
+  ip : varchar
+  cost_ms : bigint
+}
+
+entity "system_config 平台配置" as system_config {
+  * config_key : varchar PK
+  --
+  config_value : varchar "敏感值读取时脱敏"
+  * config_group : varchar "AI-SMTP-SITE"
+}
+
+user ||--o{ article : "1:N 撰写"
+category ||--o{ article : "1:N 归类"
+article ||--o{ article_tag : "1:N"
+tag ||--o{ article_tag : "1:N"
+article ||--o{ comment : "1:N"
+comment ||--o{ comment : "parent_id 回复"
+comment ||--o{ comment_like : "1:N"
+comment ||--o{ report : "1:N 被举报"
+user ||--o{ comment : "1:N 发表"
+user ||--o{ report : "1:N 提交"
+user ||--o{ notification : "1:N 接收"
+user ||--o{ api_token : "1:N 创建"
+user ||--o{ operation_log : "1:N 产生"
+article ||--o{ publish_record : "1:N 分发至"
+
+note bottom of user
+  **无外键约束策略**
+  全表不建 FOREIGN KEY：关联列只建索引，
+  引用完整性（写入校验存在性）与级联删除
+  （删文章连删 article_tag/comment/publish_record）
+  统一由服务层事务维护——错误码明确、排查路径
+  统一在业务层，不为 DB 约束名浪费 StackTrace
+end note
+
+note top of article
+  ES 文章索引是 article 的**投影**，
+  可从 MySQL 全量重建，非独立事实源
+end note
+
+@enduml

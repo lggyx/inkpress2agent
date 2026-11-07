@@ -1,0 +1,75 @@
+@startuml 01-系统全景架构
+skinparam dpi 300
+skinparam shadowing false
+skinparam defaultFontName Microsoft YaHei
+skinparam packageStyle rectangle
+title InkPress 系统全景架构（2026-11 定稿 · 端口为最新值）
+
+actor "访客" as V
+actor "博主 / 管理员 / 站长" as M
+actor "外部 Agent" as AG
+
+cloud "VPS（公网 IP · 仅做邮差，不存数据）" {
+  [域名 Nginx :443\nSSL 终止（Let's Encrypt）] as VN
+  [frps :7000\nFRP 服务端（token 鉴权）] as FS
+  VN --> FS : 反代 127.0.0.1:8912
+}
+
+package "本地机器（无公网 IP · FRP 穿透 · 服务与数据都在这）" {
+
+  package "边缘层" {
+    [Nginx :127.0.0.1:8912\n静态 · 反代 /api · SSE 关缓冲] as NG
+  }
+
+  package "渲染层" {
+    [Nuxt 3 / Nitro :3000\n内容页 ISR（SEO + agent 可读 + 热更新）\n管理端 SPA] as NUXT
+  }
+
+  package "应用层" {
+    rectangle "Spring Boot 3 :28080\n双轨鉴权（JWT + api_token scope）\n横切：审计 · 限流 · 入站合规\n业务模块 ×20" as SB
+  }
+
+  package "数据层（均绑 127.0.0.1，仅本机可达）" {
+    database "MySQL 8 :23306\n唯一权威数据源" as MY
+    database "Redis 7 :26376\n计数 · 去重 · 缓存" as RD
+    database "Elasticsearch 8 + IK :29200\nBM25 · kNN · RRF 混合\n（投影，可重建）" as ES
+    database "对象存储\n本地 ↔ 七牛 SPI" as OSS
+  }
+
+  package "用户侧" {
+    [Agent CLI / Skill\nNode + TS + Playwright\nSQLite outbox · 用户自己的 Key] as CLI
+  }
+}
+
+cloud "外部服务" {
+  cloud "大模型 API（OpenAI 兼容）" as LLM
+  cloud "SMTP 邮件" as SMTP
+  cloud "7 大内容平台" as PLAT
+}
+
+V --> VN
+M --> VN
+AG --> VN
+FS <--> NG : FRP 隧道（transport.tls）
+NG --> NUXT
+NG --> SB : /api 反代
+NUXT --> SB : ① SSR 取数（容器内网）
+SB --> NUXT : ② 发布事件 → revalidate 失效
+SB --> MY
+SB --> RD
+SB --> ES
+SB --> OSS
+SB --> LLM
+SB --> SMTP
+CLI --> NG : ③ localhost:8912（Bearer token + scope）
+CLI --> PLAT : ④ 建草稿注入，用户本人点发布
+CLI ..> LLM : 可选：出站提示（用户 Key，责任归用户）
+AG ..> SB : MCP 只读工具（stretch，经域名）
+
+note bottom of NG
+  **端口纪律**
+  本地服务零公网暴露：Nginx 只听 127.0.0.1:8912，
+  数据层绑 127.0.0.1；对外通道只有 VPS:443 + frps:7000
+end note
+
+@enduml
