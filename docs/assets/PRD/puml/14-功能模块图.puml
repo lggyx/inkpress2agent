@@ -77,6 +77,8 @@ B6 -down-> M20
 B6 -down-> M21
 
 rectangle "混合渲染（横切基础设施）：Nuxt3 内容页 ISR + 管理端 SPA + revalidate 协议" as M11
+rectangle "异步任务总线（横切基础设施）：RabbitMQ 持久队列 · 三类副作用任务（索引/缓存失效/通知）· 退避重试 · DLQ" as M22
 ROOT ..> M11
+ROOT ..> M22
 
 @enduml

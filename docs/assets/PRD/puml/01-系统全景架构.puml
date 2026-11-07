@@ -29,6 +29,10 @@ package "本地机器（无公网 IP · FRP 穿透 · 服务与数据都在这�
     rectangle "Spring Boot 3 :28080\n双轨鉴权（JWT + api_token scope）\n横切：审计 · 限流 · 入站合规\n业务模块 ×20" as SB
   }
 
+  package "异步任务层（绑 127.0.0.1）" {
+    [RabbitMQ :25672\n持久队列 · ACK · 退避重试 · DLQ\n（管理 UI :25673）] as MQ
+  }
+
   package "数据层（均绑 127.0.0.1，仅本机可达）" {
     database "MySQL 8 :23306\n唯一权威数据源" as MY
     database "Redis 7 :26376\n计数 · 去重 · 缓存" as RD
@@ -55,6 +59,8 @@ NG --> NUXT
 NG --> SB : /api 反代
 NUXT --> SB : ① SSR 取数（容器内网）
 SB --> NUXT : ② 发布事件 → revalidate 失效
+SB -> MQ : 发布副作用任务\nindex / revalidate / notify
+MQ --> SB : 消费执行 · 失败进 DLQ
 SB --> MY
 SB --> RD
 SB --> ES
@@ -69,7 +75,7 @@ AG ..> SB : MCP 只读工具（stretch，经域名）
 note bottom of NG
   **端口纪律**
   本地服务零公网暴露：Nginx 只听 127.0.0.1:8912，
-  数据层绑 127.0.0.1；对外通道只有 VPS:443 + frps:7000
+  数据层与 MQ 绑 127.0.0.1；对外通道只有 VPS:443 + frps:7000
 end note
 
 @enduml

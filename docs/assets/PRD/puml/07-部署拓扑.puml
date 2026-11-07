@@ -18,7 +18,7 @@ node "VPS（公网 IP · 年费几十元）" {
 node "本地机器（家 / 宿舍 · 无公网 IP）" {
   [frpc\n主动外连 VPS:7000] as FC
   [Nginx :127.0.0.1:8912\n只听本机，不对外] as HN
-  rectangle "Docker 六容器\nNuxt · Spring Boot · MySQL · Redis · ES" as DOC
+  rectangle "Docker 七容器\nNuxt · Spring Boot · MySQL · Redis · ES · RabbitMQ" as DOC
   FC --> HN
   HN --> DOC
 }

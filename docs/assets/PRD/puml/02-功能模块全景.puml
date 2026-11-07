@@ -49,7 +49,15 @@ package "板块六 · 可观测与运维" {
   rectangle "M21 健康监测\nActuator · 组件探针 · 状态页 · 降级告警" as M21
 }
 
-rectangle "M11 混合渲染（横切基础设施）\nNuxt3 ISR + 管理端 SPA + revalidate 协议" as M11
+package "横切基础设施" {
+  rectangle "M11 混合渲染\nNuxt3 ISR + 管理端 SPA + revalidate 协议" as M11
+  rectangle "M22 异步任务总线\nRabbitMQ · 持久队列 · DLQ\nindex/revalidate/notify 三类任务" as M22
+}
+
+M2 --> M22 : 发布事件
+M22 --> M5 : index 任务
+M22 --> M11 : revalidate 任务
+M22 --> M15 : notify 任务
 
 M2 --> M5 : 发布事件
 M2 --> M6 : 标记待分发
