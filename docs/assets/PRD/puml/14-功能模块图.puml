@@ -3,82 +3,36 @@ skinparam dpi 300
 skinparam shadowing false
 skinparam defaultFontName Microsoft YaHei
 skinparam linetype ortho
+skinparam ArrowHead none
 skinparam rectangle {
   BackgroundColor White
-  BorderColor #333333
+  BorderColor Black
+  BorderThickness 1.5
 }
-skinparam wrapWidth 200
-title 图 4-1 InkPress 系统功能模块图
 
-[<b>InkPress 个人博客与文章管理系统</b>] as ROOT
+[InkPress 个人博客与文章管理系统] as ROOT
 
-rectangle "<b>博客核心平台</b>" as B1
-rectangle "<b>互动与社区治理</b>" as B2
-rectangle "<b>知识接口层</b>" as B3
-rectangle "<b>预处理与辅助分发</b>" as B4
-rectangle "<b>数据整合与安全</b>" as B5
-rectangle "<b>可观测与运维</b>" as B6
+rectangle "个人中心与身份认证" as M1
+rectangle "博客文章管理与交互" as M2
+rectangle "AI智能写作辅助" as M3
+rectangle "跨平台自动化辅助分发" as M4
+rectangle "站内混合检索与安全运维" as M5
 
-ROOT -down-> B1
-ROOT -down-> B2
-ROOT -down-> B3
-ROOT -down-> B4
-ROOT -down-> B5
-ROOT -down-> B6
+ROOT -down- M1
+ROOT -down- M2
+ROOT -down- M3
+ROOT -down- M4
+ROOT -down- M5
 
-rectangle "认证与权限\n注册登录 · JWT · 双角色" as M1
-rectangle "文章管理\nMarkdown · 草稿/发布/置顶" as M2
-rectangle "站内互动\n评论回复 · 图片评论 · 审核\n点赞去重 · 浏览计数" as M3
-rectangle "数据统计查询\n多维筛选 · 热门排行 · 看板" as M4
-B1 -down-> M1
-B1 -down-> M2
-B1 -down-> M3
-B1 -down-> M4
+rectangle "用户注册与登录\nJWT令牌鉴权\n个人信息维护\n消息提醒与邮件" as S1
+rectangle "Markdown在线编辑\n草稿暂存与发布\n分类标签交叉归档\n读者两级评论审核\n点赞与浏览量削峰" as S2
+rectangle "SSE流式文本润色\n语法纠错与审查\n智能摘要与标签推荐\n内容续写与标题推荐" as S3
+rectangle "平台自适应排版\n主流多平台适配\nPlaywright草稿注入\n分发记录与状态回填" as S4
+rectangle "IK中文分词与BM25\n稠密向量与RRF融合\n敏感词与内容审计\n访问限流与链路追踪\n系统健康状态监控" as S5
 
-rectangle "通知系统\n站内提醒 · 邮件推送\n邮箱绑定 · 退订" as M15
-rectangle "权限管理\n用户管理 · 四级角色\n操作日志 · 防锁死" as M16
-rectangle "等级特权管理\nTL0-TL4 信任等级\n能力闸 · 举报闭环" as M18
-B2 -down-> M15
-B2 -down-> M16
-B2 -down-> M18
-
-rectangle "检索内核（ES）\nIK 分词 · BM25 · kNN\nRRF 混合" as M5A
-rectangle "检索工具层\n搜索 · 获取 · 相关推荐" as M5B
-rectangle "双接口\n人：站内搜索\nagent：MCP（stretch）" as M5C
-B3 -down-> M5A
-M5A -down-> M5B
-M5B -down-> M5C
-
-rectangle "AI 预处理台\n摘要/标签 · 格式转换\n编辑器助手" as M6
-rectangle "草稿填充引擎 CLI\n登录态 · 跳转创作页\n建草稿注入 · 交还用户" as M7
-rectangle "平台适配器 ×7\nT1 深填 / T2 半自动 / T3 转换\n掘金·CSDN·公众号等七平台" as M8
-B4 -down-> M6
-B4 -down-> M7
-B4 -down-> M8
-
-rectangle "入站审计\n文本+图片 · 审核队列" as M9
-rectangle "发布记录与整合\n链接回填 · 整合视图" as M10
-rectangle "看板与访客分析\n流量地域 · 异常 IP" as M12
-rectangle "对象存储 SPI\n本地 ↔ 七牛" as M13
-rectangle "机器身份授权\ntoken · scope · 吊销" as M14
-rectangle "平台配置\nAI 服务商 · SMTP · 站点" as M17
-B5 -down-> M9
-B5 -down-> M10
-B5 -down-> M12
-B5 -down-> M13
-B5 -down-> M14
-B5 -down-> M17
-
-rectangle "日志管理\n结构化 · traceId · 查询" as M19
-rectangle "IP 管理\n黑白名单 · 归属地 · 封禁" as M20
-rectangle "健康监测\n探针 · 状态页 · 告警" as M21
-B6 -down-> M19
-B6 -down-> M20
-B6 -down-> M21
-
-rectangle "混合渲染（横切基础设施）：Nuxt3 内容页 ISR + 管理端 SPA + revalidate 协议" as M11
-rectangle "异步任务总线（横切基础设施）：RabbitMQ 持久队列 · 三类副作用任务（索引/缓存失效/通知）· 退避重试 · DLQ" as M22
-ROOT ..> M11
-ROOT ..> M22
-
+M1 -down- S1
+M2 -down- S2
+M3 -down- S3
+M4 -down- S4
+M5 -down- S5
 @enduml
