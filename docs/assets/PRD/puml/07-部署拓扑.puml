@@ -2,45 +2,52 @@
 skinparam dpi 300
 skinparam shadowing false
 skinparam defaultFontName Microsoft YaHei
-title 部署拓扑：VPS + FRP + 本地 Docker
+title 部署拓扑：Cloudflare Tunnel 为主线路（2026-11 定稿 · 不备案）
 
 cloud "公网" {
   [访客 / Agent / 爬虫] as VIS
-  [域名 A 记录 → VPS IP] as DNS
+  [lggyx.tech\n阿里云注册 · NS 转 Cloudflare] as DNS
 }
 
-node "VPS（公网 IP · 年费几十元）" {
-  [Nginx :443/80\nSSL 终止（Let's Encrypt 自动续期）] as VN
-  [frps :7000\nFRP 服务端（token 鉴权）] as FS
-  VN --> FS : 反代 127.0.0.1:8912
+cloud "Cloudflare 边缘（公网入口）" {
+  [Anycast 节点\nTLS 自动终止（证书全自动）] as CF
 }
 
-node "本地机器（家 / 宿舍 · 无公网 IP）" {
-  [frpc\n主动外连 VPS:7000] as FC
-  [Nginx :127.0.0.1:8912\n只听本机，不对外] as HN
-  rectangle "Docker 七容器\nNuxt · Spring Boot · MySQL · Redis · ES · RabbitMQ" as DOC
+node "京东云（大陆节点 · 只出站不入境 → 无需备案）" {
+  [cloudflared\nTunnel 客户端] as CFD
+  [frps :7000\nFRP 服务端] as FS
+}
+
+node "家庭机器（无公网 IP · 数据终点）" {
+  [frpc\n主动外连京东云] as FC
+  [Nginx :127.0.0.1:8912\n只听本机] as HN
+  rectangle "Docker 七容器\nNuxt :3000 · Spring Boot :8080\nMySQL :3306 · Redis :6379 · ES :9200 · RabbitMQ :5672" as DOC
   FC --> HN
   HN --> DOC
 }
 
-[CLI + Playwright] as CLI
+cloud "GCP（备用中继 · 论文对照项）" {
+  [frps + Nginx :443\n主线路故障时 DNS 切此] as GCP
+}
 
 VIS --> DNS
-DNS --> VN
-FS <--> FC : FRP 隧道（transport.tls）
-CLI --> VN : 同机 localhost:8912 / 异地走域名
+DNS --> CF
+CF <--> CFD : Tunnel（出站加密）
+CFD --> FS
+FS <--> FC : frp 隧道（国内稳定腿）
+FC -.-> GCP : 备用：切 GCP 需改 DNS + frpc 配置
 
-note right of FS
-  **安全基线**
-  frps token 非默认
-  VPS 防火墙只放 80 / 443 / 7000
-  7500 dashboard 绑 127.0.0.1
+note bottom of CFD
+  **为什么不备案**
+  京东云只运行 cloudflared / frps（出站客户端），
+  不监听公网入站——公网入口是 Cloudflare 边缘，
+  故不触发大陆节点的 ICP 备案要求
 end note
 
-note bottom of HN
-  **可用性诚实声明**
-  家庭断网 / 断电 = 站点下线；
-  演示走 localhost:8912，VPS 只做邮差不存数据
+note right of GCP
+  **四跳链（不选为主动）**
+  访客→GCP→京东云→家庭：双重出境，
+  国内访客延迟差。仅作故障备份与论文对照
 end note
 
 @enduml
