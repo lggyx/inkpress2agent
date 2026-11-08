@@ -324,16 +324,16 @@ Body: { "routes": ["/article/123", "/", "/archive"], "reason": "ARTICLE_PUBLISHE
 
 | 服务 | 容器内端口（默认） | 宿主机绑定 | 可达范围 |
 |---|---|---|---|
-| Nginx（本地） | 80 | **127.0.0.1:8912** | 宿主机唯一出口——frpc 从本机连它 |
-| frpc | — | 出站连接 | 主动连京东云:7000，穿透 NAT |
+| Nginx（本地） | 80 | **127.0.0.1:8912** | 宿主机唯一出口——frpc 与 CLI 从本机连它 |
+| frpc | — | 出站连接 | 主动连 VPS:7000，穿透 NAT |
 | Nuxt / Nitro | 3000 | 不映射 | 仅 compose 内网 |
 | Spring Boot | 8080 | 不映射 | 仅 compose 内网 |
 | MySQL | 3306 | 不映射 | 仅 compose 内网 |
 | Redis | 6379 | 不映射 | 仅 compose 内网 |
 | Elasticsearch | 9200 | 不映射 | 仅 compose 内网 |
 | RabbitMQ | 5672 / 15672 | 不映射 | 仅 compose 内网 |
-| cloudflared（京东云） | — | 出站连接 | 主动连 Cloudflare 边缘，不监听公网 |
-| frps（京东云） | 7000 | 不监听公网 | 仅收 frpc 入站（京东云内网） |
+| VPS Nginx | 80/443 | 0.0.0.0:80/443 | **真正的公网入口** |
+| frps | 7000 | 0.0.0.0:7000 | 收 frpc 连接 |
 
 **这套纪律解决的问题**：
 1. **端口冲突为零**——宿主机上只有 8912 一个口属于本项目；campus-errand 等项目各自占用的 3306/6379 等与本项目互不干扰（Docker 容器内网端口互相隔离，同端口不同容器网络各自生效）
@@ -342,43 +342,16 @@ Body: { "routes": ["/article/123", "/", "/archive"], "reason": "ARTICLE_PUBLISHE
 
 生产共 **7 个容器**：nginx / nuxt / server / mysql / redis / elasticsearch / rabbitmq。
 
-### 8.2 公网入口：Cloudflare Tunnel（主线路）
+### 8.2 FRP 隧道
 
-**决策（2026-11-08）：不走大陆节点公网入口（不备案），公网入口用 Cloudflare Tunnel。**
+- SSL 终止在 VPS Nginx（Let's Encrypt + certbot 自动续期）；隧道内部走 frp `transport.tls`
+- 本地 Nginx 只听 127.0.0.1:8912，frpc 从本机连它——**本地服务零公网暴露**
+- SSE 流式经隧道原样穿过（TCP 隧道，注意 frpc 侧勿设短 idle 超时）
 
-```
-访客 → https://lggyx.tech（阿里云注册，NS 转 Cloudflare）
-     → Cloudflare 边缘（TLS 全自动，无需证书运维）
-     → cloudflared（跑在京东云，只出站不入境 → 不触发备案）
-     → frps（京东云）
-     → frp 隧道（国内稳定腿）
-     → 家庭机器 Nginx :127.0.0.1:8912 → Docker 七容器
-```
+### 8.3 安全基线
 
-- **为什么不备案**：京东云只运行 cloudflared / frps 两个出站型客户端，不监听公网入站；公网入口是 Cloudflare 边缘（境外），故不触发大陆节点的 ICP 备案要求
-- **为什么 cloudflared 跑在京东云而不是家庭机器**：京东云的国际出口带宽与稳定性优于家庭宽带；家庭只保留 frpc → 京东云这一条国内稳定腿
-- **证书**：Cloudflare 边缘自动签发与续期，零运维；对照方案（Let's Encrypt + certbot）写入论文部署章节作对比
-- **SSE 兼容**：Tunnel 与 frp 均为长连接透传，AI 流式输出原样穿过；cloudflared 默认无短 idle 超时
-
-### 8.3 备选拓扑：GCP 四跳链（论文对照项）
-
-```
-访客 → lggyx.tech → GCP（Nginx :443 + LE 证书）→ 京东云 frpc → 京东云 frps → 家庭 frpc
-```
-
-- 双重出境（访客→GCP→京东云→家庭），国内访客延迟显著差于主线路
-- 定位：**主线路故障时的备份中继**（DNS 切 GCP）+ 论文“部署方案对比”的对照案例
-- 届时 frpc 配置多写一个 server 地址即可，迁移十分钟
-
-### 8.4 域名与 IP 直连的边界
-
-- 域名 `lggyx.tech` 已在阿里云购买（2026-11）；DNS 托管转 Cloudflare（Named Tunnel）
-- **Let's Encrypt 不支持 IP 证书**，商业 CA 的 IP 证书要求验证 IP 段所有权（租用 IP 无法通过）——故“IP + 公网信任 HTTPS”对个人不可行，测试期用自签证书 + 本地信任（开发机导入根证书），或 Cloudflare 快速隧道（`trycloudflare.com` 临时域名）
-
-### 8.5 安全基线
-
-1. frps token 非默认值；cloudflared 凭据不出本机；京东云防火墙不放行任何公网入站（Tunnel 与 frp 均为出站发起）
-2. `.env`（含 AI Key、SMTP 授权码、JWT secret）gitignore，永不入库
+1. frps token 非默认值；VPS 防火墙只放 80/443/7000；7500 dashboard 绑 127.0.0.1
+2. `.env`（含 AI Key、SMTP 授权码、JWT secret、frp token）gitignore，永不入库
 3. 部署文档单列“安全基线”小节，上线前逐项核对
 
 ---
