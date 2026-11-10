@@ -1,0 +1,46 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: inkpress-server
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:inkpress}?useUnicode=true&characterEncoding=utf8mb4&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:inkpress}
+    password: ${MYSQL_PASSWORD:inkpress123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:inkpress}
+    password: ${RABBITMQ_PASSWORD:inkpress123}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+inkpress:
+  jwt:
+    # 必须通过环境变量注入生产值；本地缺省时启动报错提示
+    secret: ${INKPRESS_JWT_SECRET:inkpress-local-dev-secret-change-me}
+    access-token-ttl: ${INKPRESS_ACCESS_TTL:PT2H}
+    refresh-token-ttl: ${INKPRESS_REFRESH_TTL:P30D}
