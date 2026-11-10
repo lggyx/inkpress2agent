@@ -30,7 +30,7 @@ public class AiController {
     public record SummaryRequest(@NotBlank String content) {
     }
 
-    public record ConfigUpdateRequest(String baseUrl, String model, String imageModel, String apiKey) {
+    public record ConfigUpdateRequest(String baseUrl, String model, String imageModel, String embeddingModel, String apiKey) {
     }
 
     public record TemplateUpdateRequest(@NotBlank String category, @NotBlank String name,
@@ -71,7 +71,7 @@ public class AiController {
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> updateConfig(@AuthenticationPrincipal JwtAuthFilter.LoginUser user,
                                      @RequestBody ConfigUpdateRequest req) {
-        aiConfigService.update(user.id(), req.baseUrl(), req.model(), req.imageModel(), req.apiKey());
+        aiConfigService.update(user.id(), req.baseUrl(), req.model(), req.imageModel(), req.embeddingModel(), req.apiKey());
         return Result.ok();
     }
 

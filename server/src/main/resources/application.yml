@@ -44,3 +44,7 @@ inkpress:
     secret: ${INKPRESS_JWT_SECRET:inkpress-local-dev-secret-change-me}
     access-token-ttl: ${INKPRESS_ACCESS_TTL:PT2H}
     refresh-token-ttl: ${INKPRESS_REFRESH_TTL:P30D}
+  es:
+    host: ${ES_HOST:localhost}
+    port: ${ES_PORT:9200}
+    index: ${ES_INDEX:inkpress-articles}

@@ -34,11 +34,13 @@ public class ArticleService {
     private final MarkdownRenderer markdownRenderer;
     private final ViewCountBuffer viewCountBuffer;
     private final cn.hengxing.inkpress.modules.messaging.service.NotificationService notificationService;
+    private final cn.hengxing.inkpress.modules.search.service.SearchService searchService;
 
     public ArticleService(ArticleMapper articleMapper, ArticleTagMapper articleTagMapper,
                           TagMapper tagMapper, CategoryMapper categoryMapper,
                           MarkdownRenderer markdownRenderer, ViewCountBuffer viewCountBuffer,
-                          cn.hengxing.inkpress.modules.messaging.service.NotificationService notificationService) {
+                          cn.hengxing.inkpress.modules.messaging.service.NotificationService notificationService,
+                          cn.hengxing.inkpress.modules.search.service.SearchService searchService) {
         this.articleMapper = articleMapper;
         this.articleTagMapper = articleTagMapper;
         this.tagMapper = tagMapper;
@@ -46,6 +48,7 @@ public class ArticleService {
         this.markdownRenderer = markdownRenderer;
         this.viewCountBuffer = viewCountBuffer;
         this.notificationService = notificationService;
+        this.searchService = searchService;
     }
 
     /** 创建或更新草稿；博主本人稿件可直接发布，agent 来稿强制 PENDING_REVIEW */
@@ -98,6 +101,9 @@ public class ArticleService {
             articleMapper.updateById(article);
         }
         replaceTags(article.getId(), req.tags());
+        if ("PUBLISHED".equals(article.getStatus())) {
+            searchService.indexArticle(article);
+        }
         return toResponse(article, req.tags());
     }
 
@@ -113,6 +119,9 @@ public class ArticleService {
             article.setPublishedAt(LocalDateTime.now());
         }
         articleMapper.updateById(article);
+        if (pass) {
+            searchService.indexArticle(article);
+        }
         notificationService.notifyUser(article.getAuthorId(),
                 cn.hengxing.inkpress.modules.messaging.entity.Notification.TYPE_REVIEW,
                 "稿件复审结果：" + (pass ? "已通过并发布" : "被退回"),
@@ -172,6 +181,7 @@ public class ArticleService {
         Article article = mustGet(id);
         article.setStatus("OFFLINE");
         articleMapper.updateById(article);
+        searchService.removeArticle(id);
     }
 
     @PreAuthorize("hasRole('BLOGGER')")
@@ -180,6 +190,7 @@ public class ArticleService {
         Article article = mustGet(id);
         article.setDeleted(1);
         articleMapper.updateById(article);
+        searchService.removeArticle(id);
     }
 
     public Article mustGet(Long id) {

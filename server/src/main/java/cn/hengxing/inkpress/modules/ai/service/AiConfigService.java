@@ -22,6 +22,7 @@ public class AiConfigService {
     public static final String KEY_API_KEY = "ai.api_key";
     public static final String KEY_MODEL = "ai.model";
     public static final String KEY_IMAGE_MODEL = "ai.image_model";
+    public static final String KEY_EMBEDDING_MODEL = "ai.embedding_model";
 
     private final SystemConfigMapper systemConfigMapper;
     private final PromptTemplateMapper promptTemplateMapper;
@@ -48,16 +49,18 @@ public class AiConfigService {
         view.put("baseUrl", get(KEY_BASE_URL));
         view.put("model", get(KEY_MODEL));
         view.put("imageModel", get(KEY_IMAGE_MODEL));
+        view.put("embeddingModel", get(KEY_EMBEDDING_MODEL));
         view.put("apiKeyMasked", mask(get(KEY_API_KEY)));
         view.put("configured", isConfigured());
         return view;
     }
 
     @Transactional
-    public void update(Long operatorId, String baseUrl, String model, String imageModel, String apiKey) {
+    public void update(Long operatorId, String baseUrl, String model, String imageModel, String embeddingModel, String apiKey) {
         put(operatorId, KEY_BASE_URL, baseUrl);
         put(operatorId, KEY_MODEL, model);
         put(operatorId, KEY_IMAGE_MODEL, imageModel);
+        put(operatorId, KEY_EMBEDDING_MODEL, embeddingModel);
         // 传 null 表示不修改；传空串表示清除
         if (apiKey != null) {
             if (apiKey.isBlank()) {
