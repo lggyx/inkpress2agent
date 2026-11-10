@@ -27,10 +27,13 @@ public class PublicArticleController {
 
     private final ArticleService articleService;
     private final CommentService commentService;
+    private final cn.hengxing.inkpress.modules.article.service.LikeService likeService;
 
-    public PublicArticleController(ArticleService articleService, CommentService commentService) {
+    public PublicArticleController(ArticleService articleService, CommentService commentService,
+                                   cn.hengxing.inkpress.modules.article.service.LikeService likeService) {
         this.articleService = articleService;
         this.commentService = commentService;
+        this.likeService = likeService;
     }
 
     @GetMapping
@@ -55,5 +58,11 @@ public class PublicArticleController {
                                                @PathVariable Long id,
                                                @Valid @RequestBody CommentRequest req) {
         return Result.ok(commentService.post(id, user.id(), req.parentId(), req.content()));
+    }
+
+    @PostMapping("/{id}/like")
+    public Result<Map<String, Object>> like(@AuthenticationPrincipal JwtAuthFilter.LoginUser user,
+                                            @PathVariable Long id) {
+        return Result.ok(likeService.toggle(id, user.id()));
     }
 }
