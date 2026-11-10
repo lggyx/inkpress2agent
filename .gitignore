@@ -1,0 +1,33 @@
+# Java / Maven
+server/target/
+*.class
+*.jar
+
+# Node
+node_modules/
+.nuxt/
+.output/
+dist/
+
+# 环境变量与密钥（禁止入库）
+.env
+.env.*
+
+# 日志与系统文件
+logs/
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 本地数据卷备份与临时文件
+*.dump
+tmp/
+
+# 项目内部工作目录
+.workbuddy/
+.zcode/
