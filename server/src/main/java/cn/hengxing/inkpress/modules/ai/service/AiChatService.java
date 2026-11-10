@@ -95,6 +95,12 @@ public class AiChatService {
         }
     }
 
+    /** 一次性补全（非流式）：按模板渲染后调用，返回文本。供评审等场景复用 */
+    public String complete(String category, String content) {
+        requireConfigured();
+        return callOnce(configService.render(category, content));
+    }
+
     private void streamInto(SseEmitter emitter, HttpRequest request) {
         try {
             HttpResponse<java.io.InputStream> resp =

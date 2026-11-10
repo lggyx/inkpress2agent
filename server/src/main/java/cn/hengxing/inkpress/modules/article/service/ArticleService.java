@@ -35,12 +35,14 @@ public class ArticleService {
     private final ViewCountBuffer viewCountBuffer;
     private final cn.hengxing.inkpress.modules.messaging.service.NotificationService notificationService;
     private final cn.hengxing.inkpress.modules.search.service.SearchService searchService;
+    private final cn.hengxing.inkpress.modules.review.service.ReviewService reviewService;
 
     public ArticleService(ArticleMapper articleMapper, ArticleTagMapper articleTagMapper,
                           TagMapper tagMapper, CategoryMapper categoryMapper,
                           MarkdownRenderer markdownRenderer, ViewCountBuffer viewCountBuffer,
                           cn.hengxing.inkpress.modules.messaging.service.NotificationService notificationService,
-                          cn.hengxing.inkpress.modules.search.service.SearchService searchService) {
+                          cn.hengxing.inkpress.modules.search.service.SearchService searchService,
+                          cn.hengxing.inkpress.modules.review.service.ReviewService reviewService) {
         this.articleMapper = articleMapper;
         this.articleTagMapper = articleTagMapper;
         this.tagMapper = tagMapper;
@@ -49,6 +51,7 @@ public class ArticleService {
         this.viewCountBuffer = viewCountBuffer;
         this.notificationService = notificationService;
         this.searchService = searchService;
+        this.reviewService = reviewService;
     }
 
     /** 创建或更新草稿；博主本人稿件可直接发布，agent 来稿强制 PENDING_REVIEW */
@@ -85,6 +88,12 @@ public class ArticleService {
             if ("AGENT".equals(article.getSource()) || agentSource) {
                 article.setStatus("PENDING_REVIEW");
             } else {
+                // M9 低分闸口：最新 AI 评审总分低于阈值需显式确认
+                Integer score = reviewService.latestScore(article.getId());
+                if (score != null && score < cn.hengxing.inkpress.modules.review.service.ReviewService.LOW_SCORE_THRESHOLD
+                        && !Boolean.TRUE.equals(req.confirmLowScore())) {
+                    throw BizException.of(2005, "AI 评审分数偏低（" + score + " 分），请阅读评审报告后确认发布");
+                }
                 article.setStatus("PUBLISHED");
                 if (article.getPublishedAt() == null) {
                     article.setPublishedAt(LocalDateTime.now());

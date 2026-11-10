@@ -15,5 +15,7 @@ public record ArticleUpsertRequest(
         String geoSummary,
         List<String> tags,
         /** DRAFT 保存草稿 / PUBLISH 直接发布（博主本人稿件） */
-        String action) {
+        String action,
+        /** AI 评审低分时，前端确认后带 true 放行发布 */
+        Boolean confirmLowScore) {
 }

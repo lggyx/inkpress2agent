@@ -27,9 +27,12 @@ import java.util.Map;
 public class StudioArticleController {
 
     private final ArticleService articleService;
+    private final cn.hengxing.inkpress.modules.review.service.ReviewService reviewService;
 
-    public StudioArticleController(ArticleService articleService) {
+    public StudioArticleController(ArticleService articleService,
+                                   cn.hengxing.inkpress.modules.review.service.ReviewService reviewService) {
         this.articleService = articleService;
+        this.reviewService = reviewService;
     }
 
     @PostMapping
@@ -74,5 +77,16 @@ public class StudioArticleController {
                                @PathVariable Long id, @RequestBody Map<String, Boolean> body) {
         articleService.review(id, Boolean.TRUE.equals(body.get("pass")), user.id());
         return Result.ok();
+    }
+
+    /** M9：手动触发 AI 评审 */
+    @PostMapping("/{id}/ai-review")
+    public Result<cn.hengxing.inkpress.modules.review.entity.ReviewReport> aiReview(@PathVariable Long id) {
+        return Result.ok(reviewService.run(id, "MANUAL"));
+    }
+
+    @GetMapping("/{id}/ai-review/latest")
+    public Result<cn.hengxing.inkpress.modules.review.entity.ReviewReport> latestReview(@PathVariable Long id) {
+        return Result.ok(reviewService.latest(id));
     }
 }
