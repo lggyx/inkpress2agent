@@ -12,7 +12,7 @@ services:
       TZ: Asia/Shanghai
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
-      - mysql-data:/var/lib/mysql
+      - mysql-data-v2:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p$${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
@@ -57,7 +57,7 @@ services:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
       TZ: Asia/Shanghai
     volumes:
-      - es-data:/usr/share/elasticsearch/data
+      - es-data-v2:/usr/share/elasticsearch/data
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
       interval: 20s
@@ -82,7 +82,9 @@ services:
     restart: unless-stopped
 
 volumes:
-  mysql-data:
+  # 旧原型残留的 mysql-data / es-data 卷保持不动（数据仍在盘上），
+  # 新工程使用独立数据卷，避免与旧 schema 冲突。
+  mysql-data-v2:
   redis-data:
   rabbitmq-data:
-  es-data:
+  es-data-v2:
