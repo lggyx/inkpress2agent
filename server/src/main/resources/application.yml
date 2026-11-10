@@ -18,6 +18,11 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:inkpress}
     password: ${RABBITMQ_PASSWORD:inkpress123}
+  mail:
+    host: ${SMTP_HOST:smtp.local}
+    port: ${SMTP_PORT:25}
+    username: ${SMTP_USER:}
+    password: ${SMTP_PASSWORD:}
   flyway:
     enabled: true
     locations: classpath:db/migration

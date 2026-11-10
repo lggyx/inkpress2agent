@@ -33,6 +33,9 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/api/health", "/actuator/health").permitAll()
+                        // 游客可读：公开文章、搜索、分类、标签
+                        .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                "/api/articles/**", "/api/search", "/api/categories", "/api/tags").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(traceIdFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
