@@ -33,16 +33,19 @@ public class ArticleService {
     private final CategoryMapper categoryMapper;
     private final MarkdownRenderer markdownRenderer;
     private final ViewCountBuffer viewCountBuffer;
+    private final cn.hengxing.inkpress.modules.messaging.service.NotificationService notificationService;
 
     public ArticleService(ArticleMapper articleMapper, ArticleTagMapper articleTagMapper,
                           TagMapper tagMapper, CategoryMapper categoryMapper,
-                          MarkdownRenderer markdownRenderer, ViewCountBuffer viewCountBuffer) {
+                          MarkdownRenderer markdownRenderer, ViewCountBuffer viewCountBuffer,
+                          cn.hengxing.inkpress.modules.messaging.service.NotificationService notificationService) {
         this.articleMapper = articleMapper;
         this.articleTagMapper = articleTagMapper;
         this.tagMapper = tagMapper;
         this.categoryMapper = categoryMapper;
         this.markdownRenderer = markdownRenderer;
         this.viewCountBuffer = viewCountBuffer;
+        this.notificationService = notificationService;
     }
 
     /** 创建或更新草稿；博主本人稿件可直接发布，agent 来稿强制 PENDING_REVIEW */
@@ -110,7 +113,11 @@ public class ArticleService {
             article.setPublishedAt(LocalDateTime.now());
         }
         articleMapper.updateById(article);
-        // TODO(M7)：复审结果通知提交方
+        notificationService.notifyUser(article.getAuthorId(),
+                cn.hengxing.inkpress.modules.messaging.entity.Notification.TYPE_REVIEW,
+                "稿件复审结果：" + (pass ? "已通过并发布" : "被退回"),
+                "《" + article.getTitle() + "》" + (pass ? " 已通过人工复审，现已发布。" : " 未通过人工复审，请在博主端修改后重新提交。"),
+                "/studio/articles");
     }
 
     @PreAuthorize("hasRole('BLOGGER')")
