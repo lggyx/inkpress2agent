@@ -1,0 +1,21 @@
+{
+  "name": "inkpress-distributor",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "inkpress": "./src/cli.ts"
+  },
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "playwright": "^1.48.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
