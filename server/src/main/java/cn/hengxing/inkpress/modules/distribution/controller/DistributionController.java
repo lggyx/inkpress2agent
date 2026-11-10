@@ -32,9 +32,12 @@ public class DistributionController {
     }
 
     private final DistributionService distributionService;
+    private final cn.hengxing.inkpress.modules.distribution.service.PlatformConvertService platformConvertService;
 
-    public DistributionController(DistributionService distributionService) {
+    public DistributionController(DistributionService distributionService,
+                                  cn.hengxing.inkpress.modules.distribution.service.PlatformConvertService platformConvertService) {
         this.distributionService = distributionService;
+        this.platformConvertService = platformConvertService;
     }
 
     /** 博主端发起分发 */
@@ -49,6 +52,14 @@ public class DistributionController {
     @PreAuthorize("hasRole('BLOGGER')")
     public Result<List<DistributionRecord>> ofArticle(@PathVariable Long articleId) {
         return Result.ok(distributionService.listByArticle(articleId));
+    }
+
+    /** 排版转换预览：Markdown → 平台 HTML（深度主题） */
+    @PostMapping("/studio/distribution/convert")
+    @PreAuthorize("hasRole('BLOGGER')")
+    public Result<Map<String, String>> convert(@RequestBody Map<String, String> req) {
+        return Result.ok(Map.of("html",
+                platformConvertService.convert(req.get("platform"), req.get("contentMd"))));
     }
 
     /** 本机 agent（设备令牌）拉取待分发任务与正文 */

@@ -5,7 +5,7 @@ spring:
   application:
     name: inkpress-server
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:inkpress}?useUnicode=true&characterEncoding=utf8mb4&useSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:inkpress}?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=Asia/Shanghai
     username: ${MYSQL_USER:inkpress}
     password: ${MYSQL_PASSWORD:inkpress123}
     driver-class-name: com.mysql.cj.jdbc.Driver
