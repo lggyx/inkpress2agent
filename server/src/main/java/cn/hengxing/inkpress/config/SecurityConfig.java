@@ -26,7 +26,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter,
                                            TraceIdFilter traceIdFilter,
-                                           cn.hengxing.inkpress.common.RateLimitFilter rateLimitFilter) throws Exception {
+                                           cn.hengxing.inkpress.common.RateLimitFilter rateLimitFilter,
+                                           cn.hengxing.inkpress.modules.auth.support.DeviceTokenAuthFilter deviceTokenAuthFilter) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -35,6 +36,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .addFilterBefore(traceIdFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(deviceTokenAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
