@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.ArrayList;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map;
 
 @RestController
@@ -60,10 +62,30 @@ public class AiController {
         this.embeddingService = embeddingService;
     }
 
-    /** SSE 流式 AI 对话（登录可用；BLOGGER 场景为编辑器辅助） */
+    /** SSE 流式 AI 对话：{category,content} 模板模式 或 {messages:[...]} 多轮直传（studio 工作台） */
     @PostMapping(path = "/ai/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter chat(@RequestBody ChatRequest req) {
-        return aiChatService.chatStream(req.category(), req.content());
+    public SseEmitter chat(@RequestBody Map<String, Object> body) {
+        Object messages = body.get("messages");
+        if (messages instanceof List<?> list && !list.isEmpty()) {
+            List<Map<String, String>> hist = new ArrayList<>();
+            for (Object o : list) {
+                if (o instanceof Map<?, ?> m) {
+                    Object role = m.get("role");
+                    Object content = m.get("content");
+                    Map<String, String> row = new java.util.LinkedHashMap<>();
+                    row.put("role", role == null ? "user" : String.valueOf(role));
+                    row.put("content", content == null ? "" : String.valueOf(content));
+                    hist.add(row);
+                }
+            }
+            return aiChatService.chatStreamMessages(hist);
+        }
+        String category = body.get("category") == null ? "" : String.valueOf(body.get("category"));
+        String content = body.get("content") == null ? "" : String.valueOf(body.get("content"));
+        if (category.isBlank() || content.isBlank()) {
+            throw cn.hengxing.inkpress.common.BizException.of(400, "缺少 category/content 或 messages");
+        }
+        return aiChatService.chatStream(category, content);
     }
 
     @PostMapping("/ai/summary")

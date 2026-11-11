@@ -48,6 +48,18 @@ public class AiChatService {
         return emitter;
     }
 
+    /** SSE 流式多轮对话：前端直传 messages 历史（studio 工作台用），assistant 模板作为系统提示 */
+    public SseEmitter chatStreamMessages(List<Map<String, String>> messages) {
+        requireConfigured(AiConfigService.CAP_TEXT);
+        SseEmitter emitter = new SseEmitter(180_000L);
+        String system = configService.mustTemplate("assistant").getContent();
+        HttpRequest request = anthropic()
+                ? anthropicMessagesRequest(messages, system, true)
+                : openaiMessagesRequest(messages, system, true);
+        executor.submit(() -> streamInto(emitter, request));
+        return emitter;
+    }
+
     /** OpenAI 兼容请求：POST {base}/chat/completions，Bearer 鉴权 */
     private HttpRequest openaiRequest(String prompt, boolean stream) {
         String body;
@@ -67,6 +79,36 @@ public class AiChatService {
                 .build();
     }
 
+    /** OpenAI 多轮：messages 直传，assistant 模板作 system 消息前置 */
+    private HttpRequest openaiMessagesRequest(List<Map<String, String>> messages, String system, boolean stream) {
+        List<Map<String, String>> full = new ArrayList<>();
+        if (system != null && !system.isBlank()) {
+            full.add(Map.of("role", "system", "content", system));
+        }
+        for (Map<String, String> m : messages) {
+            full.add(Map.of("role", strOrDefault(m.get("role"), "user"), "content", strOrDefault(m.get("content"), "")));
+        }
+        String body;
+        try {
+            body = objectMapper.writeValueAsString(Map.of(
+                    "model", text().model(),
+                    "messages", full,
+                    "stream", stream));
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        return HttpRequest.newBuilder(URI.create(text().baseUrl() + "/chat/completions"))
+                .timeout(Duration.ofSeconds(180))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + text().apiKey())
+                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+                .build();
+    }
+
+    private static String strOrDefault(String v, String dft) {
+        return v == null || v.isBlank() ? dft : v;
+    }
+
     /** Anthropic 请求：POST {base}/v1/messages（base 以 /v1 结尾则拼 /messages）；鉴权双发 x-api-key 与 Bearer（AUTH_TOKEN 型网关只认后者）；max_tokens 必填 */
     private HttpRequest anthropicRequest(String prompt, boolean stream) {
         String body;
@@ -76,6 +118,45 @@ public class AiChatService {
                     "max_tokens", 4096,
                     "stream", stream,
                     "messages", List.of(Map.of("role", "user", "content", prompt))));
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        return anthropicBuilder(anthropicUrl("/messages"))
+                .timeout(Duration.ofSeconds(180))
+                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+                .build();
+    }
+
+    /** Anthropic 多轮：messages 直传（roles 必须交替 user/assistant），system 参数单列 */
+    private HttpRequest anthropicMessagesRequest(List<Map<String, String>> messages, String system, boolean stream) {
+        List<Map<String, Object>> full = new ArrayList<>();
+        String lastRole = null;
+        for (Map<String, String> m : messages) {
+            String role = strOrDefault(m.get("role"), "user");
+            if (role.equals("system")) continue;
+            // Anthropic 要求相邻消息角色交替，相同角色合并内容
+            if (role.equals(lastRole) && !full.isEmpty()) {
+                Map<String, Object> prev = full.get(full.size() - 1);
+                prev.put("content", prev.get("content") + "\n\n" + m.get("content"));
+                continue;
+            }
+            Map<String, Object> row = new java.util.LinkedHashMap<>();
+            row.put("role", role);
+            row.put("content", m.get("content"));
+            full.add(row);
+            lastRole = role;
+        }
+        String body;
+        try {
+            Map<String, Object> root = new java.util.LinkedHashMap<>();
+            root.put("model", text().model());
+            root.put("max_tokens", 4096);
+            root.put("stream", stream);
+            root.put("messages", full);
+            if (system != null && !system.isBlank()) {
+                root.put("system", system);
+            }
+            body = objectMapper.writeValueAsString(root);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }

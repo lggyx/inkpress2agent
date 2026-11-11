@@ -5,12 +5,8 @@
  */
 import { accessToken, refreshTokens } from './useApi'
 
-export async function streamAi(
-  category: string,
-  content: string,
-  onToken: (token: string) => void,
-): Promise<string> {
-  const send = async () => {
+function makeSend(body: unknown) {
+  return async () => {
     const token = accessToken()
     if (!token) throw new Error('请先登录')
     return fetch('/api/ai/chat', {
@@ -20,11 +16,18 @@ export async function streamAi(
         Accept: 'text/event-stream',
         Authorization: 'Bearer ' + token,
       },
-      body: JSON.stringify({ category, content }),
+      body: JSON.stringify(body),
     })
   }
+}
+
+/** 发送并读取 SSE 流：401/403 时刷新令牌重试一次；流中断时已生成部分容错返回 */
+async function sendAndRead(
+  send: () => Promise<Response>,
+  onToken: (token: string) => void,
+): Promise<string> {
   let resp = await send()
-  // access token 过期时安全层回裸 403：刷新一次重试
+  // access token 过期时安全层回裸 403/401：刷新一次重试
   if (resp.status === 401 || resp.status === 403) {
     const newToken = await refreshTokens()
     if (!newToken) throw new Error('登录已过期，请重新登录')
@@ -75,4 +78,27 @@ export async function streamAi(
     if (!full) throw e
   }
   return full
+}
+
+/** 模板模式流式对话：{category, content}（润色/纠错/续写等写作指令） */
+export async function streamAi(
+  category: string,
+  content: string,
+  onToken: (token: string) => void,
+): Promise<string> {
+  return sendAndRead(
+    () => makeSend({ category, content }),
+    onToken,
+  )
+}
+
+/** 多轮直传流式对话：messages 历史由前端持有（studio 工作台对话流） */
+export async function streamChat(
+  messages: { role: string; content: string }[],
+  onToken: (token: string) => void,
+): Promise<string> {
+  return sendAndRead(
+    () => makeSend({ messages }),
+    onToken,
+  )
 }
