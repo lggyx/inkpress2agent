@@ -49,12 +49,15 @@ public class AiController {
     private final AiChatService aiChatService;
     private final AiConfigService aiConfigService;
     private final cn.hengxing.inkpress.modules.ai.service.ImageGenerationService imageGenerationService;
+    private final cn.hengxing.inkpress.modules.search.service.EmbeddingService embeddingService;
 
     public AiController(AiChatService aiChatService, AiConfigService aiConfigService,
-                        cn.hengxing.inkpress.modules.ai.service.ImageGenerationService imageGenerationService) {
+                        cn.hengxing.inkpress.modules.ai.service.ImageGenerationService imageGenerationService,
+                        cn.hengxing.inkpress.modules.search.service.EmbeddingService embeddingService) {
         this.aiChatService = aiChatService;
         this.aiConfigService = aiConfigService;
         this.imageGenerationService = imageGenerationService;
+        this.embeddingService = embeddingService;
     }
 
     /** SSE 流式 AI 对话（登录可用；BLOGGER 场景为编辑器辅助） */
@@ -107,13 +110,16 @@ public class AiController {
         return Result.ok();
     }
 
-    /** 分能力测试连接：body 传 {capability}，缺省测文本对话 */
+    /** 分能力测试连接：body 传 {capability}，缺省测文本对话；embedding 槽实发最小 embeddings 调用 */
     @PostMapping("/admin/ai-config/test")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Map<String, Boolean>> test(@RequestBody(required = false) Map<String, String> body) {
         String cap = body == null || body.get("capability") == null
                 ? AiConfigService.CAP_TEXT : body.get("capability");
-        return Result.ok(Map.of("ok", aiChatService.testConnection(cap)));
+        boolean ok = AiConfigService.CAP_EMBEDDING.equals(cap)
+                ? embeddingService.testEmbedding()
+                : aiChatService.testConnection(cap);
+        return Result.ok(Map.of("ok", ok));
     }
 
     @GetMapping("/admin/prompt-templates")

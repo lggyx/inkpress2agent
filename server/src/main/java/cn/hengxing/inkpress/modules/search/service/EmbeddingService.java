@@ -89,4 +89,12 @@ public class EmbeddingService {
             return 1024;
         }
     }
+
+    /** 分能力测试连接：Embedding 槽必须实发一次最小 embeddings 调用（GET /models 对多数网关不存在，测了也是假阴性） */
+    public boolean testEmbedding() {
+        if (!configService.configured(AiConfigService.CAP_EMBEDDING)) {
+            return false;
+        }
+        return embed("ping") != null;
+    }
 }
