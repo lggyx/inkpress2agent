@@ -12,6 +12,10 @@ dist/
 # 环境变量与密钥（禁止入库）
 .env
 .env.*
+# distributor 本机凭据与运行产物（设备令牌/平台 Cookie 不出机）
+distributor/config.json
+distributor/.profiles/
+distributor/.artifacts/
 
 # 日志与系统文件
 logs/
