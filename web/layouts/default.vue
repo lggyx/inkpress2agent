@@ -12,11 +12,36 @@ function logout() {
   clearAuth()
   navigateTo('/login')
 }
+
+// Pure 式导航：滚离顶部→胶囊收拢（margin-inline 两侧向中间过渡）；下滑隐藏、上滑浮现
+// 事件监听 + 低频轮询双保险（部分嵌入环境滚动不派发事件）
+const scrolled = ref(false)
+const hidden = ref(false)
+let lastY = 0
+let pollId = 0
+
+function update() {
+  const y = window.scrollY
+  if (Math.abs(y - lastY) <= 1) return
+  scrolled.value = y > 24
+  hidden.value = y > 140 && y > lastY + 1
+  lastY = y
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', update, { passive: true })
+  pollId = window.setInterval(update, 200)
+  update()
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', update)
+  window.clearInterval(pollId)
+})
 </script>
 
 <template>
   <div>
-    <header class="site-header">
+    <header class="site-header" :class="{ scrolled, hidden }">
       <div class="container header-inner">
         <NuxtLink to="/" class="brand">InkPress</NuxtLink>
         <nav class="nav">
@@ -55,15 +80,32 @@ function logout() {
 </template>
 
 <style scoped>
+/* Pure 式悬浮导航：sticky 顶部留 14px；滚离顶部后 margin-inline 两侧向中间收拢成毛玻璃胶囊；
+   页面下滑时整体隐藏、上滑时胶囊浮现 */
 .site-header {
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
   position: sticky;
-  top: 0;
-  z-index: 10;
+  top: 14px;
+  z-index: 50;
+  margin-inline: 0;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: transparent;
+  transition:
+    margin-inline .35s ease,
+    background-color .3s ease,
+    border-color .3s ease,
+    transform .35s ease;
 }
-.header-inner { display: flex; align-items: center; gap: 26px; height: 58px; }
+.site-header.scrolled {
+  margin-inline: 16px;
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--bg) 76%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 32px rgb(0 0 0 / 16%);
+}
+.site-header.hidden { transform: translateY(-130%); }
+
+.header-inner { display: flex; align-items: center; gap: 26px; height: 56px; padding: 0 24px; }
 .brand { font-weight: 800; font-size: 1.18em; color: var(--ink); }
 .brand:hover { color: var(--ink); }
 .nav { display: flex; gap: 18px; }
@@ -88,7 +130,7 @@ function logout() {
 .login-link:hover { border-color: var(--primary); color: var(--primary); text-decoration: none; }
 .linkish { border: none; background: none; padding: 0; color: var(--ink-faint); }
 .linkish:hover { color: var(--danger); }
-.page-body { padding: 26px 24px 56px; min-height: calc(100vh - 150px); }
+.page-body { padding: 26px 24px 56px; min-height: calc(100vh - 170px); }
 .site-footer { border-top: 1px solid var(--line); padding: 18px 0; }
 .footer-inner { text-align: center; display: flex; gap: 10px; justify-content: center; align-items: center; }
 .footer-inner a:hover { color: var(--primary); }
