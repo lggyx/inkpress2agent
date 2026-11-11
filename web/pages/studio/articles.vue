@@ -123,53 +123,53 @@ async function showLatest(row: ArticleRow) {
 </script>
 
 <template>
-  <div>
+  <div class="page">
     <div class="page-head">
-      <h2>文章管理</h2>
-      <div style="display:flex;gap:10px;align-items:center">
+      <div>
+        <h2>文章管理</h2>
+        <span class="sub">写作、评审与分发都在这条流水线上</span>
+      </div>
+      <div class="head-actions">
         <el-select v-model="status" placeholder="全部状态" clearable style="width:140px">
           <el-option v-for="(t, k) in STATUS_TEXT" :key="k" :label="t" :value="k" />
         </el-select>
-        <NuxtLink to="/studio/write/0"><el-button type="primary">写文章</el-button></NuxtLink>
+        <NuxtLink to="/studio/write/0" class="btn primary">写文章</NuxtLink>
       </div>
     </div>
 
-    <el-table :data="records" v-loading="loading" style="width:100%">
-      <el-table-column label="标题" min-width="260">
-        <template #default="{ row }">
+    <div v-loading="loading">
+      <div v-for="row in records" :key="row.id" class="row">
+        <div class="row-main">
           <NuxtLink :to="`/studio/write/${row.id}`" class="row-title">
-            <el-tag v-if="row.pinned" size="small" type="danger">置顶</el-tag>
-            {{ row.title }}
+            <span v-if="row.pinned" class="pin">置顶</span>{{ row.title }}
           </NuxtLink>
-          <div class="row-sub">{{ (row.tags || []).join(' / ') }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" width="110">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 'PUBLISHED' ? 'success' : row.status === 'DRAFT' ? 'info' : 'warning'" size="small">
-            {{ STATUS_TEXT[row.status] || row.status }}
-          </el-tag>
-          <el-tag v-if="row.source === 'AGENT'" size="small" style="margin-left:4px">AI 来稿</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="viewCount" label="浏览" width="70" />
-      <el-table-column prop="likeCount" label="赞" width="60" />
-      <el-table-column prop="commentCount" label="评" width="60" />
-      <el-table-column label="操作" width="330">
-        <template #default="{ row }">
-          <el-button size="small" @click="togglePin(row)">{{ row.pinned ? '取消置顶' : '置顶' }}</el-button>
-          <el-button v-if="row.status === 'PUBLISHED'" size="small" @click="offline(row)">下架</el-button>
-          <el-button size="small" type="danger" @click="remove(row)">删除</el-button>
-          <el-button size="small" @click="runReview(row)">AI 评审</el-button>
-          <el-button v-if="row.status === 'PUBLISHED'" size="small" @click="openDist(row)">分发</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+          <div class="row-sub">
+            <span class="mono">{{ (row.publishedAt || '').slice(0, 10) || '未发布' }}</span>
+            <span v-if="(row.tags || []).length"> · {{ (row.tags || []).join(' / ') }}</span>
+            <span v-if="row.source === 'AGENT'" class="ai-tag">AI 来稿</span>
+          </div>
+        </div>
+        <span class="st" :class="'st-' + row.status">{{ STATUS_TEXT[row.status] || row.status }}</span>
+        <div class="row-stats">
+          <span>{{ row.viewCount }} 浏览</span>
+          <span>{{ row.likeCount }} 赞</span>
+          <span>{{ row.commentCount }} 评</span>
+        </div>
+        <div class="row-actions">
+          <button class="abtn" @click="togglePin(row)">{{ row.pinned ? '取消置顶' : '置顶' }}</button>
+          <button v-if="row.status === 'PUBLISHED'" class="abtn" @click="offline(row)">下架</button>
+          <button class="abtn" @click="runReview(row)">AI 评审</button>
+          <button v-if="row.status === 'PUBLISHED'" class="abtn" @click="openDist(row)">分发</button>
+          <button class="abtn danger" @click="remove(row)">删除</button>
+        </div>
+      </div>
+      <el-empty v-if="!loading && !records.length" description="还没有文章，点右上角「写文章」开始" />
+    </div>
 
     <el-pagination
       v-model:current-page="page"
       :page-size="10" :total="total" layout="prev, pager, next, total"
-      style="margin-top:16px;justify-content:flex-end"
+      style="margin-top:18px;justify-content:flex-end"
     />
 
     <!-- 分发对话框 -->
@@ -224,10 +224,5 @@ async function showLatest(row: ArticleRow) {
 </template>
 
 <style scoped>
-.page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.page-head h2 { margin: 0; }
-.row-title { color: var(--ink); }
-.row-title:hover { color: var(--primary); text-decoration: none; }
-.row-sub { color: var(--ink-faint); font-size: .85em; margin-top: 2px; }
 .ellip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
 </style>
