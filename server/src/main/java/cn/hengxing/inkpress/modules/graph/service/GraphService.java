@@ -171,6 +171,33 @@ public class GraphService {
                 .eq(ArticleLink::getTargetId, targetId));
     }
 
+    /** 文章的手动关联列表（含目标标题，双向合并） */
+    public List<Map<String, Object>> linksOf(Long articleId) {
+        Set<Long> ids = new java.util.TreeSet<>();
+        for (ArticleLink l : articleLinkMapper.selectList(new LambdaQueryWrapper<ArticleLink>()
+                .eq(ArticleLink::getArticleId, articleId))) {
+            ids.add(l.getTargetId());
+        }
+        for (ArticleLink l : articleLinkMapper.selectList(new LambdaQueryWrapper<ArticleLink>()
+                .eq(ArticleLink::getTargetId, articleId))) {
+            ids.add(l.getArticleId());
+        }
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, String> titles = articleMapper.selectList(new LambdaQueryWrapper<Article>()
+                        .in(Article::getId, ids).select(Article::getId, Article::getTitle))
+                .stream().collect(Collectors.toMap(Article::getId, Article::getTitle));
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Long id : ids) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("articleId", id);
+            item.put("title", titles.getOrDefault(id, "(已删除)"));
+            out.add(item);
+        }
+        return out;
+    }
+
     private Article mustOwned(Long userId, Long articleId) {
         Article a = articleMapper.selectById(articleId);
         if (a == null || a.getDeleted() == 1) {
