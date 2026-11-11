@@ -26,7 +26,8 @@ onMounted(async () => {
     endpoint: view.value?.endpoint || '',
     region: view.value?.region || '',
     bucket: view.value?.bucket || '',
-    accessKey: view.value?.accessKeyMasked || '',
+    // AK/SK 表单留空 = 不修改；脱敏值只作占位提示
+    accessKey: '',
     secretKey: '',
     publicBaseUrl: view.value?.publicBaseUrl || '',
     pathStyle: view.value?.pathStyle || 'true',
@@ -35,8 +36,12 @@ onMounted(async () => {
 
 async function save() {
   await $api('PUT', '/admin/oss-config', {
-    ...form.value,
-    // accessKey/secretKey 空串表示清除；null 表示不改
+    endpoint: form.value.endpoint,
+    region: form.value.region,
+    bucket: form.value.bucket,
+    publicBaseUrl: form.value.publicBaseUrl,
+    pathStyle: form.value.pathStyle,
+    // AK/SK 未输入发 null（不改）；输入空串清除；有值更新
     accessKey: form.value.accessKey === '' ? '' : form.value.accessKey || null,
     secretKey: form.value.secretKey === '' ? '' : form.value.secretKey || null,
   })

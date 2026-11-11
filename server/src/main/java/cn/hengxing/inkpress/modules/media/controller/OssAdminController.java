@@ -47,12 +47,22 @@ public class OssAdminController {
         view.put("endpoint", aiConfigService.get("oss.endpoint"));
         view.put("region", aiConfigService.get("oss.region"));
         view.put("bucket", aiConfigService.get("oss.bucket"));
-        view.put("accessKeyMasked", aiConfigService.get("oss.access_key"));
-        view.put("secretKeyMasked", aiConfigService.get("oss.secret_key"));
+        view.put("accessKeyMasked", mask(aiConfigService.get("oss.access_key")));
+        view.put("secretKeyMasked", mask(aiConfigService.get("oss.secret_key")));
         view.put("publicBaseUrl", aiConfigService.get("oss.public_base_url"));
         view.put("pathStyle", aiConfigService.get("oss.path_style"));
         view.put("configured", ossStorageService.configured());
         return Result.ok(view);
+    }
+
+    private String mask(String key) {
+        if (key == null || key.isBlank()) {
+            return "";
+        }
+        if (key.length() <= 8) {
+            return key.charAt(0) + "****";
+        }
+        return key.substring(0, 4) + "****" + key.substring(key.length() - 4);
     }
 
     @PutMapping
