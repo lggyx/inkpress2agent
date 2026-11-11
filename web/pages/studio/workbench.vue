@@ -482,7 +482,7 @@ onMounted(async () => {
         <div ref="chatBody" class="chat-body">
           <div v-if="!chat.length" class="hero">
             <div class="hero-badge">INKPRESS STUDIO</div>
-            <h1 class="hero-title grad-title">让 AI 和你一起写作</h1>
+            <h1 class="hero-title">让 AI 和你一起写作</h1>
             <p class="hero-sub">顶栏切换文章即自动带入上下文；选一张卡片开始。</p>
             <div class="cmd-grid">
               <button class="cmd lavender" @click="send('帮我润色这篇文章的开头，使其更有吸引力')">
@@ -662,8 +662,8 @@ onMounted(async () => {
   transition: border-color .18s ease, box-shadow .18s ease, transform .25s cubic-bezier(.34, 1.56, .64, 1);
 }
 .sw-btn:hover {
-  border-color: rgba(138, 180, 248, .45);
-  box-shadow: 0 0 0 3px rgba(138, 180, 248, .1), inset 0 1px 0 rgba(255, 255, 255, .08);
+  border-color: rgba(217, 242, 79, .4);
+  box-shadow: 0 0 0 3px rgba(217, 242, 79, .07), inset 0 1px 0 rgba(255, 255, 255, .06);
   transform: scale(1.01);
 }
 .sw-doc { width: 17px; height: 17px; color: var(--primary); flex-shrink: 0; }
@@ -737,33 +737,33 @@ onMounted(async () => {
 }
 .btn:hover {
   color: var(--ink);
-  border-color: rgba(138, 180, 248, .45);
+  border-color: rgba(217, 242, 79, .45);
   background: rgba(255, 255, 255, .06);
   transform: translateY(-1px) scale(1.04);
   box-shadow: 0 6px 18px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .08);
 }
 .btn:active { transform: scale(.96); }
 .btn.primary {
-  background: linear-gradient(135deg, var(--sprimary-deep), #9a7bf5);
+  background: linear-gradient(135deg, var(--sprimary-deep), #b8d42e);
   border: 0;
   color: #fff;
-  box-shadow: 0 4px 16px rgba(91, 141, 239, .32);
+  box-shadow: 0 4px 16px rgba(217, 242, 79, .32);
 }
-.btn.primary:hover { box-shadow: 0 6px 22px rgba(138, 180, 248, .45); filter: brightness(1.08); }
+.btn.primary:hover { box-shadow: 0 6px 22px rgba(217, 242, 79, .45); filter: brightness(1.08); }
 .btn.primary:disabled { opacity: .5; filter: none; transform: none; }
 .btn.icon { width: 38px; height: 38px; padding: 0; display: grid; place-items: center; }
 .btn.icon svg { width: 18px; height: 18px; }
-.btn.icon.on { color: var(--primary); border-color: rgba(138, 180, 248, .45); background: var(--primary-soft); }
+.btn.icon.on { color: var(--primary); border-color: rgba(217, 242, 79, .45); background: var(--primary-soft); }
 
-/* ===== 面板通用：苹果式玻璃 ===== */
+/* ===== 面板通用：苹果式玻璃（中性化） ===== */
 .pane {
   position: relative;
-  background: linear-gradient(180deg, rgba(26, 30, 46, .5), rgba(15, 18, 29, .58));
-  border: 1px solid rgba(255, 255, 255, .09);
-  border-radius: 18px;
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, .42), inset 0 1px 0 rgba(255, 255, 255, .07);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, .015));
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 14px;
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .05);
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -791,9 +791,9 @@ onMounted(async () => {
   transition: all .2s cubic-bezier(.34, 1.56, .64, 1);
   white-space: nowrap;
 }
-.chip:hover:not(:disabled) { color: var(--ink); border-color: rgba(138, 180, 248, .4); transform: scale(1.05); }
+.chip:hover:not(:disabled) { color: var(--ink); border-color: rgba(217, 242, 79, .4); transform: scale(1.05); }
 .chip:active:not(:disabled) { transform: scale(.95); }
-.chip.on { color: var(--primary); border-color: rgba(138, 180, 248, .5); background: var(--primary-soft); }
+.chip.on { color: var(--primary); border-color: rgba(217, 242, 79, .5); background: var(--primary-soft); }
 .chip:disabled { opacity: .45; }
 .chip-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
@@ -824,13 +824,23 @@ onMounted(async () => {
   font-weight: 700;
   letter-spacing: 4px;
   color: var(--primary);
-  border: 1px solid rgba(138, 180, 248, .35);
+  border: 1px solid rgba(217, 242, 79, .35);
   border-radius: 999px;
   padding: 4px 14px;
   margin-bottom: 16px;
   animation: rise .4s ease both;
 }
-.hero-title { font-size: 1.9em; font-weight: 800; margin: 0 0 8px; animation: rise .45s ease .05s both; }
+.hero-title {
+  font-size: 1.7em;
+  font-weight: 800;
+  margin: 0 0 8px;
+  letter-spacing: .5px;
+  background: linear-gradient(100deg, #ffffff 55%, #d9f24f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: rise .45s ease .05s both;
+}
 .hero-sub { color: var(--ink-faint); font-size: .9em; margin: 0; animation: rise .5s ease .1s both; }
 
 /* ===== 颜色卡快捷指令（暗底高饱和卡 + 黑胶囊，参考 KNOCK 风格） ===== */
@@ -921,8 +931,8 @@ onMounted(async () => {
 }
 .bubble.user {
   align-self: flex-end;
-  background: linear-gradient(135deg, rgba(91, 141, 239, .28), rgba(154, 123, 245, .22));
-  border: 1px solid rgba(138, 180, 248, .3);
+  background: linear-gradient(135deg, rgba(217, 242, 79, .28), rgba(184, 212, 46, .22));
+  border: 1px solid rgba(217, 242, 79, .3);
   border-bottom-right-radius: 5px;
 }
 .bubble.assistant {
@@ -938,7 +948,7 @@ onMounted(async () => {
   font-size: .76em;
   padding: 4px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(138, 180, 248, .4);
+  border: 1px solid rgba(217, 242, 79, .4);
   background: transparent;
   color: var(--primary);
   transition: all .15s ease;
@@ -970,8 +980,8 @@ onMounted(async () => {
   transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
 }
 .composer:focus-within {
-  border-color: rgba(138, 180, 248, .55);
-  box-shadow: 0 0 0 3px rgba(138, 180, 248, .12), inset 0 1px 0 rgba(255, 255, 255, .06);
+  border-color: rgba(217, 242, 79, .55);
+  box-shadow: 0 0 0 3px rgba(217, 242, 79, .12), inset 0 1px 0 rgba(255, 255, 255, .06);
   transform: translateY(-1px);
 }
 .composer textarea {
@@ -994,12 +1004,12 @@ onMounted(async () => {
   border: 0;
   border-radius: 12px;
   color: #fff;
-  background: linear-gradient(135deg, var(--sprimary-deep), #9a7bf5);
-  box-shadow: 0 4px 14px rgba(91, 141, 239, .35), inset 0 1px 0 rgba(255, 255, 255, .25);
+  background: linear-gradient(135deg, var(--sprimary-deep), #b8d42e);
+  box-shadow: 0 4px 14px rgba(217, 242, 79, .35), inset 0 1px 0 rgba(255, 255, 255, .25);
   transition: all .22s cubic-bezier(.34, 1.56, .64, 1);
 }
 .send svg { width: 17px; height: 17px; }
-.send:hover:not(:disabled) { transform: translateY(-1px) scale(1.08); box-shadow: 0 8px 24px rgba(138, 180, 248, .55), inset 0 1px 0 rgba(255, 255, 255, .3); }
+.send:hover:not(:disabled) { transform: translateY(-1px) scale(1.08); box-shadow: 0 8px 24px rgba(217, 242, 79, .55), inset 0 1px 0 rgba(255, 255, 255, .3); }
 .send:active:not(:disabled) { transform: scale(.94); }
 .send:disabled { opacity: .4; }
 
@@ -1033,8 +1043,8 @@ onMounted(async () => {
 .tabs button:hover { color: var(--ink); }
 .tabs button.on {
   color: var(--ink);
-  background: rgba(138, 180, 248, .16);
-  box-shadow: inset 0 0 0 1px rgba(138, 180, 248, .3);
+  background: rgba(217, 242, 79, .16);
+  box-shadow: inset 0 0 0 1px rgba(217, 242, 79, .3);
 }
 .doc-hint { font-size: .74em; color: var(--ink-faint); font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
 

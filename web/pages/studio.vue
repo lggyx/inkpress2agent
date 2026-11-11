@@ -76,25 +76,25 @@ watchEffect(() => {
 <style scoped>
 /* ===== Studio 外壳：AI 工作台形态，与博客风格完全解耦（配色同源） ===== */
 .studio-shell {
-  --sbg: #0a0c12;
-  --scard: rgba(20, 24, 36, .62);
-  --scard-solid: #12151f;
-  --sline: rgba(255, 255, 255, .07);
-  --sprimary: #8ab4f8;
-  --sprimary-deep: #5b8def;
-  --sviolet: #b7a4f8;
+  --sbg: #0c0c0e;
+  --scard: rgba(255, 255, 255, .032);
+  --scard-solid: #131316;
+  --sline: rgba(255, 255, 255, .08);
+  --sprimary: #d9f24f;
+  --sprimary-deep: #b8d42e;
+  --sviolet: #d9f24f;
   /* 重定义博客变量，让子页面自动进入暗色工作台语境 */
   --bg: var(--sbg);
   --card: var(--scard-solid);
-  --card-soft: #1a1f2d;
+  --card-soft: #1a1a1e;
   --line: var(--sline);
-  --ink: #e8eaf2;
-  --ink-soft: #9aa3b5;
-  --ink-faint: #69718a;
+  --ink: #ececec;
+  --ink-soft: #9a9aa0;
+  --ink-faint: #5d5d63;
   --primary: var(--sprimary);
   --primary-deep: var(--sprimary-deep);
-  --primary-soft: rgba(138, 180, 248, .13);
-  --code-bg: #0d1017;
+  --primary-soft: rgba(217, 242, 79, .1);
+  --code-bg: #101012;
   --radius: 14px;
 
   position: relative;
@@ -114,12 +114,12 @@ watchEffect(() => {
 }
 .orb-a {
   width: 560px; height: 560px; top: -180px; left: 120px;
-  background: radial-gradient(closest-side, rgba(138, 180, 248, .16), transparent 70%);
+  background: radial-gradient(closest-side, rgba(217, 242, 79, .06), transparent 70%);
   animation: drift 26s ease-in-out infinite alternate;
 }
 .orb-b {
   width: 640px; height: 640px; bottom: -240px; right: -120px;
-  background: radial-gradient(closest-side, rgba(183, 164, 248, .14), transparent 70%);
+  background: radial-gradient(closest-side, rgba(255, 255, 255, .045), transparent 70%);
   animation: drift 32s ease-in-out infinite alternate-reverse;
 }
 @keyframes drift {
@@ -148,12 +148,12 @@ watchEffect(() => {
   width: 40px; height: 40px;
   display: grid; place-items: center;
   border-radius: 12px;
-  color: #fff;
-  background: linear-gradient(135deg, var(--sprimary-deep), var(--sviolet));
-  box-shadow: 0 4px 18px rgba(91, 141, 239, .35);
+  color: #101012;
+  background: var(--sprimary);
+  box-shadow: 0 4px 18px rgba(217, 242, 79, .22);
   transition: transform .2s ease, box-shadow .2s ease;
 }
-.rail-logo:hover { transform: translateY(-1px) scale(1.04); box-shadow: 0 6px 22px rgba(138, 180, 248, .45); }
+.rail-logo:hover { transform: translateY(-1px) scale(1.04); box-shadow: 0 6px 24px rgba(217, 242, 79, .32); }
 .rail-logo svg { width: 21px; height: 21px; }
 .rail-sep { width: 26px; height: 1px; background: var(--sline); margin: 2px 0; }
 .rail-nav, .rail-bottom { display: flex; flex-direction: column; gap: 6px; }
@@ -167,15 +167,15 @@ watchEffect(() => {
   transition: color .18s ease, background .18s ease, transform .25s cubic-bezier(.34, 1.56, .64, 1);
 }
 .rail-btn svg { width: 20px; height: 20px; }
-.rail-btn:hover { color: var(--ink); background: rgba(255, 255, 255, .08); transform: scale(1.1); }
+.rail-btn:hover { color: var(--ink); background: rgba(255, 255, 255, .07); transform: scale(1.1); }
 .rail-btn:active { transform: scale(.96); }
-.rail-btn.router-link-active { color: var(--sprimary); background: rgba(138, 180, 248, .12); }
+.rail-btn.router-link-active { color: var(--sprimary); background: rgba(217, 242, 79, .09); }
 .rail-btn.router-link-active::before {
   content: '';
   position: absolute; left: -11px; top: 11px;
   width: 3px; height: 20px;
   border-radius: 2px;
-  background: linear-gradient(180deg, var(--sprimary), var(--sviolet));
+  background: var(--sprimary);
 }
 /* 悬浮提示 */
 .rail-tip {
@@ -300,9 +300,9 @@ watchEffect(() => {
 .studio-shell .spine-REJECTED { --spine: #f28b82; }
 .studio-shell .spine-OFFLINE { --spine: #6b7280; }
 .studio-shell .row:hover {
-  border-color: rgba(138, 180, 248, .45);
+  border-color: rgba(255, 255, 255, .16);
   transform: translateY(-2px) scale(1.003);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .09);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .06);
 }
 .studio-shell .row:hover::before { opacity: 1; }
 @keyframes s-row-in {
@@ -364,7 +364,7 @@ watchEffect(() => {
   transition: all .16s ease;
   white-space: nowrap;
 }
-.studio-shell .abtn:hover { color: var(--ink); border-color: rgba(138, 180, 248, .45); background: rgba(255, 255, 255, .05); transform: translateY(-1px) scale(1.05); }
+.studio-shell .abtn:hover { color: var(--ink); border-color: rgba(217, 242, 79, .45); background: rgba(255, 255, 255, .05); transform: translateY(-1px) scale(1.05); }
 .studio-shell .abtn:active { transform: scale(.96); }
 .studio-shell .abtn.danger { color: #f28b82; border-color: rgba(242, 139, 130, .35); }
 .studio-shell .abtn.danger:hover { background: rgba(242, 139, 130, .1); border-color: rgba(242, 139, 130, .6); }
@@ -373,20 +373,20 @@ watchEffect(() => {
 .studio-shell .btn.primary {
   display: inline-block;
   padding: 8px 18px;
-  border-radius: 11px;
+  border-radius: 10px;
   font-size: .88em;
-  font-weight: 600;
-  background: linear-gradient(135deg, var(--sprimary-deep), #9a7bf5);
-  color: #fff;
+  font-weight: 700;
+  background: var(--sprimary);
+  color: #101012;
   border: 0;
-  box-shadow: 0 4px 16px rgba(91, 141, 239, .32);
+  box-shadow: 0 4px 16px rgba(217, 242, 79, .18);
   transition: all .2s cubic-bezier(.34, 1.56, .64, 1);
 }
 .studio-shell .btn.primary:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.06);
   transform: translateY(-1px) scale(1.04);
-  color: #fff;
-  box-shadow: 0 8px 26px rgba(138, 180, 248, .45);
+  color: #101012;
+  box-shadow: 0 8px 26px rgba(217, 242, 79, .28);
 }
 .studio-shell .btn.primary:active { transform: scale(.97); }
 
