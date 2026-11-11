@@ -16,9 +16,18 @@ async function post<T>(path: string, body: unknown): Promise<T> {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  const json = await resp.json()
-  if (json.code !== 0) throw new Error(json.message)
-  return json.data as T
+  const text = await resp.text()
+  try {
+    const json = JSON.parse(text)
+    if (json.code !== 0) throw new Error(json.message || `HTTP ${resp.status}`)
+    return json.data as T
+  } catch (e) {
+    // 响应非 JSON（代理/安全层拦截页等）：给出可读提示而非原始解析错误
+    if (e instanceof SyntaxError) {
+      throw new Error(`服务异常 HTTP ${resp.status}：${text.slice(0, 60) || '(空响应)'}`)
+    }
+    throw e
+  }
 }
 
 async function doLogin() {
