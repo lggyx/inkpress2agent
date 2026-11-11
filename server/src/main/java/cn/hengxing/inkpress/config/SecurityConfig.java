@@ -33,6 +33,8 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/api/health", "/actuator/health").permitAll()
+                        // 一键退订：邮件链接直达，免登录
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/unsubscribe").permitAll()
                         // 游客可读：公开文章、搜索、分类、标签
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 "/api/articles/**", "/api/search", "/api/categories", "/api/tags").permitAll()

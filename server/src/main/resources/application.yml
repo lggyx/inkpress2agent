@@ -18,6 +18,10 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:inkpress}
     password: ${RABBITMQ_PASSWORD:inkpress123}
+    listener:
+      simple:
+        # 消费失败拒绝不回队：毒消息直接经 DLX 落入 DLQ，避免无限重投循环
+        default-requeue-rejected: false
   mail:
     host: ${SMTP_HOST:smtp.local}
     port: ${SMTP_PORT:25}
@@ -53,3 +57,7 @@ inkpress:
     host: ${ES_HOST:localhost}
     port: ${ES_PORT:9200}
     index: ${ES_INDEX:inkpress-articles}
+  mail:
+    from: ${INKPRESS_MAIL_FROM:inkpress@noreply.local}
+    # 邮件正文里的站内链接前缀（退订/文章跳转）
+    public-base-url: ${INKPRESS_PUBLIC_BASE_URL:http://127.0.0.1:8912}

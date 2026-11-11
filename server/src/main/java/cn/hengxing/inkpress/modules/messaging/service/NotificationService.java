@@ -22,10 +22,12 @@ public class NotificationService {
     private static final long HEARTBEAT_MS = 30_000L;
 
     private final NotificationMapper notificationMapper;
+    private final MailService mailService;
     private final Map<Long, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
 
-    public NotificationService(NotificationMapper notificationMapper) {
+    public NotificationService(NotificationMapper notificationMapper, MailService mailService) {
         this.notificationMapper = notificationMapper;
+        this.mailService = mailService;
     }
 
     public void notifyUser(Long userId, String type, String title, String content, String refUrl) {
@@ -37,6 +39,15 @@ public class NotificationService {
         n.setRefUrl(refUrl);
         notificationMapper.insert(n);
         push(userId, n);
+        // 评论类即时邮件提醒（无需订阅）：入队/投递失败不影响站内通知主链路
+        if (Notification.TYPE_COMMENT.equals(type) || Notification.TYPE_REPLY.equals(type)) {
+            try {
+                mailService.publishCommentAlert(userId, title, content, refUrl);
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(NotificationService.class)
+                        .warn("评论邮件提醒入队失败 userId={}", userId, e);
+            }
+        }
     }
 
     public List<Notification> list(Long userId, int page, int size) {

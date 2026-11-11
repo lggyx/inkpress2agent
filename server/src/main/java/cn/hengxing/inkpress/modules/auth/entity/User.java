@@ -18,6 +18,10 @@ public class User {
     private String bio;
     /** UNVERIFIED / ACTIVE / DISABLED */
     private String status;
+    /** 每周精选订阅开关（默认关闭，仅注册用户可开） */
+    private Integer digestSubscribed;
+    /** 一键退订令牌原文（低敏感，仅能关闭订阅；首封邮件/首次订阅时生成） */
+    private String digestUnsubToken;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -47,6 +51,14 @@ public class User {
 
     public String getStatus() {
         return status;
+    }
+
+    public Integer getDigestSubscribed() {
+        return digestSubscribed;
+    }
+
+    public String getDigestUnsubToken() {
+        return digestUnsubToken;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -83,6 +95,14 @@ public class User {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public void setDigestSubscribed(Integer digestSubscribed) {
+        this.digestSubscribed = digestSubscribed;
+    }
+
+    public void setDigestUnsubToken(String digestUnsubToken) {
+        this.digestUnsubToken = digestUnsubToken;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
