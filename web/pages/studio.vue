@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { useAuthUser, hydrateAuthUser } from '~/composables/useApi'
+import { useTheme } from '~/composables/useTheme'
 
 // 脱离博客默认布局：studio 使用独立 AI 工作台外壳
 definePageMeta({ layout: 'studio' })
 
 const user = useAuthUser()
-onMounted(() => { hydrateAuthUser() })
+const { theme, init: initTheme, toggle: toggleTheme } = useTheme()
+onMounted(() => {
+  hydrateAuthUser()
+  initTheme()
+})
 
 // SPA 端登录门禁：未登录跳登录页
 watchEffect(() => {
@@ -54,6 +59,16 @@ watchEffect(() => {
         </NuxtLink>
       </nav>
       <div class="rail-bottom">
+        <button class="rail-btn" :title="theme === 'dark' ? '切换浅色' : '切换深色'" @click="toggleTheme()">
+          <svg v-if="theme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+            <circle cx="12" cy="12" r="4.2" />
+            <path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7" />
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 13.2A8.2 8.2 0 0 1 10.8 4a7.6 7.6 0 1 0 9.2 9.2z" />
+          </svg>
+          <span class="rail-tip">{{ theme === 'dark' ? '切换浅色' : '切换深色' }}</span>
+        </button>
         <NuxtLink to="/notifications" class="rail-btn" title="通知中心">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9z" />
@@ -75,28 +90,8 @@ watchEffect(() => {
 
 <style scoped>
 /* ===== Studio 外壳：AI 工作台形态，与博客风格完全解耦（配色同源） ===== */
+/* 主题变量在下方全局块定义（需按 data-theme 切换，scoped 选择器够不到 :root） */
 .studio-shell {
-  --sbg: #0c0c0e;
-  --scard: rgba(255, 255, 255, .032);
-  --scard-solid: #131316;
-  --sline: rgba(255, 255, 255, .08);
-  --sprimary: #d9f24f;
-  --sprimary-deep: #b8d42e;
-  --sviolet: #d9f24f;
-  /* 重定义博客变量，让子页面自动进入暗色工作台语境 */
-  --bg: var(--sbg);
-  --card: var(--scard-solid);
-  --card-soft: #1a1a1e;
-  --line: var(--sline);
-  --ink: #ececec;
-  --ink-soft: #9a9aa0;
-  --ink-faint: #5d5d63;
-  --primary: var(--sprimary);
-  --primary-deep: var(--sprimary-deep);
-  --primary-soft: rgba(217, 242, 79, .1);
-  --code-bg: #101012;
-  --radius: 14px;
-
   position: relative;
   display: flex;
   min-height: 100vh;
@@ -139,7 +134,7 @@ watchEffect(() => {
   padding: 14px 0 16px;
   gap: 10px;
   border-right: 1px solid var(--sline);
-  background: rgba(12, 14, 22, .55);
+  background: var(--srail);
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, .03);
@@ -184,7 +179,7 @@ watchEffect(() => {
   white-space: nowrap;
   font-size: .78em;
   color: var(--ink);
-  background: #1c2130;
+  background: var(--spop-solid);
   border: 1px solid var(--sline);
   padding: 4px 10px;
   border-radius: 8px;
@@ -217,34 +212,115 @@ watchEffect(() => {
 </style>
 
 <style>
-/* 全局前缀样式：只作用于 studio 外壳内（el-dialog 默认就地渲染） */
-/* 苹果式模态：背景化霜 + 玻璃面板 + 顶面高光 */
+/* ===== 主题变量：暗色默认，亮色经 :root[data-theme='light'] 覆盖 ===== */
+.studio-shell {
+  --sbg: #0c0c0e;
+  --scard: rgba(255, 255, 255, .032);
+  --scard-solid: #131316;
+  --sline: rgba(255, 255, 255, .08);
+  --sprimary: #d9f24f;
+  --sprimary-deep: #b8d42e;
+  --srail: rgba(12, 14, 22, .55);
+  --sglass: rgba(255, 255, 255, .05);
+  --spop: rgba(20, 24, 38, .85);
+  --spop-solid: rgba(22, 26, 40, .96);
+  --sinset: rgba(0, 0, 0, .25);
+  --sbubble: rgba(255, 255, 255, .05);
+  --spane: linear-gradient(180deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, .015));
+  --sorba: rgba(217, 242, 79, .06);
+  --sorbb: rgba(255, 255, 255, .045);
+  --shadow-pane: 0 20px 60px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .05);
+  --heroa: #ffffff;
+  --herob: #d9f24f;
+  /* 重定义博客变量，让子页面自动进入工作台语境 */
+  --bg: var(--sbg);
+  --card: var(--scard-solid);
+  --card-soft: #1a1a1e;
+  --line: var(--sline);
+  --ink: #ececec;
+  --ink-soft: #9a9aa0;
+  --ink-faint: #5d5d63;
+  --primary: var(--sprimary);
+  --primary-deep: var(--sprimary-deep);
+  --primary-soft: rgba(217, 242, 79, .1);
+  --code-bg: #101012;
+  --radius: 14px;
+}
+:root[data-theme='light'] .studio-shell {
+  --sbg: #f5f5f7;
+  --scard: rgba(255, 255, 255, .66);
+  --scard-solid: #ffffff;
+  --sline: rgba(0, 0, 0, .09);
+  --srail: rgba(255, 255, 255, .66);
+  --sglass: rgba(255, 255, 255, .6);
+  --spop: rgba(255, 255, 255, .92);
+  --spop-solid: #ffffff;
+  --sinset: rgba(0, 0, 0, .035);
+  --sbubble: rgba(0, 0, 0, .045);
+  --spane: linear-gradient(180deg, rgba(255, 255, 255, .72), rgba(255, 255, 255, .45));
+  --sorba: rgba(184, 212, 46, .1);
+  --sorbb: rgba(0, 0, 0, .03);
+  --shadow-pane: 0 20px 60px rgba(0, 0, 0, .08), inset 0 1px 0 rgba(255, 255, 255, .6);
+  --heroa: #1d1d1f;
+  --herob: #6b8409;
+  --card: #ffffff;
+  --card-soft: #f5f5f7;
+  --ink: #1d1d1f;
+  --ink-soft: #55555c;
+  --ink-faint: #86868b;
+  --primary: #6b8409;
+  --primary-deep: #5f7508;
+  --primary-soft: rgba(184, 212, 46, .16);
+  --code-bg: #f2f2f4;
+}
+
+.orb { background: var(--sorba); }
+.orb-a { background: var(--sorba); }
+.orb-b { background: var(--sorbb); }
+/* 苹果式模态：背景化霜 + 玻璃面板（按主题分色） */
 .studio-shell .el-overlay {
   backdrop-filter: blur(26px) saturate(140%);
   -webkit-backdrop-filter: blur(26px) saturate(140%);
-  background: rgba(8, 10, 16, .42);
 }
-.studio-shell .el-dialog {
+:root[data-theme='dark'] .studio-shell .el-overlay { background: rgba(8, 10, 16, .42); }
+:root[data-theme='light'] .studio-shell .el-overlay { background: rgba(0, 0, 0, .16); }
+.studio-shell .el-dialog { border-radius: 18px; }
+:root[data-theme='dark'] .studio-shell .el-dialog {
   background: rgba(22, 26, 40, .72);
   backdrop-filter: blur(40px) saturate(160%);
   -webkit-backdrop-filter: blur(40px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, .1);
-  border-radius: 18px;
   box-shadow: 0 32px 90px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .09);
 }
-.studio-shell .el-dialog__title { color: #e8eaf2; font-weight: 650; }
-.studio-shell .el-dialog__body { color: #c6cbd9; }
-.studio-shell .el-message-box {
+:root[data-theme='light'] .studio-shell .el-dialog {
+  background: rgba(255, 255, 255, .86);
+  backdrop-filter: blur(40px) saturate(140%);
+  -webkit-backdrop-filter: blur(40px) saturate(140%);
+  border: 1px solid rgba(0, 0, 0, .08);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .8);
+}
+.studio-shell .el-dialog__title { color: var(--ink); font-weight: 650; }
+.studio-shell .el-dialog__body { color: var(--ink-soft); }
+.studio-shell .el-message-box { border-radius: 16px; }
+:root[data-theme='dark'] .studio-shell .el-message-box {
   background: rgba(22, 26, 40, .78);
   backdrop-filter: blur(40px) saturate(160%);
   -webkit-backdrop-filter: blur(40px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, .1);
-  border-radius: 16px;
   box-shadow: 0 32px 90px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .09);
 }
-.studio-shell .el-message-box__title { color: #e8eaf2; }
-.studio-shell .el-message-box__message { color: #c6cbd9; }
-.studio-shell .el-loading-mask { background: rgba(10, 12, 18, .55); backdrop-filter: blur(4px); }
+:root[data-theme='light'] .studio-shell .el-message-box {
+  background: rgba(255, 255, 255, .88);
+  backdrop-filter: blur(40px) saturate(140%);
+  -webkit-backdrop-filter: blur(40px) saturate(140%);
+  border: 1px solid rgba(0, 0, 0, .08);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .8);
+}
+.studio-shell .el-message-box__title { color: var(--ink); }
+.studio-shell .el-message-box__message { color: var(--ink-soft); }
+:root[data-theme='dark'] .studio-shell .el-loading-mask { background: rgba(10, 12, 18, .55); }
+:root[data-theme='light'] .studio-shell .el-loading-mask { background: rgba(255, 255, 255, .6); }
+.studio-shell .el-loading-mask { backdrop-filter: blur(4px); }
 
 /* ===== studio 管理页共享：玻璃行列表（articles/comments 等） ===== */
 .studio-shell .page {

@@ -2,6 +2,7 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { $api, accessToken } from '~/composables/useApi'
 import { streamChat } from '~/composables/useAiStream'
+import { useTheme } from '~/composables/useTheme'
 
 interface ArticleRow {
   id: number
@@ -39,6 +40,9 @@ const STATUS_TEXT: Record<string, string> = {
   DRAFT: '草稿', PENDING_REVIEW: '待复审', PUBLISHED: '已发布',
   REJECTED: '未通过', OFFLINE: '已下架',
 }
+
+// 主题（与博客全局主题联动）：驱动 Vditor 编辑器/预览配色
+const { theme: themeRef } = useTheme()
 
 const rows = ref<ArticleRow[]>([])
 const current = ref<ArticleRow | null>(null)
@@ -115,13 +119,21 @@ async function refreshPreview() {
   try {
     await VditorCtor.preview(previewBox.value, currentMd(), {
       cdn: '/vditor',
-      theme: { current: 'dark', path: '/vditor/dist/css/content-theme' },
+      theme: { current: themeRef.value, path: '/vditor/dist/css/content-theme' },
     })
   } catch { /* 预览失败不打断 */ }
 }
 
 watch(docTab, (t) => { if (t === 'preview') nextTick(refreshPreview) })
 watch(docOpen, (v) => { if (v) nextTick(refreshPreview) })
+
+// 主题切换：编辑器与预览同步换肤
+watch(themeRef, (t) => {
+  try {
+    (vditor as any)?.setTheme?.(t, undefined, t, t === 'dark' ? 'github-dark' : 'github')
+  } catch { /* 旧版本无此方法则忽略 */ }
+  nextTick(refreshPreview)
+})
 
 async function openArticle(row: ArticleRow) {
   current.value = row
@@ -159,16 +171,17 @@ async function initEditor() {
     import('vditor/dist/index.css'),
   ])
   VditorCtor = Vditor
+  const vt = themeRef.value
   vditor = new Vditor(editorBox.value!, {
     cdn: '/vditor',
     height: '100%',
     mode: 'ir',
-    theme: 'dark',
+    theme: vt,
     cache: { enable: false },
     placeholder: '微调正文…',
     preview: {
-      theme: { current: 'dark', path: '/vditor/dist/css/content-theme' },
-      hljs: { style: 'github-dark', lineNumber: false },
+      theme: { current: vt, path: '/vditor/dist/css/content-theme' },
+      hljs: { style: vt === 'dark' ? 'github-dark' : 'github', lineNumber: false },
     },
     toolbar: [
       'undo', 'redo', '|', 'headings', 'bold', 'italic', 'strike', '|',
@@ -654,7 +667,7 @@ onMounted(async () => {
   padding: 9px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(24, 28, 42, .5);
+  background: var(--sglass);
   backdrop-filter: blur(18px) saturate(150%);
   -webkit-backdrop-filter: blur(18px) saturate(150%);
   color: var(--ink);
@@ -690,7 +703,7 @@ onMounted(async () => {
   width: 380px;
   max-width: 76vw;
   z-index: 50;
-  background: rgba(20, 24, 38, .78);
+  background: var(--spop);
   border: 1px solid rgba(255, 255, 255, .1);
   border-radius: 16px;
   box-shadow: 0 24px 70px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .08);
@@ -715,7 +728,7 @@ onMounted(async () => {
   color: var(--ink-soft);
   transition: background .15s ease, color .15s ease;
 }
-.sw-item:hover { background: rgba(255, 255, 255, .05); color: var(--ink); }
+.sw-item:hover { background: var(--sbubble); color: var(--ink); }
 .sw-item.active { background: var(--primary-soft); color: var(--primary); }
 .sw-item.new { color: var(--primary); font-weight: 600; margin-bottom: 4px; }
 .sw-item.new:hover { background: var(--primary-soft); }
@@ -730,7 +743,7 @@ onMounted(async () => {
   font-size: .88em;
   font-weight: 600;
   border: 1px solid var(--line);
-  background: rgba(24, 28, 42, .5);
+  background: var(--sglass);
   color: var(--ink-soft);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
   transition: all .2s cubic-bezier(.34, 1.56, .64, 1);
@@ -758,12 +771,12 @@ onMounted(async () => {
 /* ===== 面板通用：苹果式玻璃（中性化） ===== */
 .pane {
   position: relative;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, .015));
+  background: var(--spane);
   border: 1px solid rgba(255, 255, 255, .08);
   border-radius: 14px;
   backdrop-filter: blur(24px) saturate(130%);
   -webkit-backdrop-filter: blur(24px) saturate(130%);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .05);
+  box-shadow: var(--shadow-pane);
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -835,7 +848,7 @@ onMounted(async () => {
   font-weight: 800;
   margin: 0 0 8px;
   letter-spacing: .5px;
-  background: linear-gradient(100deg, #ffffff 55%, #d9f24f);
+  background: linear-gradient(100deg, var(--heroa) 55%, var(--herob));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -937,7 +950,7 @@ onMounted(async () => {
 }
 .bubble.assistant {
   align-self: flex-start;
-  background: rgba(255, 255, 255, .04);
+  background: var(--sbubble);
   border: 1px solid var(--sline);
   border-bottom-left-radius: 5px;
 }
@@ -975,7 +988,7 @@ onMounted(async () => {
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: rgba(0, 0, 0, .25);
+  background: var(--sinset);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
   transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
 }
@@ -1029,7 +1042,7 @@ onMounted(async () => {
   gap: 10px;
 }
 .doc-head { display: flex; justify-content: space-between; align-items: center; }
-.tabs { display: flex; gap: 4px; background: rgba(0, 0, 0, .28); border-radius: 11px; padding: 3px; }
+.tabs { display: flex; gap: 4px; background: var(--sinset); border-radius: 11px; padding: 3px; }
 .tabs button {
   border: 0;
   background: transparent;
@@ -1055,7 +1068,7 @@ onMounted(async () => {
   overflow-y: auto;
   border: 1px solid var(--sline);
   border-radius: 12px;
-  background: rgba(0, 0, 0, .2);
+  background: var(--sinset);
   padding: 4px;
 }
 .doc-preview > div { padding: 12px 16px; }
@@ -1067,8 +1080,8 @@ onMounted(async () => {
 :deep(.vditor-reset a) { color: var(--primary); }
 :deep(.vditor-reset blockquote) { border-left-color: var(--primary); }
 :deep(.vditor-reset img) { max-width: 100%; border-radius: 8px; }
-:deep(.doc-editor .vditor) { border: 1px solid var(--sline); border-radius: 12px; background: rgba(0, 0, 0, .2); }
-:deep(.doc-editor .vditor-toolbar) { background: rgba(20, 24, 38, .9); border-bottom: 1px solid var(--sline); }
+:deep(.doc-editor .vditor) { border: 1px solid var(--sline); border-radius: 12px; background: var(--sinset); }
+:deep(.doc-editor .vditor-toolbar) { background: var(--spop-solid); border-bottom: 1px solid var(--sline); }
 :deep(.doc-editor .vditor-content) { background: transparent; }
 
 /* ===== 文档元信息 ===== */
