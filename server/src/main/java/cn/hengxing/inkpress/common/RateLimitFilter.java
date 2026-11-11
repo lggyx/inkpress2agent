@@ -27,6 +27,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             new Rule("POST", "/api/auth/device", 10, Duration.ofMinutes(10)),
             new Rule("POST", "/api/auth/forgot-password", 5, Duration.ofMinutes(10)),
             new Rule("POST", "/api/ai/chat", 30, Duration.ofMinutes(1)),
+            new Rule("POST", "/api/ai/images", 10, Duration.ofMinutes(1)),
             new Rule("POST", "/api/ai/summary", 10, Duration.ofMinutes(1)));
 
     private final StringRedisTemplate redis;

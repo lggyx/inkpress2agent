@@ -30,6 +30,9 @@ public class AiController {
     public record SummaryRequest(@NotBlank String content) {
     }
 
+    public record ImageRequest(@NotBlank String prompt, String size) {
+    }
+
     public record ConfigUpdateRequest(String baseUrl, String model, String imageModel, String embeddingModel, String apiKey) {
     }
 
@@ -39,10 +42,13 @@ public class AiController {
 
     private final AiChatService aiChatService;
     private final AiConfigService aiConfigService;
+    private final cn.hengxing.inkpress.modules.ai.service.ImageGenerationService imageGenerationService;
 
-    public AiController(AiChatService aiChatService, AiConfigService aiConfigService) {
+    public AiController(AiChatService aiChatService, AiConfigService aiConfigService,
+                        cn.hengxing.inkpress.modules.ai.service.ImageGenerationService imageGenerationService) {
         this.aiChatService = aiChatService;
         this.aiConfigService = aiConfigService;
+        this.imageGenerationService = imageGenerationService;
     }
 
     /** SSE 流式 AI 对话（登录可用；BLOGGER 场景为编辑器辅助） */
@@ -54,6 +60,13 @@ public class AiController {
     @PostMapping("/ai/summary")
     public Result<Map<String, Object>> summary(@RequestBody SummaryRequest req) {
         return Result.ok(aiChatService.generateSummary(req.content()));
+    }
+
+    /** AI 配图：生成图片落媒体流，返回站内 /api/media/{id}（可作封面/插图 URL） */
+    @PostMapping("/ai/images")
+    public Result<Map<String, Object>> image(@AuthenticationPrincipal JwtAuthFilter.LoginUser user,
+                                             @jakarta.validation.Valid @RequestBody ImageRequest req) {
+        return Result.ok(imageGenerationService.generateAndStore(user.id(), req.prompt(), req.size()));
     }
 
     @GetMapping("/ai/status")
