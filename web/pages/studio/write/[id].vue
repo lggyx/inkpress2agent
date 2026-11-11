@@ -90,18 +90,21 @@ async function initEditor(pendingContent: string) {
     placeholder: '开始写作…（Markdown，所见即所得）',
     // vditor 3.11 必填：按文章维度的本地草稿缓存（未保存内容不丢失）
     cache: { id: 'inkpress-write-' + articleId, enable: true },
-    // 拖拽/粘贴上传：文件经服务器中转上传到云 OSS，返回外链 markdown 插入正文（图片/视频）
+    // 拖拽/粘贴上传：文件经服务器中转上传到云 OSS，成功后显式插入正文（图片/视频）
+    // 注意：Vditor 3.11 的 upload.handler 返回值不会自动插入编辑器，必须显式 insertValue
     upload: {
       handler: async (files: File[]): Promise<string[]> => {
-        const out: string[] = []
         for (const f of files) {
           try {
-            out.push(await uploadFile(f))
+            const url = await uploadMediaOnly(f)
+            const isVideo = (f.type || '').startsWith('video/')
+            const md = isVideo ? `[🎬 视频](${url})` : `![](${url})`
+            vditor?.insertValue(md)
           } catch (e) {
             ElMessage.error(`${f.name} 上传失败：${(e as Error).message}`)
           }
         }
-        return out
+        return []
       },
     },
     after: () => {
@@ -110,20 +113,6 @@ async function initEditor(pendingContent: string) {
       if (pendingContent) vditor?.setValue(pendingContent)
     },
   })
-}
-
-/** 上传单文件到媒体服务，返回插入编辑器的 markdown 片段（图片 ![]() / 视频 [视频]()） */
-async function uploadFile(f: File): Promise<string> {
-  const fd = new FormData()
-  fd.append('file', f)
-  const resp = await fetch('/api/media/upload', {
-    method: 'POST',
-    headers: { Authorization: 'Bearer ' + (accessToken() || '') },
-    body: fd,
-  })
-  const json = await resp.json()
-  if (json.code !== 0) throw new Error(json.message || `HTTP ${resp.status}`)
-  return json.data.kind === 'video' ? `[🎬 视频](${json.data.url})` : `![](${json.data.url})`
 }
 
 const coverInput = ref<HTMLInputElement | null>(null)
