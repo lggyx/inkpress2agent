@@ -483,12 +483,32 @@ onMounted(async () => {
           <div v-if="!chat.length" class="hero">
             <div class="hero-badge">INKPRESS STUDIO</div>
             <h1 class="hero-title grad-title">让 AI 和你一起写作</h1>
-            <p class="hero-sub">顶栏切换文章即自动带入上下文；AI 可润色、起标题、写摘要、配封面。</p>
-            <div class="hero-chips">
-              <button @click="send('帮我润色这篇文章的开头，使其更有吸引力')">润色开头</button>
-              <button @click="send('基于当前文章，帮我想 5 个更有吸引力的标题')">想标题</button>
-              <button @click="aiImage()">生成封面插画</button>
-              <button @click="aiSummary()">摘要 + 标签</button>
+            <p class="hero-sub">顶栏切换文章即自动带入上下文；选一张卡片开始。</p>
+            <div class="cmd-grid">
+              <button class="cmd lavender" @click="send('帮我润色这篇文章的开头，使其更有吸引力')">
+                <span class="cmd-title">润色开头</span>
+                <span class="cmd-sub">从第一段入手，提升吸引力与节奏</span>
+                <span class="cmd-foot"><span class="pill">开始</span><span class="go">›</span></span>
+                <i class="blob b1" /><i class="blob b2" />
+              </button>
+              <button class="cmd orange" @click="send('基于当前文章，帮我想 5 个更有吸引力的标题')">
+                <span class="cmd-title">想标题</span>
+                <span class="cmd-sub">基于全文一口气出 5 个候选</span>
+                <span class="cmd-foot"><span class="pill">开始</span><span class="go">›</span></span>
+                <i class="blob b1" /><i class="blob b2" />
+              </button>
+              <button class="cmd lime" @click="aiImage()">
+                <span class="cmd-title">生成封面插画</span>
+                <span class="cmd-sub">一句话描述画面，即出 1024px 成图</span>
+                <span class="cmd-foot"><span class="pill">开始</span><span class="go">›</span></span>
+                <i class="blob b1" /><i class="blob b2" />
+              </button>
+              <button class="cmd yellow" @click="aiSummary()">
+                <span class="cmd-title">摘要 + 标签</span>
+                <span class="cmd-sub">SEO 描述、GEO 摘要与标签一次生成</span>
+                <span class="cmd-foot"><span class="pill">开始</span><span class="go">›</span></span>
+                <i class="blob b1" /><i class="blob b2" />
+              </button>
             </div>
           </div>
           <template v-else>
@@ -510,10 +530,10 @@ onMounted(async () => {
           </template>
         </div>
         <div class="quick-row">
-          <button class="chip" :disabled="aiBusy" @click="quick('润色全文并保持原有结构','replace')">润色全文</button>
-          <button class="chip" :disabled="aiBusy" @click="quick('基于全文起一个更吸引人的标题','title')">起标题</button>
-          <button class="chip" :disabled="aiBusy" @click="aiSummary()">摘要+标签</button>
-          <button class="chip" :disabled="aiBusy" @click="aiImage()">AI 配图</button>
+          <button class="chip v-lavender" :disabled="aiBusy" @click="quick('润色全文并保持原有结构','replace')">润色全文</button>
+          <button class="chip v-orange" :disabled="aiBusy" @click="quick('基于全文起一个更吸引人的标题','title')">起标题</button>
+          <button class="chip v-yellow" :disabled="aiBusy" @click="aiSummary()">摘要+标签</button>
+          <button class="chip v-lime" :disabled="aiBusy" @click="aiImage()">AI 配图</button>
         </div>
         <div class="composer">
           <textarea
@@ -762,6 +782,12 @@ onMounted(async () => {
 .chip:disabled { opacity: .45; }
 .chip-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
+/* 快捷指令 chip 色变体（与色卡同源） */
+.chip.v-lavender:hover:not(:disabled) { color: #c5b7f8; border-color: rgba(185, 168, 245, .55); background: rgba(185, 168, 245, .12); }
+.chip.v-orange:hover:not(:disabled) { color: #f79a77; border-color: rgba(242, 130, 90, .55); background: rgba(242, 130, 90, .12); }
+.chip.v-lime:hover:not(:disabled) { color: #e6fa7e; border-color: rgba(217, 242, 79, .5); background: rgba(217, 242, 79, .1); }
+.chip.v-yellow:hover:not(:disabled) { color: #faec9e; border-color: rgba(246, 225, 124, .5); background: rgba(246, 225, 124, .1); }
+
 .chat-body {
   flex: 1;
   min-height: 0;
@@ -774,7 +800,8 @@ onMounted(async () => {
 .hero {
   margin: auto;
   text-align: center;
-  padding: 30px 20px;
+  padding: 24px 18px;
+  width: 100%;
 }
 .hero-badge {
   display: inline-block;
@@ -785,28 +812,77 @@ onMounted(async () => {
   border: 1px solid rgba(138, 180, 248, .35);
   border-radius: 999px;
   padding: 4px 14px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
   animation: rise .4s ease both;
 }
-.hero-title { font-size: 2em; font-weight: 800; margin: 0 0 10px; animation: rise .45s ease .05s both; }
-.hero-sub { color: var(--ink-faint); font-size: .92em; margin: 0 0 22px; animation: rise .5s ease .1s both; }
-.hero-chips { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; animation: rise .55s ease .15s both; }
-.hero-chips button {
-  padding: 8px 18px;
+.hero-title { font-size: 1.9em; font-weight: 800; margin: 0 0 8px; animation: rise .45s ease .05s both; }
+.hero-sub { color: var(--ink-faint); font-size: .9em; margin: 0; animation: rise .5s ease .1s both; }
+
+/* ===== 颜色卡快捷指令（暗底高饱和卡 + 黑胶囊，参考 KNOCK 风格） ===== */
+.cmd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  max-width: 470px;
+  margin: 24px auto 0;
+}
+.cmd {
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  border: 0;
+  border-radius: 18px;
+  padding: 15px 15px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: transform .2s cubic-bezier(.2, .7, .3, 1), box-shadow .2s ease, filter .2s ease;
+  animation: rise .5s cubic-bezier(.2, .7, .3, 1) both;
+}
+.cmd:nth-child(1) { animation-delay: .14s; }
+.cmd:nth-child(2) { animation-delay: .19s; }
+.cmd:nth-child(3) { animation-delay: .24s; }
+.cmd:nth-child(4) { animation-delay: .29s; }
+.cmd:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgba(0, 0, 0, .45); filter: brightness(1.04); }
+.cmd:active { transform: translateY(-1px) scale(.99); }
+.cmd .blob { position: absolute; border-radius: 50%; pointer-events: none; }
+.cmd .b1 { width: 130px; height: 130px; right: -40px; bottom: -54px; }
+.cmd .b2 { width: 54px; height: 54px; right: 30px; top: -26px; opacity: .8; }
+.cmd-title { font-weight: 800; font-size: 1em; position: relative; letter-spacing: .3px; }
+.cmd-sub { font-size: .76em; opacity: .68; line-height: 1.55; position: relative; }
+.cmd-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; position: relative; }
+.cmd .pill {
+  background: #15171e;
+  color: #fff;
+  font-size: .72em;
+  padding: 4px 14px;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, .03);
-  color: var(--ink-soft);
-  font-size: .86em;
-  transition: all .18s ease;
+  font-weight: 650;
+  letter-spacing: 1px;
 }
-.hero-chips button:hover {
-  color: var(--primary);
-  border-color: rgba(138, 180, 248, .55);
-  background: var(--primary-soft);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(91, 141, 239, .18);
+.cmd .go {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: #15171e;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 1.05em;
+  line-height: 1;
 }
+.lavender { background: #b9a8f5; color: #17122b; }
+.lavender .b1 { background: #a48ef0; }
+.lavender .b2 { background: #c5b7f8; }
+.orange { background: #f2825a; color: #2a120a; }
+.orange .b1 { background: #e86a3e; }
+.orange .b2 { background: #f79a77; }
+.lime { background: #d9f24f; color: #1c2005; }
+.lime .b1 { background: #c7e336; }
+.lime .b2 { background: #e6fa7e; }
+.yellow { background: #f6e17c; color: #2a2205; }
+.yellow .b1 { background: #eed463; }
+.yellow .b2 { background: #faec9e; }
 @keyframes rise {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }

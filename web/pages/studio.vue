@@ -252,6 +252,8 @@ watchEffect(() => {
 .studio-shell .head-actions { display: flex; gap: 10px; align-items: center; }
 
 .studio-shell .row {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -265,6 +267,25 @@ watchEffect(() => {
   transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
   animation: s-row-in .3s cubic-bezier(.2, .7, .3, 1) both;
 }
+/* 状态色脊条（spine-* 类由页面按行状态绑定） */
+.studio-shell .row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--spine, transparent);
+  opacity: .8;
+}
+.studio-shell .spine-PUBLISHED { --spine: #81c995; }
+.studio-shell .spine-DRAFT { --spine: #9aa3b5; }
+.studio-shell .spine-PENDING_REVIEW { --spine: #f8bb66; }
+.studio-shell .spine-PENDING { --spine: #f8bb66; }
+.studio-shell .spine-PENDING_AUDIT { --spine: #f8bb66; }
+.studio-shell .spine-REJECTED { --spine: #f28b82; }
+.studio-shell .spine-OFFLINE { --spine: #6b7280; }
 .studio-shell .row:hover {
   border-color: rgba(138, 180, 248, .4);
   transform: translateY(-1px);

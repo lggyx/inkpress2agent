@@ -138,7 +138,7 @@ async function showLatest(row: ArticleRow) {
     </div>
 
     <div v-loading="loading">
-      <div v-for="row in records" :key="row.id" class="row">
+      <div v-for="row in records" :key="row.id" class="row" :class="'spine-' + row.status">
         <div class="row-main">
           <NuxtLink :to="`/studio/write/${row.id}`" class="row-title">
             <span v-if="row.pinned" class="pin">置顶</span>{{ row.title }}
