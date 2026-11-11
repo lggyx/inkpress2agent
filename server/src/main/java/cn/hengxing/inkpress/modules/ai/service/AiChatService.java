@@ -20,7 +20,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** OpenAI 兼容大模型代理：SSE 流式对话、摘要/标签生成、连接测试 */
+/**
+ * OpenAI 兼容 / Anthropic 双协议大模型代理：SSE 流式对话、摘要/标签生成、连接测试。
+ * 一律使用 AiConfigService 的能力槽 provider（文本对话=ai.text，视觉理解=ai.vision，双协议同构）。
+ */
 @Service
 public class AiChatService {
 
@@ -35,105 +38,95 @@ public class AiChatService {
         this.configService = configService;
     }
 
-    /** SSE 流式对话：按提示词模板渲染后转发模型输出，逐 token 推给前端（双协议） */
+    /** SSE 流式对话：按提示词模板渲染后转发模型输出，逐 token 推给前端 */
     public SseEmitter chatStream(String category, String content) {
-        requireConfigured();
+        requireConfigured(AiConfigService.CAP_TEXT);
         SseEmitter emitter = new SseEmitter(180_000L);
         String prompt = configService.render(category, content);
-        HttpRequest request = anthropic() ? anthropicStreamRequest(prompt) : openaiStreamRequest(prompt);
+        HttpRequest request = anthropic() ? anthropicRequest(prompt, true) : openaiRequest(prompt, true);
         executor.submit(() -> streamInto(emitter, request));
         return emitter;
     }
 
-    /** OpenAI 兼容：POST {base}/chat/completions，流式，Bearer 鉴权 */
-    private HttpRequest openaiStreamRequest(String prompt) {
+    /** OpenAI 兼容请求：POST {base}/chat/completions，Bearer 鉴权 */
+    private HttpRequest openaiRequest(String prompt, boolean stream) {
         String body;
         try {
             body = objectMapper.writeValueAsString(Map.of(
-                    "model", configService.get(AiConfigService.KEY_MODEL),
+                    "model", text().model(),
                     "messages", List.of(Map.of("role", "user", "content", prompt)),
-                    "stream", true));
+                    "stream", stream));
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
-        return HttpRequest.newBuilder(URI.create(baseUrl() + "/chat/completions"))
+        return HttpRequest.newBuilder(URI.create(text().baseUrl() + "/chat/completions"))
                 .timeout(Duration.ofSeconds(180))
                 .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + configService.get(AiConfigService.KEY_API_KEY))
+                .header("Authorization", "Bearer " + text().apiKey())
                 .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                 .build();
     }
 
-    /** Anthropic：POST {base}/v1/messages（base 以 /v1 结尾则拼 /messages）；鉴权双发 x-api-key 与 Bearer（AUTH_TOKEN 型网关只认后者），max_tokens 必填 */
-    private HttpRequest anthropicStreamRequest(String prompt) {
+    /** Anthropic 请求：POST {base}/v1/messages（base 以 /v1 结尾则拼 /messages）；鉴权双发 x-api-key 与 Bearer（AUTH_TOKEN 型网关只认后者）；max_tokens 必填 */
+    private HttpRequest anthropicRequest(String prompt, boolean stream) {
         String body;
         try {
             body = objectMapper.writeValueAsString(Map.of(
-                    "model", configService.get(AiConfigService.KEY_MODEL),
+                    "model", text().model(),
                     "max_tokens", 4096,
-                    "stream", true,
+                    "stream", stream,
                     "messages", List.of(Map.of("role", "user", "content", prompt))));
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
-        return anthropicRequestBuilder(anthropicMessagesUrl())
+        return anthropicBuilder(anthropicUrl("/messages"))
+                .timeout(Duration.ofSeconds(180))
                 .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                 .build();
     }
 
-    /** Anthropic 请求公共头：Content-Type + x-api-key/Bearer 双发 + anthropic-version */
-    private HttpRequest.Builder anthropicRequestBuilder(String url) {
-        return HttpRequest.newBuilder(URI.create(url))
-                .timeout(Duration.ofSeconds(180))
-                .header("Content-Type", "application/json")
-                .header("x-api-key", configService.get(AiConfigService.KEY_API_KEY))
-                .header("Authorization", "Bearer " + configService.get(AiConfigService.KEY_API_KEY))
-                .header("anthropic-version", "2023-06-01");
+    private AiConfigService.AiProvider text() {
+        return configService.provider(AiConfigService.CAP_TEXT);
     }
 
     private boolean anthropic() {
-        return AiConfigService.PROTOCOL_ANTHROPIC.equals(configService.protocol());
+        return AiConfigService.PROTOCOL_ANTHROPIC.equals(text().protocol());
     }
 
-    /** Anthropic messages 端点：base 已含 /v1 则只拼 /messages */
-    private String anthropicMessagesUrl() {
-        String base = baseUrl();
-        return base.endsWith("/v1") ? base + "/messages" : base + "/v1/messages";
+    private boolean anthropic(AiConfigService.AiProvider p) {
+        return AiConfigService.PROTOCOL_ANTHROPIC.equals(p.protocol());
     }
 
-    /** Anthropic models 端点（测试连接用），同 /v1 规则 */
-    private String anthropicModelsUrl() {
-        String base = baseUrl();
-        return base.endsWith("/v1") ? base + "/models" : base + "/v1/models";
+    /** Anthropic 端点拼接：base 已含 /v1 则只拼子路径 */
+    private static String anthropicUrl(String base, String sub) {
+        return base.endsWith("/v1") ? base + sub : base + "/v1" + sub;
     }
 
-    /** 摘要与标签：summary 模板 → JSON 解析为 seoDescription/geoSummary/tags（双协议） */
-    public Map<String, Object> generateSummary(String content) {
-        requireConfigured();
-        String raw = callModel(configService.render("summary", content));
-        try {
-            JsonNode node = objectMapper.readTree(extractJson(raw));
-            List<String> tags = new ArrayList<>();
-            if (node.has("tags") && node.get("tags").isArray()) {
-                node.get("tags").forEach(t -> tags.add(t.asText()));
-            }
-            return Map.of(
-                    "seoDescription", node.path("seoDescription").asText(""),
-                    "geoSummary", node.path("geoSummary").asText(""),
-                    "tags", tags);
-        } catch (Exception e) {
-            throw BizException.of(3002, "AI 返回格式异常，请重试");
-        }
+    private String anthropicUrl(String sub) {
+        return anthropicUrl(text().baseUrl(), sub);
     }
 
-    /** 管理端测试连接：OpenAI 走 GET /models（Bearer）；Anthropic 走 GET /v1/models，网关不支持该端点（404/405）时降级为 1 token messages ping */
-    public boolean testConnection() {
-        if (!configService.isConfigured()) {
+    private HttpRequest.Builder anthropicBuilder(String url, AiConfigService.AiProvider p) {
+        return HttpRequest.newBuilder(URI.create(url))
+                .header("Content-Type", "application/json")
+                .header("x-api-key", p.apiKey())
+                .header("Authorization", "Bearer " + p.apiKey())
+                .header("anthropic-version", "2023-06-01");
+    }
+
+    private HttpRequest.Builder anthropicBuilder(String url) {
+        return anthropicBuilder(url, text());
+    }
+
+    /** 分能力测试连接：OpenAI 走 GET {base}/models；Anthropic 走 GET {base}/v1/models，网关不支持（404/405）时降级为 1 token messages ping */
+    public boolean testConnection(String capability) {
+        if (!configService.configured(capability)) {
             return false;
         }
+        AiConfigService.AiProvider p = configService.provider(capability);
         try {
-            if (anthropic()) {
-                HttpResponse<String> resp = http.send(anthropicRequestBuilder(anthropicModelsUrl())
+            if (anthropic(p)) {
+                HttpResponse<String> resp = http.send(anthropicBuilder(anthropicUrl(p.baseUrl(), "/models"), p)
                         .timeout(Duration.ofSeconds(15)).GET().build(), HttpResponse.BodyHandlers.ofString());
                 if (resp.statusCode() == 200) {
                     return true;
@@ -141,20 +134,19 @@ public class AiChatService {
                 if (resp.statusCode() != 404 && resp.statusCode() != 405) {
                     return false;
                 }
-                // 网关未实现 models 列表：用 1 token 的 messages ping 验证鉴权与连通性
                 String ping = objectMapper.writeValueAsString(Map.of(
-                        "model", configService.get(AiConfigService.KEY_MODEL),
+                        "model", p.model(),
                         "max_tokens", 1,
                         "messages", List.of(Map.of("role", "user", "content", "ping"))));
-                HttpResponse<String> pingResp = http.send(anthropicRequestBuilder(anthropicMessagesUrl())
+                HttpResponse<String> pingResp = http.send(anthropicBuilder(anthropicUrl(p.baseUrl(), "/messages"), p)
                         .timeout(Duration.ofSeconds(30))
                         .POST(HttpRequest.BodyPublishers.ofString(ping, StandardCharsets.UTF_8)).build(),
                         HttpResponse.BodyHandlers.ofString());
                 return pingResp.statusCode() == 200;
             }
-            HttpResponse<String> resp = http.send(HttpRequest.newBuilder(URI.create(baseUrl() + "/models"))
+            HttpResponse<String> resp = http.send(HttpRequest.newBuilder(URI.create(p.baseUrl() + "/models"))
                     .timeout(Duration.ofSeconds(15))
-                    .header("Authorization", "Bearer " + configService.get(AiConfigService.KEY_API_KEY))
+                    .header("Authorization", "Bearer " + p.apiKey())
                     .GET().build(), HttpResponse.BodyHandlers.ofString());
             return resp.statusCode() == 200;
         } catch (Exception e) {
@@ -164,7 +156,7 @@ public class AiChatService {
 
     /** 一次性补全（非流式）：按模板渲染后调用，返回文本。供评审等场景复用（双协议统一入口） */
     public String complete(String category, String content) {
-        requireConfigured();
+        requireConfigured(AiConfigService.CAP_TEXT);
         return callModel(configService.render(category, content));
     }
 
@@ -173,21 +165,29 @@ public class AiChatService {
         if (anthropic()) {
             return anthropicComplete(prompt);
         }
-        return callOnce(prompt);
+        return openaiComplete(prompt);
+    }
+
+    /** OpenAI 非流式补全 */
+    private String openaiComplete(String prompt) {
+        try {
+            HttpResponse<String> resp = http.send(openaiRequest(prompt, false), HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() != 200) {
+                throw BizException.of(3003, "模型服务返回 " + resp.statusCode());
+            }
+            JsonNode choices = objectMapper.readTree(resp.body()).path("choices");
+            return choices.get(0).path("message").path("content").asText("");
+        } catch (BizException e) {
+            throw e;
+        } catch (Exception e) {
+            throw BizException.of(3003, "AI 调用失败：" + e.getMessage());
+        }
     }
 
     /** Anthropic 非流式补全 */
     private String anthropicComplete(String prompt) {
         try {
-            String body = objectMapper.writeValueAsString(Map.of(
-                    "model", configService.get(AiConfigService.KEY_MODEL),
-                    "max_tokens", 4096,
-                    "messages", List.of(Map.of("role", "user", "content", prompt))));
-            HttpRequest request = anthropicRequestBuilder(anthropicMessagesUrl())
-                    .timeout(Duration.ofSeconds(180))
-                    .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                    .build();
-            HttpResponse<String> resp = http.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> resp = http.send(anthropicRequest(prompt, false), HttpResponse.BodyHandlers.ofString());
             if (resp.statusCode() != 200) {
                 throw BizException.of(3003, "模型服务返回 " + resp.statusCode());
             }
@@ -256,7 +256,7 @@ public class AiChatService {
         }
     }
 
-    /** Anthropic 流帧：type=content_block_delta 时 delta.text；error 事件透传文案 */
+    /** Anthropic 流帧：type=content_block_delta 时 delta.text；error 帧丢弃 */
     private String anthropicToken(String data) {
         try {
             JsonNode node = objectMapper.readTree(data);
@@ -264,54 +264,35 @@ public class AiChatService {
             if ("content_block_delta".equals(type)) {
                 return node.path("delta").path("text").asText(null);
             }
-            if ("error".equals(type)) {
-                return null; // 错误帧丢弃，等待流自然结束
-            }
             return null;
         } catch (Exception ignored) {
             return null;
         }
     }
 
-    private String callOnce(String prompt) {
-        String body;
+    /** 摘要与标签：summary 模板 → JSON 解析为 seoDescription/geoSummary/tags（双协议） */
+    public Map<String, Object> generateSummary(String content) {
+        requireConfigured(AiConfigService.CAP_TEXT);
+        String raw = callModel(configService.render("summary", content));
         try {
-            body = objectMapper.writeValueAsString(Map.of(
-                    "model", configService.get(AiConfigService.KEY_MODEL),
-                    "messages", List.of(Map.of("role", "user", "content", prompt)),
-                    "stream", false));
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-        try {
-            HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl() + "/chat/completions"))
-                    .timeout(Duration.ofSeconds(120))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + configService.get(AiConfigService.KEY_API_KEY))
-                    .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                    .build();
-            HttpResponse<String> resp = http.send(request, HttpResponse.BodyHandlers.ofString());
-            if (resp.statusCode() != 200) {
-                throw BizException.of(3003, "模型服务返回 " + resp.statusCode());
+            JsonNode node = objectMapper.readTree(extractJson(raw));
+            List<String> tags = new ArrayList<>();
+            if (node.has("tags") && node.get("tags").isArray()) {
+                node.get("tags").forEach(t -> tags.add(t.asText()));
             }
-            JsonNode choices = objectMapper.readTree(resp.body()).path("choices");
-            return choices.get(0).path("message").path("content").asText("");
-        } catch (BizException e) {
-            throw e;
+            return Map.of(
+                    "seoDescription", node.path("seoDescription").asText(""),
+                    "geoSummary", node.path("geoSummary").asText(""),
+                    "tags", tags);
         } catch (Exception e) {
-            throw BizException.of(3003, "AI 调用失败：" + e.getMessage());
+            throw BizException.of(3002, "AI 返回格式异常，请重试");
         }
     }
 
-    private void requireConfigured() {
-        if (!configService.isConfigured()) {
-            throw BizException.of(3004, "AI 服务未配置，请管理员在系统设置中填写");
+    private void requireConfigured(String capability) {
+        if (!configService.configured(capability)) {
+            throw BizException.of(3004, "AI 能力未配置（" + capability + "），请管理员在系统设置中填写");
         }
-    }
-
-    private String baseUrl() {
-        String base = configService.get(AiConfigService.KEY_BASE_URL);
-        return base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
     }
 
     private String extractJson(String raw) {

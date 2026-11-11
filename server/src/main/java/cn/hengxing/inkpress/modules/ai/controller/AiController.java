@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +34,11 @@ public class AiController {
     public record ImageRequest(@NotBlank String prompt, String size) {
     }
 
-    public record ConfigUpdateRequest(String protocol, String baseUrl, String model, String imageModel, String embeddingModel, String apiKey) {
+    /** 单能力槽配置更新：protocol/baseUrl/model；apiKey 约定 null 不改、空串清除 */
+    public record CapabilityUpdate(String capability, String protocol, String baseUrl, String model, String apiKey) {
+    }
+
+    public record ConfigUpdateRequest(List<CapabilityUpdate> updates) {
     }
 
     public record TemplateUpdateRequest(@NotBlank String category, @NotBlank String name,
@@ -84,14 +89,29 @@ public class AiController {
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> updateConfig(@AuthenticationPrincipal JwtAuthFilter.LoginUser user,
                                      @RequestBody ConfigUpdateRequest req) {
-        aiConfigService.update(user.id(), req.protocol(), req.baseUrl(), req.model(), req.imageModel(), req.embeddingModel(), req.apiKey());
+        List<Map<String, String>> updates = new ArrayList<>();
+        if (req.updates() != null) {
+            for (CapabilityUpdate u : req.updates()) {
+                Map<String, String> m = new java.util.LinkedHashMap<>();
+                m.put("capability", u.capability());
+                m.put("protocol", u.protocol());
+                m.put("baseUrl", u.baseUrl());
+                m.put("model", u.model());
+                m.put("apiKey", u.apiKey());
+                updates.add(m);
+            }
+        }
+        aiConfigService.update(user.id(), updates);
         return Result.ok();
     }
 
+    /** 分能力测试连接：body 传 {capability}，缺省测文本对话 */
     @PostMapping("/admin/ai-config/test")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<Map<String, Boolean>> test() {
-        return Result.ok(Map.of("ok", aiChatService.testConnection()));
+    public Result<Map<String, Boolean>> test(@RequestBody(required = false) Map<String, String> body) {
+        String cap = body == null || body.get("capability") == null
+                ? AiConfigService.CAP_TEXT : body.get("capability");
+        return Result.ok(Map.of("ok", aiChatService.testConnection(cap)));
     }
 
     @GetMapping("/admin/prompt-templates")

@@ -45,32 +45,33 @@ public class ImageGenerationService {
         this.mediaAssetMapper = mediaAssetMapper;
     }
 
-    /** 生成并落库；返回 mediaId 与站内 URL */
+    /** 生成并落库；返回 mediaId 与站内 URL（独立 image 能力槽：可单独配 OpenAI 兼容图像服务商，与文本协议互不影响） */
     public Map<String, Object> generateAndStore(Long userId, String prompt, String size) {
-        if (!configService.isConfigured()) {
-            throw BizException.of(3004, "AI 服务未配置，请管理员在系统设置中填写");
+        AiConfigService.AiProvider p = configService.provider(AiConfigService.CAP_IMAGE);
+        if (!configService.configured(AiConfigService.CAP_IMAGE)) {
+            throw BizException.of(3004, "图像生成未配置，请管理员在 AI 设置的「图像生成」槽填写（需 OpenAI 兼容图像服务）");
         }
-        if (AiConfigService.PROTOCOL_ANTHROPIC.equals(configService.protocol())) {
-            throw BizException.of(3006, "Anthropic 协议无图像生成接口；如需 AI 配图请切换 OpenAI 兼容协议（图像模型单独生效）");
+        if (AiConfigService.PROTOCOL_ANTHROPIC.equals(p.protocol())) {
+            throw BizException.of(3006, "Anthropic 协议无图像生成接口；请在「图像生成」槽单独配置 OpenAI 兼容图像服务（协议选 openai）");
         }
         String sizeValue = size == null || size.isBlank() ? "1024x1024" : size;
         if (!SIZE_PATTERN.matcher(sizeValue).matches()) {
             throw BizException.of(3005, "不支持的图片尺寸，可选：1024x1024、768x1344、864x1152、1344x768、1152x864、1440x720、720x1440");
         }
-        String model = configService.get(AiConfigService.KEY_IMAGE_MODEL);
+        String model = p.model() == null || p.model().isBlank() ? DEFAULT_IMAGE_MODEL : p.model();
         String body;
         try {
             body = objectMapper.writeValueAsString(Map.of(
-                    "model", model == null || model.isBlank() ? DEFAULT_IMAGE_MODEL : model,
+                    "model", model,
                     "prompt", prompt,
                     "size", sizeValue));
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
-        HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl() + "/images/generations"))
+        HttpRequest request = HttpRequest.newBuilder(URI.create(p.baseUrl() + "/images/generations"))
                 .timeout(Duration.ofSeconds(120))
                 .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + configService.get(AiConfigService.KEY_API_KEY))
+                .header("Authorization", "Bearer " + p.apiKey())
                 .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                 .build();
         JsonNode item;
@@ -135,10 +136,5 @@ public class ImageGenerationService {
         } catch (Exception e) {
             throw BizException.of(3003, "图片下载失败：" + e.getMessage());
         }
-    }
-
-    private String baseUrl() {
-        String base = configService.get(AiConfigService.KEY_BASE_URL);
-        return base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
     }
 }

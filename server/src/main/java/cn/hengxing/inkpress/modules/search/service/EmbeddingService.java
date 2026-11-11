@@ -33,26 +33,26 @@ public class EmbeddingService {
         return configService.isConfigured();
     }
 
-    /** 文本转向量；失败返回 null（调用方降级为 BM25）；Anthropic 协议无 embeddings 接口，直接降级 */
+    /** 文本转向量；失败返回 null（调用方降级为 BM25）；独立 embedding 能力槽，Anthropic 协议无此接口直接降级 */
     public List<Double> embed(String text) {
-        if (text == null || text.isBlank() || !available()
-                || AiConfigService.PROTOCOL_ANTHROPIC.equals(configService.protocol())) {
+        if (text == null || text.isBlank() || !available()) {
+            return null;
+        }
+        AiConfigService.AiProvider p = configService.provider(AiConfigService.CAP_EMBEDDING);
+        if (AiConfigService.PROTOCOL_ANTHROPIC.equals(p.protocol())
+                || p.baseUrl() == null || p.baseUrl().isBlank() || p.apiKey() == null || p.apiKey().isBlank()) {
             return null;
         }
         try {
-            String model = configService.get("ai.embedding_model");
-            if (model == null || model.isBlank()) {
-                model = "embedding-3";
-            }
+            String model = p.model() == null || p.model().isBlank() ? "embedding-3" : p.model();
             String body = objectMapper.writeValueAsString(Map.of(
                     "model", model,
                     "input", text.length() > 2000 ? text.substring(0, 2000) : text));
-            String base = configService.get(AiConfigService.KEY_BASE_URL);
-            base = base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
+            String base = p.baseUrl().endsWith("/") ? p.baseUrl().substring(0, p.baseUrl().length() - 1) : p.baseUrl();
             HttpRequest request = HttpRequest.newBuilder(URI.create(base + "/embeddings"))
                     .timeout(Duration.ofSeconds(60))
                     .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + configService.get(AiConfigService.KEY_API_KEY))
+                    .header("Authorization", "Bearer " + p.apiKey())
                     .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                     .build();
             HttpResponse<String> resp = http.send(request, HttpResponse.BodyHandlers.ofString());
