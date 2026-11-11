@@ -23,6 +23,7 @@ watchEffect(() => {
         <NuxtLink to="/admin/stats" class="side-item">画像总览</NuxtLink>
         <NuxtLink to="/admin/dlq" class="side-item">死信队列</NuxtLink>
         <NuxtLink to="/admin/logs" class="side-item">日志查询</NuxtLink>
+        <NuxtLink to="/admin/oss" class="side-item">对象存储</NuxtLink>
         <NuxtLink to="/me" class="side-item">个人中心</NuxtLink>
       </nav>
       <div class="side-foot muted" v-if="user">{{ user.nickname }}</div>

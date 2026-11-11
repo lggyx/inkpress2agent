@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { $api, $pub } from '~/composables/useApi'
+import { $api, $pub, accessToken } from '~/composables/useApi'
 import { streamAi } from '~/composables/useAiStream'
 
 const route = useRoute()
@@ -90,12 +90,68 @@ async function initEditor(pendingContent: string) {
     placeholder: '开始写作…（Markdown，所见即所得）',
     // vditor 3.11 必填：按文章维度的本地草稿缓存（未保存内容不丢失）
     cache: { id: 'inkpress-write-' + articleId, enable: true },
+    // 拖拽/粘贴上传：文件经服务器中转上传到云 OSS，返回外链 markdown 插入正文（图片/视频）
+    upload: {
+      handler: async (files: File[]): Promise<string[]> => {
+        const out: string[] = []
+        for (const f of files) {
+          try {
+            out.push(await uploadFile(f))
+          } catch (e) {
+            ElMessage.error(`${f.name} 上传失败：${(e as Error).message}`)
+          }
+        }
+        return out
+      },
+    },
     after: () => {
       editorReady.value = true
       // setValue 必须在编辑器就绪回调之后（提前调用会被吞掉）
       if (pendingContent) vditor?.setValue(pendingContent)
     },
   })
+}
+
+/** 上传单文件到媒体服务，返回插入编辑器的 markdown 片段（图片 ![]() / 视频 [视频]()） */
+async function uploadFile(f: File): Promise<string> {
+  const fd = new FormData()
+  fd.append('file', f)
+  const resp = await fetch('/api/media/upload', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + (accessToken() || '') },
+    body: fd,
+  })
+  const json = await resp.json()
+  if (json.code !== 0) throw new Error(json.message || `HTTP ${resp.status}`)
+  return json.data.kind === 'video' ? `[🎬 视频](${json.data.url})` : `![](${json.data.url})`
+}
+
+const coverInput = ref<HTMLInputElement | null>(null)
+async function onCoverUpload(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  try {
+    coverUrl.value = await uploadMediaOnly(file)
+    ElMessage.success('封面上传成功')
+  } catch (e) {
+    ElMessage.error((e as Error).message)
+  } finally {
+    (e.target as HTMLInputElement).value = ''
+  }
+}
+
+/** 上传并仅返回外链（封面用） */
+async function uploadMediaOnly(f: File): Promise<string> {
+  const fd = new FormData()
+  fd.append('file', f)
+  const resp = await fetch('/api/media/upload', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + (accessToken() || '') },
+    body: fd,
+  })
+  const json = await resp.json()
+  if (json.code !== 0) throw new Error(json.message || `HTTP ${resp.status}`)
+  return json.data.url as string
 }
 
 function payload(action?: string, confirmLowScore?: boolean) {
@@ -223,8 +279,12 @@ async function removeLink(id: number) {
           <input v-model="tagsText" placeholder="spring-boot, 教程">
         </div>
         <div class="form-row">
-          <label>封面 URL</label>
-          <input v-model="coverUrl" placeholder="https://… 或 /api/media/1">
+          <label>封面（URL 或直接上传图片）</label>
+          <div style="display:flex;gap:8px">
+            <input v-model="coverUrl" placeholder="https://… 或上传生成">
+            <el-button @click="coverInput?.click()">上传封面</el-button>
+            <input ref="coverInput" type="file" accept="image/*,video/*" style="display:none" @change="onCoverUpload">
+          </div>
         </div>
         <div class="form-row">
           <label>SEO 描述（meta description）</label>
