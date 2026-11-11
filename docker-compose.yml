@@ -96,6 +96,22 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  web:
+    build: ./web
+    container_name: inkpress-web
+    environment:
+      NUXT_API_BASE: http://server:8080/api
+      NUXT_PUBLIC_API_BASE: /api
+      TZ: Asia/Shanghai
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
   nginx:
     image: nginx:1.27-alpine
     container_name: inkpress-nginx
