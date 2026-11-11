@@ -1,4 +1,4 @@
-import { accessToken } from './useApi'
+import { accessToken, refreshTokens } from './useApi'
 
 export interface NotifyItem {
   id: number
@@ -65,9 +65,11 @@ export function useNotifications() {
           buf = buf.slice(idx + 2)
         }
       }
-    } catch { /* 断线走重连 */ }
+    } catch {
+      // 断线：token 过期先刷新再重连，否则 5s 后原样重连
+      try { await refreshTokens() } catch { /* 刷新失败照常重连 */ }
+    }
     connected.value = false
-    // 断线 5s 重连
     setTimeout(() => { if (accessToken()) startStream() }, 5000)
   }
 

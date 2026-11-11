@@ -37,7 +37,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/unsubscribe").permitAll()
                         // M6 统计采集与公开榜：游客可上报/可读
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/track/visit").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/r", "/api/stats/hot", "/api/graph").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/r", "/api/stats/hot", "/api/graph", "/rss.xml").permitAll()
                         // 游客可读：公开文章、搜索、分类、标签、媒体资产
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 "/api/articles/**", "/api/search", "/api/categories", "/api/tags",

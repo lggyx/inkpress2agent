@@ -107,6 +107,20 @@ async function authFetch<T>(path: string, init: RequestInit): Promise<T> {
   }))
 }
 
+/** 刷新令牌旋转：换新 accessToken 并落库用户态；无 refreshToken 返回 null */
+export async function refreshTokens(): Promise<string | null> {
+  if (!process.client) return null
+  const refresh = localStorage.getItem(REFRESH_KEY)
+  if (!refresh) return null
+  const data = await unwrap<AuthData>(fetch(base() + '/auth/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken: refresh }),
+  }))
+  saveAuth(data)
+  return data.accessToken
+}
+
 /** 客户端带凭据请求；401 自动 refresh 一次后重试 */
 export async function $api<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, body?: unknown): Promise<T> {
   try {
@@ -115,14 +129,8 @@ export async function $api<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: s
     // unwrap 抛的是服务端业务文案；只有 401 语义才走刷新重试
     const msg = (e as Error).message
     if (!/401|未登录|登录已过期/.test(msg)) throw e
-    const refresh = process.client ? localStorage.getItem(REFRESH_KEY) : null
-    if (!refresh) throw e
-    const data = await unwrap<AuthData>(fetch(base() + '/auth/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: refresh }),
-    }))
-    saveAuth(data)
+    const newToken = await refreshTokens()
+    if (!newToken) throw e
     return authFetch<T>(path, { method, body: body === undefined ? undefined : JSON.stringify(body) })
   }
 }

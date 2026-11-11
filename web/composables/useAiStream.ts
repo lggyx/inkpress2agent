@@ -3,24 +3,33 @@
  * EventSource 无法带 Authorization 头，一律用 fetch ReadableStream。
  * 服务端事件：token（增量文本）/ done（结束）/ error（失败，data 为文案）。
  */
-import { accessToken } from './useApi'
+import { accessToken, refreshTokens } from './useApi'
 
 export async function streamAi(
   category: string,
   content: string,
   onToken: (token: string) => void,
 ): Promise<string> {
-  const token = accessToken()
-  if (!token) throw new Error('请先登录')
-  const resp = await fetch('/api/ai/chat', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'text/event-stream',
-      Authorization: 'Bearer ' + token,
-    },
-    body: JSON.stringify({ category, content }),
-  })
+  const send = async () => {
+    const token = accessToken()
+    if (!token) throw new Error('请先登录')
+    return fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+        Authorization: 'Bearer ' + token,
+      },
+      body: JSON.stringify({ category, content }),
+    })
+  }
+  let resp = await send()
+  // access token 过期时安全层回裸 403：刷新一次重试
+  if (resp.status === 401 || resp.status === 403) {
+    const newToken = await refreshTokens()
+    if (!newToken) throw new Error('登录已过期，请重新登录')
+    resp = await send()
+  }
   if (!resp.ok || !resp.body) {
     let message = `HTTP ${resp.status}`
     try { message = (await resp.json()).message || message } catch { /* keep */ }

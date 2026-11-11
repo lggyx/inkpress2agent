@@ -33,6 +33,8 @@ for (const c of CAPS) {
 }
 const testing = ref<Record<string, boolean>>({})
 const saving = ref(false)
+// 用户实际改过的 Key 输入框才参与保存（未触碰 = 保留现有 Key，避免保存全部误清其它槽）
+const touchedKeys = ref<Record<string, boolean>>({})
 
 onMounted(async () => {
   const view = await $api<{ capabilities: Record<string, CapConfig> }>('GET', '/admin/ai-config')
@@ -56,9 +58,14 @@ async function save() {
   try {
     const updates = CAPS.map((c) => ({
       capability: c.key,
-      ...forms.value[c.key],
-      // 空串表示清除 Key；null 表示不改
-      apiKey: forms.value[c.key].apiKey === '' ? '' : forms.value[c.key].apiKey || null,
+      protocol: forms.value[c.key].protocol,
+      baseUrl: forms.value[c.key].baseUrl,
+      model: forms.value[c.key].model,
+      // 未触碰的 Key 输入框发 null（服务端不改）；触碰后空串=清除、有值=更新
+      apiKey: touchedKeys.value[c.key]
+        ? (forms.value[c.key].apiKey === '' ? '' : forms.value[c.key].apiKey || '')
+        : null,
+      dimensions: c.key === 'embedding' ? forms.value[c.key].dimensions : undefined,
     }))
     await $api('PUT', '/admin/ai-config', { updates })
     ElMessage.success('AI 配置已保存')
@@ -122,8 +129,9 @@ async function test(cap: string) {
           <input v-model="forms[c.key].model" :placeholder="c.modelPlaceholder">
         </div>
         <div class="form-row">
-          <label>API Key（留空不改；输入空格清除）</label>
-          <input v-model="forms[c.key].apiKey" type="password" :placeholder="caps[c.key]?.apiKeyMasked || '粘贴 Key'">
+          <label>API Key（不填保留现有；输入内容或空格后保存生效）</label>
+          <input v-model="forms[c.key].apiKey" type="password" :placeholder="caps[c.key]?.apiKeyMasked || '粘贴 Key'"
+                 @input="touchedKeys[c.key] = true">
         </div>
         <div v-if="c.key === 'embedding'" class="form-row">
           <label>向量维度（需与 ES 索引一致，默认 1024；智谱 embedding-3 / bge-m3 均支持）</label>
