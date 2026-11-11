@@ -13,24 +13,25 @@ function logout() {
   navigateTo('/login')
 }
 
-// Pure 式导航：滚离顶部→胶囊收拢（margin-inline 两侧向中间过渡）；下滑隐藏、上滑浮现
-// 事件监听 + 低频轮询双保险（部分嵌入环境滚动不派发事件）
-const scrolled = ref(false)
-const hidden = ref(false)
-let lastY = 0
+// Pure 式导航状态机（对齐 astro-theme-pure Header.astro）：
+// not-top：滚过 20px → 胶囊收拢（margin-inline 8%、描边/底色/投影浮现）
+// show=false：滚过 350px 且继续下滚 → 温和上移隐藏（translateY -5rem）；上滑立即回显
+const notTop = ref(false)
+const show = ref(true)
+let preY = 0
 let pollId = 0
 
 function update() {
   const y = window.scrollY
-  if (Math.abs(y - lastY) <= 1) return
-  scrolled.value = y > 24
-  hidden.value = y > 140 && y > lastY + 1
-  lastY = y
+  if (Math.abs(y - preY) <= 1) return
+  notTop.value = y > 20
+  show.value = y < 350 || y < preY
+  preY = y
 }
 
 onMounted(() => {
   window.addEventListener('scroll', update, { passive: true })
-  pollId = window.setInterval(update, 200)
+  pollId = window.setInterval(update, 200) // 事件不派发的嵌入环境兜底
   update()
 })
 onBeforeUnmount(() => {
@@ -41,7 +42,11 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <header class="site-header" :class="{ scrolled, hidden }">
+    <header
+      class="site-header"
+      :class="{ 'not-top': notTop, expanded: show }"
+      :data-show="show"
+    >
       <div class="container header-inner">
         <NuxtLink to="/" class="brand">InkPress</NuxtLink>
         <nav class="nav">
@@ -80,57 +85,71 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* Pure 式悬浮导航：sticky 顶部留 14px；滚离顶部后 margin-inline 两侧向中间收拢成毛玻璃胶囊；
-   页面下滑时整体隐藏、上滑时胶囊浮现 */
+/* 对齐 astro-theme-pure Header.astro：sticky top-16px、滚过 20px 收拢为胶囊
+   （margin-inline 8% 两侧向中间过渡 + padding 0.375rem + 描边/底色/投影浮现），
+   滚过 350px 且继续下滚才温和上移隐藏（-5rem），上滑立即回显 */
 .site-header {
   position: sticky;
-  top: 14px;
+  top: 16px;
   z-index: 50;
-  margin-inline: 0;
+  margin-bottom: 3rem;
   border: 1px solid transparent;
   border-radius: 16px;
   background: transparent;
   transition:
-    margin-inline .35s ease,
-    background-color .3s ease,
-    border-color .3s ease,
-    transform .35s ease;
+    padding 0.3s,
+    transform 0.3s,
+    margin-inline 0.3s,
+    border 0.15s,
+    background-color 0.15s;
 }
-.site-header.scrolled {
-  margin-inline: 16px;
+.site-header.not-top {
   border-color: var(--line);
-  background: color-mix(in srgb, var(--bg) 76%, transparent);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 10px 32px rgb(0 0 0 / 16%);
+  background: var(--card);
+  padding-left: 0.375rem;
+  padding-right: 0.375rem;
+  box-shadow:
+    rgb(255, 255, 255) 0 0 0 0,
+    rgb(24 24 27 / 8%) 0 0 0 1px,
+    rgb(39 39 42 / 8%) 0 10px 15px -3px,
+    rgb(39 39 42 / 8%) 0 4px 6px -4px;
 }
-.site-header.hidden { transform: translateY(-130%); }
+@media (min-width: 800px) {
+  .site-header.not-top { margin-inline: 8%; }
+}
+.site-header[data-show='false'] { transform: translateY(-5rem); }
 
-.header-inner { display: flex; align-items: center; gap: 26px; height: 56px; padding: 0 24px; }
-.brand { font-weight: 800; font-size: 1.18em; color: var(--ink); }
+.header-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 48px; padding: 0 10px; }
+.brand { z-index: 30; font-weight: 650; font-size: 1.25em; color: var(--ink); margin-inline-start: 0; transition: margin-inline 0.3s; }
+.site-header.not-top .brand { margin-inline-start: 0.5rem; }
+@media (min-width: 640px) {
+  .site-header.not-top .brand { margin-inline-start: 0.75rem; }
+}
 .brand:hover { color: var(--ink); }
-.nav { display: flex; gap: 18px; }
-.nav a { color: var(--ink-soft); }
-.nav a:hover, .nav a.router-link-active { color: var(--ink); }
-.header-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+.nav { z-index: 30; display: flex; gap-x: 12px; gap: 12px; }
+.nav a { color: var(--ink-soft); padding: 0 10px; }
+.nav a:hover, .nav a.router-link-active { color: var(--primary); }
+.header-right { z-index: 30; display: flex; align-items: center; gap: 16px; }
+.site-header.not-top .header-right { gap: 10px; transition: gap 0.3s; }
 .header-right a { color: var(--ink-soft); }
 .header-right a:hover { color: var(--primary); }
 .user-chip {
   background: var(--card-soft);
   border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
+  border-radius: 10px;
   padding: 2px 12px;
   font-size: .9em;
 }
 .login-link {
   border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  padding: 4px 18px;
+  border-radius: 10px;
+  padding: 4px 16px;
   color: var(--ink);
 }
 .login-link:hover { border-color: var(--primary); color: var(--primary); text-decoration: none; }
 .linkish { border: none; background: none; padding: 0; color: var(--ink-faint); }
 .linkish:hover { color: var(--danger); }
-.page-body { padding: 26px 24px 56px; min-height: calc(100vh - 170px); }
+.page-body { padding: 10px 24px 56px; min-height: calc(100vh - 190px); }
 .site-footer { border-top: 1px solid var(--line); padding: 18px 0; }
 .footer-inner { text-align: center; display: flex; gap: 10px; justify-content: center; align-items: center; }
 .footer-inner a:hover { color: var(--primary); }
