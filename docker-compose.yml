@@ -116,7 +116,8 @@ services:
     image: nginx:1.27-alpine
     container_name: inkpress-nginx
     ports:
-      - "127.0.0.1:${INKPRESS_PORT:-8912}:80"
+      # 绑定全部网卡（局域网设备可访问）；如需仅本机，改回 "127.0.0.1:${INKPRESS_PORT:-8912}:80"
+      - "${INKPRESS_PORT:-8912}:80"
     volumes:
       - ./deploy/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
