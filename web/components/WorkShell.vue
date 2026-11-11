@@ -273,6 +273,44 @@ watchEffect(() => {
   flex-direction: column;
 }
 .studio-main > :deep(*) { flex: 1; }
+
+/* ===== 移动端：侧栏转底部导航条 ===== */
+@media (max-width: 720px) {
+  .rail {
+    position: fixed;
+    left: 0; right: 0; bottom: 0; top: auto;
+    width: 100%;
+    height: 58px;
+    flex-direction: row;
+    align-items: center;
+    padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-top: 1px solid var(--sline);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, .35);
+    gap: 0;
+  }
+  .rail-logo, .rail-sep { display: none; }
+  .rail-nav {
+    flex-direction: row;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    justify-content: flex-start;
+    scrollbar-width: none;
+    gap: 2px;
+  }
+  .rail-nav::-webkit-scrollbar { display: none; }
+  .rail-bottom { flex-direction: row; margin: 0 0 0 auto; gap: 2px; }
+  .rail-btn { width: 42px; height: 40px; flex-shrink: 0; }
+  .rail-btn.router-link-active::before {
+    left: 50%; top: auto; bottom: -5px;
+    transform: translateX(-50%);
+    width: 16px; height: 3px;
+  }
+  .rail-tip { display: none; }
+  .rail-avatar { width: 32px; height: 32px; }
+  .studio-main { padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
+}
 </style>
 
 <style>
@@ -504,6 +542,20 @@ watchEffect(() => {
 @media (max-width: 900px) {
   .studio-shell .row { flex-wrap: wrap; }
   .studio-shell .row-stats { display: none; }
+}
+/* ===== 移动端共享：留白收紧 + 弹窗全宽 ===== */
+@media (max-width: 720px) {
+  .studio-shell .page { padding: 16px 14px 20px; }
+  .studio-shell .page-head { flex-wrap: wrap; row-gap: 10px; }
+  .studio-shell .page-head .sub { display: block; margin-left: 0; width: 100%; }
+}
+@media (max-width: 640px) {
+  .studio-shell .el-dialog {
+    width: calc(100vw - 18px) !important;
+    max-width: calc(100vw - 18px) !important;
+    margin-top: 7vh !important;
+  }
+  .studio-shell .el-message-box { width: calc(100vw - 30px) !important; }
 }
 
 /* ===== 苹果式模态：背景化霜 + 玻璃面板（按主题分色） ===== */

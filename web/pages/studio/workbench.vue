@@ -1107,4 +1107,22 @@ onMounted(async () => {
   .doc-inner { width: 100%; }
   .doc-body { min-height: 360px; }
 }
+/* ===== 手机 ===== */
+@media (max-width: 720px) {
+  .wb { padding: 12px 12px 18px; gap: 10px; }
+  .wb-top { flex-wrap: wrap; row-gap: 8px; }
+  .switcher { width: 100%; }
+  .sw-btn { width: 100%; max-width: none; }
+  .sw-panel { max-width: calc(100vw - 24px); }
+  .wb-actions { width: 100%; justify-content: flex-end; flex-wrap: wrap; }
+  .btn { padding: 7px 12px; font-size: .84em; }
+  .chat { min-height: 62vh; padding: 12px 12px 10px; }
+  .doc-inner { padding: 12px; }
+  .doc-head .doc-hint { display: none; }
+  .cmd-grid { gap: 10px; max-width: none; }
+  .cmd { padding: 13px 12px 11px; border-radius: 14px; }
+  .cmd-sub { font-size: .72em; }
+  .composer { padding: 8px 10px; }
+  .bubble { max-width: 96%; }
+}
 </style>
