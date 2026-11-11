@@ -48,10 +48,13 @@ public class OssStorageService {
                 + (ext == null || ext.isBlank() ? "" : (ext.startsWith(".") ? ext : "." + ext));
     }
 
-    /** 公网访问链接：public_base_url 去尾斜杠 + "/" + key */
+    /** 公网访问链接：public_base_url 去尾斜杠 + "/" + key（用户漏填协议时自动补 http://） */
     public String publicUrl(String key) {
         String base = get("oss.public_base_url");
         base = base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
+        if (!base.startsWith("http://") && !base.startsWith("https://")) {
+            base = "http://" + base;
+        }
         return base + "/" + key;
     }
 
@@ -70,7 +73,7 @@ public class OssStorageService {
         }
     }
 
-    /** 测试连接：确保桶存在（无则创建）并写入探测对象 */
+    /** 测试连接：确保桶存在（无则创建）并写入探测对象；失败原因记日志（排查配置用） */
     public boolean test() {
         if (!configured()) {
             return false;
@@ -88,6 +91,8 @@ public class OssStorageService {
                     RequestBody.fromString("inkpress oss test " + System.currentTimeMillis()));
             return true;
         } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(OssStorageService.class)
+                    .warn("OSS test failed: {}: {}", e.getClass().getSimpleName(), e.getMessage());
             return false;
         }
     }
