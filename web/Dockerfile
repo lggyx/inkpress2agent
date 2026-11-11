@@ -4,6 +4,8 @@ COPY package.json package-lock.json ./
 # 本机网络对 npm registry 偶发抖动，容器内固定走 npmmirror
 RUN npm ci --registry=https://registry.npmmirror.com
 COPY . .
+# vditor 编辑器静态资源复制到 public（保持 dist/ 目录层级，运行时 cdn:'/vditor' → /vditor/dist/**）
+RUN mkdir -p public/vditor && cp -r node_modules/vditor/dist public/vditor/dist
 RUN npm run build
 
 FROM node:22-alpine

@@ -11,7 +11,7 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: 'InkPress · 个人博客与文章管理',
-      htmlAttrs: { lang: 'zh-CN' },
+      htmlAttrs: { lang: 'zh-CN', class: 'dark' },
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
@@ -26,8 +26,9 @@ export default defineNuxtConfig({
     '/article/**': { isr: 60 },
     '/archive': { isr: 300 },
     '/graph': { ssr: false },
-    // 博主端 / 管理员端为纯 SPA
+    // 博主端 / 管理员端 / 个人中心为纯 SPA
     '/studio/**': { ssr: false },
-    '/admin/**': { ssr: false }
+    '/admin/**': { ssr: false },
+    '/me': { ssr: false }
   }
 })
