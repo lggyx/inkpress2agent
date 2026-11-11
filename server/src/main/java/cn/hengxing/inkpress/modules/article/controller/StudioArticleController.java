@@ -28,11 +28,14 @@ public class StudioArticleController {
 
     private final ArticleService articleService;
     private final cn.hengxing.inkpress.modules.review.service.ReviewService reviewService;
+    private final cn.hengxing.inkpress.modules.graph.service.GraphService graphService;
 
     public StudioArticleController(ArticleService articleService,
-                                   cn.hengxing.inkpress.modules.review.service.ReviewService reviewService) {
+                                   cn.hengxing.inkpress.modules.review.service.ReviewService reviewService,
+                                   cn.hengxing.inkpress.modules.graph.service.GraphService graphService) {
         this.articleService = articleService;
         this.reviewService = reviewService;
+        this.graphService = graphService;
     }
 
     @PostMapping
@@ -88,5 +91,19 @@ public class StudioArticleController {
     @GetMapping("/{id}/ai-review/latest")
     public Result<cn.hengxing.inkpress.modules.review.entity.ReviewReport> latestReview(@PathVariable Long id) {
         return Result.ok(reviewService.latest(id));
+    }
+
+    /** M8：手动关联文章（图谱边 + 相关阅读置顶），仅文章作者 */
+    @PostMapping("/{id}/links")
+    public Result<Void> addLink(@AuthenticationPrincipal JwtAuthFilter.LoginUser user,
+                                @PathVariable Long id, @RequestBody Map<String, Long> body) {
+        graphService.addManualLink(user.id(), id, body.get("targetId"));
+        return Result.ok();
+    }
+
+    @DeleteMapping("/{id}/links/{targetId}")
+    public Result<Void> removeLink(@PathVariable Long id, @PathVariable Long targetId) {
+        graphService.removeManualLink(id, targetId);
+        return Result.ok();
     }
 }
