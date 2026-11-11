@@ -35,7 +35,10 @@ public class LikeService {
                 .eq(ArticleLike::getArticleId, articleId).eq(ArticleLike::getUserId, userId));
         boolean liked;
         if (existing != null) {
-            articleLikeMapper.deleteById(existing);
+            // article_like 为复合主键表（无 @TableId），MP 的 deleteById 未注入，走条件删除
+            articleLikeMapper.delete(new LambdaQueryWrapper<ArticleLike>()
+                    .eq(ArticleLike::getArticleId, articleId)
+                    .eq(ArticleLike::getUserId, userId));
             articleMapper.update(null, new UpdateWrapper<Article>()
                     .eq("id", articleId).setSql("like_count = GREATEST(like_count - 1, 0)"));
             liked = false;
@@ -49,6 +52,8 @@ public class LikeService {
                     .eq("id", articleId).setSql("like_count = like_count + 1"));
             liked = true;
         }
-        return Map.of("liked", liked);
+        Article updated = articleMapper.selectById(articleId);
+        return Map.of("liked", liked,
+                "likeCount", updated == null || updated.getLikeCount() == null ? 0L : updated.getLikeCount());
     }
 }
