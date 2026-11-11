@@ -61,3 +61,5 @@ inkpress:
     from: ${INKPRESS_MAIL_FROM:inkpress@noreply.local}
     # 邮件正文里的站内链接前缀（退订/文章跳转）
     public-base-url: ${INKPRESS_PUBLIC_BASE_URL:http://127.0.0.1:8912}
+    # 每周精选投递时间（默认周一 09:00 北京时间）
+    digest-cron: ${INKPRESS_DIGEST_CRON:0 0 9 * * MON}
