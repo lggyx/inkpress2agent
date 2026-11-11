@@ -13,11 +13,9 @@ function logout() {
   navigateTo('/login')
 }
 
-// Pure 式导航状态机（对齐 astro-theme-pure Header.astro）：
-// not-top：滚过 20px → 胶囊收拢（margin-inline 8%、描边/底色/投影浮现）
-// show=false：滚过 350px 且继续下滚 → 温和上移隐藏（translateY -5rem）；上滑立即回显
+// Pure 式导航状态机（对齐 astro-theme-pure Header.astro，按用户要求去掉隐藏行为）：
+// not-top：滚过 20px → 胶囊收拢（margin-inline 8%、描边/底色/投影浮现）；导航始终悬浮不消失
 const notTop = ref(false)
-const show = ref(true)
 let preY = 0
 let pollId = 0
 
@@ -25,7 +23,6 @@ function update() {
   const y = window.scrollY
   if (Math.abs(y - preY) <= 1) return
   notTop.value = y > 20
-  show.value = y < 350 || y < preY
   preY = y
 }
 
@@ -42,11 +39,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <header
-      class="site-header"
-      :class="{ 'not-top': notTop, expanded: show }"
-      :data-show="show"
-    >
+    <header class="site-header" :class="{ 'not-top': notTop }">
       <div class="container header-inner">
         <NuxtLink to="/" class="brand">InkPress</NuxtLink>
         <nav class="nav">
@@ -117,7 +110,6 @@ onBeforeUnmount(() => {
 @media (min-width: 800px) {
   .site-header.not-top { margin-inline: 8%; }
 }
-.site-header[data-show='false'] { transform: translateY(-5rem); }
 
 .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 48px; padding: 0 10px; }
 .brand { z-index: 30; font-weight: 650; font-size: 1.25em; color: var(--ink); margin-inline-start: 0; transition: margin-inline 0.3s; }
