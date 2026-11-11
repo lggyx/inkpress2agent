@@ -62,7 +62,7 @@ public class DistributionController {
                 platformConvertService.convert(req.get("platform"), req.get("contentMd"))));
     }
 
-    /** 本机 agent（设备令牌）拉取待分发任务与正文 */
+    /** 本机 agent（设备令牌）拉取待分发任务与正文（含深度排版转换后 HTML，未知平台为空串由 agent 降级） */
     @GetMapping("/distribution/pending")
     public Result<List<Map<String, Object>>> pending() {
         List<Map<String, Object>> result = new ArrayList<>();
@@ -71,12 +71,19 @@ public class DistributionController {
             if (article == null) {
                 continue;
             }
+            String contentHtml;
+            try {
+                contentHtml = platformConvertService.convert(r.getPlatform(), article.getContentMd());
+            } catch (Exception e) {
+                contentHtml = "";
+            }
             Map<String, Object> item = new HashMap<>();
             item.put("recordId", r.getId());
             item.put("platform", r.getPlatform());
             item.put("articleId", article.getId());
             item.put("title", article.getTitle());
             item.put("contentMd", article.getContentMd());
+            item.put("contentHtml", contentHtml);
             item.put("coverUrl", article.getCoverUrl() == null ? "" : article.getCoverUrl());
             result.add(item);
         }
