@@ -86,7 +86,7 @@ async function test(cap: string) {
 </script>
 
 <template>
-  <div>
+  <div class="page">
     <div class="head">
       <h2>AI 配置</h2>
       <el-button type="primary" :loading="saving" @click="save">保存全部</el-button>

@@ -25,7 +25,7 @@ function levelTag(level: string) {
 </script>
 
 <template>
-  <div>
+  <div class="page">
     <h2>日志查询（traceId 全链路）</h2>
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <input v-model="traceId" placeholder="粘贴响应头 X-Trace-Id 或日志中的 traceId" style="flex:1" @keyup.enter="search">

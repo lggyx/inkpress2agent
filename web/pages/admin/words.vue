@@ -34,7 +34,7 @@ async function reload() {
 </script>
 
 <template>
-  <div style="max-width:640px">
+  <div class="page" style="max-width:640px">
     <h2>敏感词库</h2>
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <input v-model="word" placeholder="添加敏感词（命中评论转人工审核）" @keyup.enter="add">

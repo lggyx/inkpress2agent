@@ -54,7 +54,7 @@ async function render() {
 </script>
 
 <template>
-  <div>
+  <div class="page">
     <div class="head">
       <h2>画像总览</h2>
       <el-select v-model="days" style="width:120px" @change="load">

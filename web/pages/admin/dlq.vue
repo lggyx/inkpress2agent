@@ -29,7 +29,7 @@ async function republish() {
 </script>
 
 <template>
-  <div>
+  <div class="page">
     <div class="head">
       <h2>邮件死信队列</h2>
       <div style="display:flex;gap:10px;align-items:center">

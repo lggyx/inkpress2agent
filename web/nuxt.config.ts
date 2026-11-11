@@ -32,9 +32,8 @@ export default defineNuxtConfig({
     '/article/**': { isr: 60 },
     '/archive': { isr: 300 },
     '/graph': { ssr: false },
-    // 门户根路径直接落到默认功能页（裸布局页无内容，避免空白）
-    '/studio': { redirect: { to: '/studio/articles', statusCode: 302 } },
-    '/admin': { redirect: { to: '/admin/ai', statusCode: 302 } },
+    // 门户根路径直接落到默认功能页（/admin 已有仪表盘、/studio 已有工作台，不再重定向）
+    '/studio': { redirect: { to: '/studio/workbench', statusCode: 302 } },
     // 博主端 / 管理员端 / 个人中心为纯 SPA
     '/studio/**': { ssr: false },
     '/admin/**': { ssr: false },

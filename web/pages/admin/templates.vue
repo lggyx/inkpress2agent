@@ -31,7 +31,7 @@ async function save() {
 </script>
 
 <template>
-  <div>
+  <div class="page">
     <h2>提示词模板</h2>
     <el-table :data="rows">
       <el-table-column prop="category" label="类别" width="110" />

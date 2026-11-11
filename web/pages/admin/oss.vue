@@ -61,7 +61,7 @@ async function test() {
 </script>
 
 <template>
-  <div style="max-width:680px">
+  <div class="page" style="max-width:680px">
     <div class="head">
       <h2>对象存储 OSS</h2>
       <el-tag size="small" :type="view?.configured ? 'success' : 'info'">
