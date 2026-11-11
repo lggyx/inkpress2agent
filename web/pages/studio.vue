@@ -139,9 +139,10 @@ watchEffect(() => {
   padding: 14px 0 16px;
   gap: 10px;
   border-right: 1px solid var(--sline);
-  background: rgba(12, 14, 22, .72);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(12, 14, 22, .55);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, .03);
 }
 .rail-logo {
   width: 40px; height: 40px;
@@ -163,10 +164,11 @@ watchEffect(() => {
   display: grid; place-items: center;
   border-radius: 12px;
   color: var(--ink-faint);
-  transition: color .18s ease, background .18s ease, transform .18s ease;
+  transition: color .18s ease, background .18s ease, transform .25s cubic-bezier(.34, 1.56, .64, 1);
 }
 .rail-btn svg { width: 20px; height: 20px; }
-.rail-btn:hover { color: var(--ink); background: rgba(255, 255, 255, .06); transform: translateY(-1px); }
+.rail-btn:hover { color: var(--ink); background: rgba(255, 255, 255, .08); transform: scale(1.1); }
+.rail-btn:active { transform: scale(.96); }
 .rail-btn.router-link-active { color: var(--sprimary); background: rgba(138, 180, 248, .12); }
 .rail-btn.router-link-active::before {
   content: '';
@@ -216,22 +218,33 @@ watchEffect(() => {
 
 <style>
 /* 全局前缀样式：只作用于 studio 外壳内（el-dialog 默认就地渲染） */
+/* 苹果式模态：背景化霜 + 玻璃面板 + 顶面高光 */
+.studio-shell .el-overlay {
+  backdrop-filter: blur(26px) saturate(140%);
+  -webkit-backdrop-filter: blur(26px) saturate(140%);
+  background: rgba(8, 10, 16, .42);
+}
 .studio-shell .el-dialog {
-  background: #141826;
-  border: 1px solid rgba(255, 255, 255, .08);
-  border-radius: 16px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
+  background: rgba(22, 26, 40, .72);
+  backdrop-filter: blur(40px) saturate(160%);
+  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 18px;
+  box-shadow: 0 32px 90px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .09);
 }
 .studio-shell .el-dialog__title { color: #e8eaf2; font-weight: 650; }
 .studio-shell .el-dialog__body { color: #c6cbd9; }
 .studio-shell .el-message-box {
-  background: #141826;
-  border: 1px solid rgba(255, 255, 255, .08);
-  border-radius: 14px;
+  background: rgba(22, 26, 40, .78);
+  backdrop-filter: blur(40px) saturate(160%);
+  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 16px;
+  box-shadow: 0 32px 90px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .09);
 }
 .studio-shell .el-message-box__title { color: #e8eaf2; }
 .studio-shell .el-message-box__message { color: #c6cbd9; }
-.studio-shell .el-loading-mask { background: rgba(10, 12, 18, .6); }
+.studio-shell .el-loading-mask { background: rgba(10, 12, 18, .55); backdrop-filter: blur(4px); }
 
 /* ===== studio 管理页共享：玻璃行列表（articles/comments 等） ===== */
 .studio-shell .page {
@@ -287,10 +300,11 @@ watchEffect(() => {
 .studio-shell .spine-REJECTED { --spine: #f28b82; }
 .studio-shell .spine-OFFLINE { --spine: #6b7280; }
 .studio-shell .row:hover {
-  border-color: rgba(138, 180, 248, .4);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 26px rgba(0, 0, 0, .3);
+  border-color: rgba(138, 180, 248, .45);
+  transform: translateY(-2px) scale(1.003);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .09);
 }
+.studio-shell .row:hover::before { opacity: 1; }
 @keyframes s-row-in {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
@@ -350,7 +364,8 @@ watchEffect(() => {
   transition: all .16s ease;
   white-space: nowrap;
 }
-.studio-shell .abtn:hover { color: var(--ink); border-color: rgba(138, 180, 248, .45); transform: translateY(-1px); }
+.studio-shell .abtn:hover { color: var(--ink); border-color: rgba(138, 180, 248, .45); background: rgba(255, 255, 255, .05); transform: translateY(-1px) scale(1.05); }
+.studio-shell .abtn:active { transform: scale(.96); }
 .studio-shell .abtn.danger { color: #f28b82; border-color: rgba(242, 139, 130, .35); }
 .studio-shell .abtn.danger:hover { background: rgba(242, 139, 130, .1); border-color: rgba(242, 139, 130, .6); }
 .studio-shell .abtn.ok { color: #81c995; border-color: rgba(129, 201, 149, .35); }
@@ -365,9 +380,15 @@ watchEffect(() => {
   color: #fff;
   border: 0;
   box-shadow: 0 4px 16px rgba(91, 141, 239, .32);
-  transition: all .18s ease;
+  transition: all .2s cubic-bezier(.34, 1.56, .64, 1);
 }
-.studio-shell .btn.primary:hover { filter: brightness(1.08); transform: translateY(-1px); color: #fff; }
+.studio-shell .btn.primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px) scale(1.04);
+  color: #fff;
+  box-shadow: 0 8px 26px rgba(138, 180, 248, .45);
+}
+.studio-shell .btn.primary:active { transform: scale(.97); }
 
 /* 状态 pill（与工作台一致） */
 .studio-shell .st {
