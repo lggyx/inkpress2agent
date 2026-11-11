@@ -33,9 +33,10 @@ public class EmbeddingService {
         return configService.isConfigured();
     }
 
-    /** 文本转向量；失败返回 null（调用方降级为 BM25） */
+    /** 文本转向量；失败返回 null（调用方降级为 BM25）；Anthropic 协议无 embeddings 接口，直接降级 */
     public List<Double> embed(String text) {
-        if (text == null || text.isBlank() || !available()) {
+        if (text == null || text.isBlank() || !available()
+                || AiConfigService.PROTOCOL_ANTHROPIC.equals(configService.protocol())) {
             return null;
         }
         try {

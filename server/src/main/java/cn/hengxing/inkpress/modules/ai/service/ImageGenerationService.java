@@ -1,6 +1,7 @@
 package cn.hengxing.inkpress.modules.ai.service;
 
 import cn.hengxing.inkpress.common.BizException;
+import cn.hengxing.inkpress.modules.ai.service.AiConfigService;
 import cn.hengxing.inkpress.modules.media.entity.MediaAsset;
 import cn.hengxing.inkpress.modules.media.mapper.MediaAssetMapper;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -48,6 +49,9 @@ public class ImageGenerationService {
     public Map<String, Object> generateAndStore(Long userId, String prompt, String size) {
         if (!configService.isConfigured()) {
             throw BizException.of(3004, "AI 服务未配置，请管理员在系统设置中填写");
+        }
+        if (AiConfigService.PROTOCOL_ANTHROPIC.equals(configService.protocol())) {
+            throw BizException.of(3006, "Anthropic 协议无图像生成接口；如需 AI 配图请切换 OpenAI 兼容协议（图像模型单独生效）");
         }
         String sizeValue = size == null || size.isBlank() ? "1024x1024" : size;
         if (!SIZE_PATTERN.matcher(sizeValue).matches()) {

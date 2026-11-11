@@ -23,6 +23,16 @@ public class AiConfigService {
     public static final String KEY_MODEL = "ai.model";
     public static final String KEY_IMAGE_MODEL = "ai.image_model";
     public static final String KEY_EMBEDDING_MODEL = "ai.embedding_model";
+    /** 接口协议：openai（默认，/chat/completions + Bearer）/ anthropic（/v1/messages + x-api-key） */
+    public static final String KEY_PROTOCOL = "ai.protocol";
+    public static final String PROTOCOL_OPENAI = "openai";
+    public static final String PROTOCOL_ANTHROPIC = "anthropic";
+
+    /** 当前协议（未配置时默认 OpenAI 兼容） */
+    public String protocol() {
+        String p = get(KEY_PROTOCOL);
+        return PROTOCOL_ANTHROPIC.equals(p) ? PROTOCOL_ANTHROPIC : PROTOCOL_OPENAI;
+    }
 
     private final SystemConfigMapper systemConfigMapper;
     private final PromptTemplateMapper promptTemplateMapper;
@@ -46,6 +56,7 @@ public class AiConfigService {
     /** 管理端回显：密钥脱敏（前 6 后 4） */
     public Map<String, Object> view() {
         Map<String, Object> view = new LinkedHashMap<>();
+        view.put("protocol", protocol());
         view.put("baseUrl", get(KEY_BASE_URL));
         view.put("model", get(KEY_MODEL));
         view.put("imageModel", get(KEY_IMAGE_MODEL));
@@ -56,7 +67,8 @@ public class AiConfigService {
     }
 
     @Transactional
-    public void update(Long operatorId, String baseUrl, String model, String imageModel, String embeddingModel, String apiKey) {
+    public void update(Long operatorId, String protocol, String baseUrl, String model, String imageModel, String embeddingModel, String apiKey) {
+        put(operatorId, KEY_PROTOCOL, PROTOCOL_ANTHROPIC.equals(protocol) ? PROTOCOL_ANTHROPIC : PROTOCOL_OPENAI);
         put(operatorId, KEY_BASE_URL, baseUrl);
         put(operatorId, KEY_MODEL, model);
         put(operatorId, KEY_IMAGE_MODEL, imageModel);
