@@ -34,8 +34,9 @@ public class AiController {
     public record ImageRequest(@NotBlank String prompt, String size) {
     }
 
-    /** 单能力槽配置更新：protocol/baseUrl/model；apiKey 约定 null 不改、空串清除 */
-    public record CapabilityUpdate(String capability, String protocol, String baseUrl, String model, String apiKey) {
+    /** 单能力槽配置更新：protocol/baseUrl/model；apiKey 约定 null 不改、空串清除；dimensions 仅向量槽 */
+    public record CapabilityUpdate(String capability, String protocol, String baseUrl, String model,
+                                   String apiKey, String dimensions) {
     }
 
     public record ConfigUpdateRequest(List<CapabilityUpdate> updates) {
@@ -98,6 +99,7 @@ public class AiController {
                 m.put("baseUrl", u.baseUrl());
                 m.put("model", u.model());
                 m.put("apiKey", u.apiKey());
+                m.put("dimensions", u.dimensions());
                 updates.add(m);
             }
         }

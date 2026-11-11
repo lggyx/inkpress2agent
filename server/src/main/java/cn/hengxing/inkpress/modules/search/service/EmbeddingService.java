@@ -45,9 +45,12 @@ public class EmbeddingService {
         }
         try {
             String model = p.model() == null || p.model().isBlank() ? "embedding-3" : p.model();
+            // 维度默认 1024，与 ES 索引 dense_vector 一致；智谱 embedding-3 等支持 dimensions 参数
+            int dims = dims();
             String body = objectMapper.writeValueAsString(Map.of(
                     "model", model,
-                    "input", text.length() > 2000 ? text.substring(0, 2000) : text));
+                    "input", text.length() > 2000 ? text.substring(0, 2000) : text,
+                    "dimensions", dims));
             String base = p.baseUrl().endsWith("/") ? p.baseUrl().substring(0, p.baseUrl().length() - 1) : p.baseUrl();
             HttpRequest request = HttpRequest.newBuilder(URI.create(base + "/embeddings"))
                     .timeout(Duration.ofSeconds(60))
@@ -67,9 +70,23 @@ public class EmbeddingService {
             for (JsonNode v : data.get(0).path("embedding")) {
                 vector.add(v.asDouble());
             }
+            // 维度与 ES 索引不符直接降级（避免写入被拒后文档缺向量）
+            if (vector.size() != dims()) {
+                return null;
+            }
             return vector;
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    /** 向量维度：默认 1024（与 ES 索引 dense_vector 一致），可经 ai.embedding.dimensions 配置 */
+    public int dims() {
+        String d = configService.get("ai.embedding.dimensions");
+        try {
+            return d == null || d.isBlank() ? 1024 : Integer.parseInt(d.trim());
+        } catch (Exception e) {
+            return 1024;
         }
     }
 }

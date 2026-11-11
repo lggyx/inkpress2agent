@@ -62,8 +62,18 @@ public class AiConfigService {
         String model = firstNonBlank(
                 get("ai." + capability + ".model"),
                 legacyModel(capability),
-                anthropic ? "claude-sonnet-4-5" : "cogview-3-flash");
+                defaultModel(capability));
         return new AiProvider(capability, anthropic ? PROTOCOL_ANTHROPIC : PROTOCOL_OPENAI, baseUrl, apiKey, model);
+    }
+
+    /** 协议无关的能力默认模型（仅作占位提示，真正可用需用户配置） */
+    private String defaultModel(String capability) {
+        return switch (capability) {
+            case CAP_EMBEDDING -> "embedding-3";
+            case CAP_IMAGE -> "cogview-3-flash";
+            case CAP_VISION -> "glm-4v";
+            default -> "glm-4-flash";
+        };
     }
 
     private String legacyModel(String capability) {
@@ -98,7 +108,7 @@ public class AiConfigService {
         return sc == null ? null : sc.getConfigValue();
     }
 
-    /** 管理端视图：四个能力槽分组回显，密钥脱敏 */
+    /** 管理端视图：四个能力槽分组回显，密钥脱敏；向量槽附维度 */
     public Map<String, Object> view() {
         Map<String, Object> caps = new LinkedHashMap<>();
         for (String cap : CAPABILITIES) {
@@ -109,6 +119,10 @@ public class AiConfigService {
             item.put("model", p.model());
             item.put("apiKeyMasked", mask(p.apiKey()));
             item.put("configured", configured(cap));
+            if (CAP_EMBEDDING.equals(cap)) {
+                String d = get("ai.embedding.dimensions");
+                item.put("dimensions", d == null || d.isBlank() ? "1024" : d);
+            }
             caps.put(cap, item);
         }
         Map<String, Object> view = new LinkedHashMap<>();
@@ -134,6 +148,10 @@ public class AiConfigService {
                 } else {
                     put(operatorId, "ai." + cap + ".api_key", apiKey);
                 }
+            }
+            // 向量槽专属：维度（默认 1024，需与 ES 索引 dense_vector 一致）
+            if (CAP_EMBEDDING.equals(cap) && u.get("dimensions") != null && !u.get("dimensions").isBlank()) {
+                put(operatorId, "ai.embedding.dimensions", u.get("dimensions").trim());
             }
         }
     }

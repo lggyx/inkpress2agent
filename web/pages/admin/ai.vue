@@ -8,6 +8,7 @@ interface CapConfig {
   model: string
   apiKeyMasked: string
   configured: boolean
+  dimensions?: string
 }
 interface Capability {
   key: string
@@ -25,10 +26,10 @@ const CAPS: Capability[] = [
 ]
 
 const caps = ref<Record<string, CapConfig>>({})
-const forms = ref<Record<string, { protocol: string; baseUrl: string; model: string; apiKey: string }>>({})
+const forms = ref<Record<string, { protocol: string; baseUrl: string; model: string; apiKey: string; dimensions: string }>>({})
 // 静态能力表同步初始化表单（v-model 需要稳定的赋值目标）
 for (const c of CAPS) {
-  forms.value[c.key] = { protocol: 'openai', baseUrl: '', model: '', apiKey: '' }
+  forms.value[c.key] = { protocol: 'openai', baseUrl: '', model: '', apiKey: '', dimensions: '1024' }
 }
 const testing = ref<Record<string, boolean>>({})
 const saving = ref(false)
@@ -44,6 +45,7 @@ onMounted(async () => {
         baseUrl: cfg.baseUrl || '',
         model: cfg.model || '',
         apiKey: '',
+        dimensions: cfg.dimensions || '1024',
       }
     }
   }
@@ -122,6 +124,10 @@ async function test(cap: string) {
         <div class="form-row">
           <label>API Key（留空不改；输入空格清除）</label>
           <input v-model="forms[c.key].apiKey" type="password" :placeholder="caps[c.key]?.apiKeyMasked || '粘贴 Key'">
+        </div>
+        <div v-if="c.key === 'embedding'" class="form-row">
+          <label>向量维度（需与 ES 索引一致，默认 1024；智谱 embedding-3 / bge-m3 均支持）</label>
+          <input v-model="forms[c.key].dimensions" placeholder="1024">
         </div>
 
         <el-button size="small" :loading="testing[c.key]" @click="test(c.key)">测试连接</el-button>
