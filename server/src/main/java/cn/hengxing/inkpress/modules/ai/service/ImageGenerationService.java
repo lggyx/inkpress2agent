@@ -78,7 +78,12 @@ public class ImageGenerationService {
         try {
             HttpResponse<String> resp = http.send(request, HttpResponse.BodyHandlers.ofString());
             if (resp.statusCode() != 200) {
-                throw BizException.of(3003, "图像模型服务返回 " + resp.statusCode());
+                String detail = resp.body() == null ? "" : resp.body().replaceAll("\\s+", " ").trim();
+                if (detail.length() > 220) {
+                    detail = detail.substring(0, 220) + "…";
+                }
+                throw BizException.of(3003, "图像模型服务返回 " + resp.statusCode()
+                        + (detail.isBlank() ? "" : "：" + detail));
             }
             JsonNode data = objectMapper.readTree(resp.body()).path("data");
             if (!data.isArray() || data.isEmpty()) {

@@ -21,7 +21,7 @@ interface Capability {
 const CAPS: Capability[] = [
   { key: 'text', label: '文本对话', note: '润色/纠错/续写/起标题/摘要标签/评审全走这里', modelPlaceholder: 'step-5-preview / glm-4-flash / claude-sonnet-4-5', basePlaceholder: 'https://api.stepfun.com/step_plan' },
   { key: 'vision', label: '视觉理解', note: '多模态模型（图片/视频输入理解）；无视觉需求可不填', modelPlaceholder: 'step-5-preview / glm-4v', basePlaceholder: 'https://api.stepfun.com/step_plan' },
-  { key: 'image', label: '图像生成', note: 'AI 配图走这里（需 OpenAI 兼容图像服务；Anthropic 协议无此接口）', modelPlaceholder: 'cogview-3-flash / step-1x-medium', basePlaceholder: 'https://open.bigmodel.cn/api/paas/v4' },
+  { key: 'image', label: '图像生成', note: 'AI 配图走这里（需 OpenAI 兼容图像服务；Anthropic 协议无此接口）', modelPlaceholder: 'GPT Image 2 / cogview-3-flash / step-1x-medium', basePlaceholder: 'https://maas-openapi.wanjiedata.com/api/v1' },
   { key: 'embedding', label: '向量 Embedding', note: '混合检索的向量臂（Anthropic 协议无此接口，未配置自动降级 BM25）', modelPlaceholder: 'embedding-3 / text-embedding-3-small', basePlaceholder: 'https://open.bigmodel.cn/api/paas/v4' },
 ]
 

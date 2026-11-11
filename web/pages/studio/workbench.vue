@@ -21,6 +21,7 @@ interface ArticleDetail {
   tags: string[]
   status: string
   source: string
+  coverUrl?: string
 }
 interface ChatMsg { role: 'user' | 'assistant'; content: string }
 interface ReviewReport {
@@ -71,6 +72,12 @@ const chatBody = ref<HTMLElement | null>(null)
 const reviewVisible = ref(false)
 const reviewLoading = ref(false)
 const review = ref<ReviewReport | null>(null)
+
+// AI 配图状态
+const imgBusy = ref(false)
+const imgVisible = ref(false)
+const imgGenUrl = ref('')
+const imgGenPrompt = ref('')
 
 async function loadList() {
   loadingList.value = true
@@ -149,6 +156,48 @@ async function onCoverUpload(e: Event) {
   } catch (e) { ElMessage.error((e as Error).message) } finally { input.value = '' }
 }
 
+/** AI 配图：生成 → 预览弹窗 → 设为封面 / 插入正文 */
+async function aiImage() {
+  let desc = ''
+  try {
+    const r = await ElMessageBox.prompt('描述想要的画面，中英文都可以', 'AI 配图', {
+      inputValue: title.value ? `为文章《${title.value}》生成一张封面插画` : '',
+      confirmButtonText: '生成',
+      cancelButtonText: '取消',
+      inputPattern: /.+/,
+      inputErrorMessage: '描述不能为空',
+    })
+    desc = r.value
+  } catch { return }
+  imgVisible.value = true
+  imgBusy.value = true
+  imgGenUrl.value = ''
+  imgGenPrompt.value = desc
+  try {
+    const r = await $api<{ mediaId: number; url: string }>('POST', '/ai/images', {
+      prompt: desc,
+      size: '1024x1024',
+    })
+    imgGenUrl.value = r.url
+  } catch (e) {
+    imgVisible.value = false
+    ElMessage.error((e as Error).message)
+  } finally { imgBusy.value = false }
+}
+
+function useAsCover() {
+  coverUrl.value = imgGenUrl.value
+  imgVisible.value = false
+  ElMessage.success('已设为封面，保存或发布后生效')
+}
+
+function insertImageToBody() {
+  if (!vditor) return
+  vditor.insertValue(`![${imgGenPrompt.value}](${imgGenUrl.value})`)
+  imgVisible.value = false
+  ElMessage.success('已插入正文')
+}
+
 async function save(action?: string, confirmLowScore?: boolean) {
   if (!current.value || !title.value.trim()) { ElMessage.warning('标题必填'); return }
   saving.value = true
@@ -158,6 +207,7 @@ async function save(action?: string, confirmLowScore?: boolean) {
       title: title.value.trim(),
       contentMd: vditor?.getValue() ?? '',
       tags: tagsText.value.split(/[,，]/).map((t) => t.trim()).filter(Boolean),
+      coverUrl: coverUrl.value || null,
       action: action ?? 'DRAFT',
       confirmLowScore,
     })
@@ -335,6 +385,14 @@ onMounted(async () => {
       </div>
       <div ref="editorBox" class="editor-box" />
       <div class="meta-row">
+        <span class="muted">封面：</span>
+        <img v-if="coverUrl" :src="coverUrl" class="cover-thumb" alt="cover">
+        <span v-else class="muted" style="font-size:.85em">未设置</span>
+        <el-button size="small" @click="coverInput?.click()">上传</el-button>
+        <input ref="coverInput" type="file" accept="image/*" style="display:none" @change="onCoverUpload">
+        <el-button size="small" :loading="imgBusy" @click="aiImage">AI 配图</el-button>
+      </div>
+      <div class="meta-row">
         <span class="muted">标签：</span>
         <input v-model="tagsText" style="flex:1" placeholder="逗号分隔">
         <el-button size="small" @click="aiSummary">AI 摘要+标签</el-button>
@@ -375,6 +433,19 @@ onMounted(async () => {
         <el-button size="small" @click="applyToEditor('append')">追加到文末</el-button>
       </div>
     </aside>
+
+    <!-- AI 配图结果 -->
+    <el-dialog v-model="imgVisible" title="AI 配图" width="480">
+      <div v-loading="imgBusy" style="min-height:200px">
+        <img v-if="imgGenUrl" :src="imgGenUrl" style="width:100%;border-radius:10px" alt="AI 生成图">
+        <div v-else-if="!imgBusy" class="muted" style="padding:40px;text-align:center">生成失败</div>
+      </div>
+      <template #footer>
+        <el-button @click="imgVisible = false">关闭</el-button>
+        <el-button type="primary" :disabled="!imgGenUrl" @click="useAsCover">设为封面</el-button>
+        <el-button :disabled="!imgGenUrl || !editorReady" @click="insertImageToBody">插入正文</el-button>
+      </template>
+    </el-dialog>
 
     <!-- AI 评审报告 -->
     <el-dialog v-model="reviewVisible" title="AI 评审报告" width="620">
@@ -442,6 +513,7 @@ onMounted(async () => {
 .editor-actions { display: flex; gap: 8px; }
 .editor-box { flex: 1; min-height: 420px; border-radius: 10px; overflow: hidden; }
 .meta-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.cover-thumb { height: 34px; border-radius: 6px; border: 1px solid var(--line); }
 
 .wb-right {
   background: var(--card);
