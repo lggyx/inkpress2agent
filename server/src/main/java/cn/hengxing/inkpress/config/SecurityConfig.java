@@ -32,6 +32,9 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // SSE（SseEmitter）异步完成时的 ASYNC 再派发不重复鉴权：
+                        // 否则过滤器链在响应已提交后抛 AccessDenied，流式连接被拦腰掐断（nginx premature close）
+                        .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ASYNC).permitAll()
                         .requestMatchers("/api/auth/**", "/api/health", "/actuator/health").permitAll()
                         // 一键退订：邮件链接直达，免登录
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/unsubscribe").permitAll()

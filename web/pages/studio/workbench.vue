@@ -373,7 +373,8 @@ async function quick(command: string, apply: 'replace' | 'append' | 'title' | 'n
   scrollChat()
   try {
     const history = chat.value.slice(0, -1).map((m) => ({ role: m.role, content: m.content }))
-    await streamChat('assistant', `请${command}${md ? `\n\n【当前文章草稿】\n${md.slice(0, 3000)}` : ''}`, (t) => {
+    const prompt = `请${command}${md ? `\n\n【当前文章草稿】\n${md.slice(0, 3000)}` : ''}`
+    await streamChat([...history, { role: 'user', content: prompt }], (t) => {
       chat.value[idx].content += t
       scrollChat()
     })

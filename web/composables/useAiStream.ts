@@ -86,10 +86,8 @@ export async function streamAi(
   content: string,
   onToken: (token: string) => void,
 ): Promise<string> {
-  return sendAndRead(
-    () => makeSend({ category, content }),
-    onToken,
-  )
+  // makeSend 返回的即是 () => Promise<Response>，直接传入（勿再包一层箭头——那样返回的是函数对象而非响应）
+  return sendAndRead(makeSend({ category, content }), onToken)
 }
 
 /** 多轮直传流式对话：messages 历史由前端持有（studio 工作台对话流） */
@@ -97,8 +95,5 @@ export async function streamChat(
   messages: { role: string; content: string }[],
   onToken: (token: string) => void,
 ): Promise<string> {
-  return sendAndRead(
-    () => makeSend({ messages }),
-    onToken,
-  )
+  return sendAndRead(makeSend({ messages }), onToken)
 }
