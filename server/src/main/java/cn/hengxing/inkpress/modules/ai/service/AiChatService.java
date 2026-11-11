@@ -64,7 +64,7 @@ public class AiChatService {
                 .build();
     }
 
-    /** Anthropic：POST {base}/v1/messages（base 以 /v1 结尾则拼 /messages），x-api-key + anthropic-version，max_tokens 必填 */
+    /** Anthropic：POST {base}/v1/messages（base 以 /v1 结尾则拼 /messages）；鉴权双发 x-api-key 与 Bearer（AUTH_TOKEN 型网关只认后者），max_tokens 必填 */
     private HttpRequest anthropicStreamRequest(String prompt) {
         String body;
         try {
@@ -76,13 +76,19 @@ public class AiChatService {
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
-        return HttpRequest.newBuilder(URI.create(anthropicMessagesUrl()))
+        return anthropicRequestBuilder(anthropicMessagesUrl())
+                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+                .build();
+    }
+
+    /** Anthropic 请求公共头：Content-Type + x-api-key/Bearer 双发 + anthropic-version */
+    private HttpRequest.Builder anthropicRequestBuilder(String url) {
+        return HttpRequest.newBuilder(URI.create(url))
                 .timeout(Duration.ofSeconds(180))
                 .header("Content-Type", "application/json")
                 .header("x-api-key", configService.get(AiConfigService.KEY_API_KEY))
-                .header("anthropic-version", "2023-06-01")
-                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                .build();
+                .header("Authorization", "Bearer " + configService.get(AiConfigService.KEY_API_KEY))
+                .header("anthropic-version", "2023-06-01");
     }
 
     private boolean anthropic() {
@@ -120,24 +126,36 @@ public class AiChatService {
         }
     }
 
-    /** 管理端测试连接：OpenAI 走 GET /models（Bearer）；Anthropic 走 GET /v1/models（x-api-key） */
+    /** 管理端测试连接：OpenAI 走 GET /models（Bearer）；Anthropic 走 GET /v1/models，网关不支持该端点（404/405）时降级为 1 token messages ping */
     public boolean testConnection() {
         if (!configService.isConfigured()) {
             return false;
         }
         try {
-            HttpRequest.Builder builder;
             if (anthropic()) {
-                builder = HttpRequest.newBuilder(URI.create(anthropicModelsUrl()))
-                        .timeout(Duration.ofSeconds(15))
-                        .header("x-api-key", configService.get(AiConfigService.KEY_API_KEY))
-                        .header("anthropic-version", "2023-06-01");
-            } else {
-                builder = HttpRequest.newBuilder(URI.create(baseUrl() + "/models"))
-                        .timeout(Duration.ofSeconds(15))
-                        .header("Authorization", "Bearer " + configService.get(AiConfigService.KEY_API_KEY));
+                HttpResponse<String> resp = http.send(anthropicRequestBuilder(anthropicModelsUrl())
+                        .timeout(Duration.ofSeconds(15)).GET().build(), HttpResponse.BodyHandlers.ofString());
+                if (resp.statusCode() == 200) {
+                    return true;
+                }
+                if (resp.statusCode() != 404 && resp.statusCode() != 405) {
+                    return false;
+                }
+                // 网关未实现 models 列表：用 1 token 的 messages ping 验证鉴权与连通性
+                String ping = objectMapper.writeValueAsString(Map.of(
+                        "model", configService.get(AiConfigService.KEY_MODEL),
+                        "max_tokens", 1,
+                        "messages", List.of(Map.of("role", "user", "content", "ping"))));
+                HttpResponse<String> pingResp = http.send(anthropicRequestBuilder(anthropicMessagesUrl())
+                        .timeout(Duration.ofSeconds(30))
+                        .POST(HttpRequest.BodyPublishers.ofString(ping, StandardCharsets.UTF_8)).build(),
+                        HttpResponse.BodyHandlers.ofString());
+                return pingResp.statusCode() == 200;
             }
-            HttpResponse<String> resp = http.send(builder.GET().build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> resp = http.send(HttpRequest.newBuilder(URI.create(baseUrl() + "/models"))
+                    .timeout(Duration.ofSeconds(15))
+                    .header("Authorization", "Bearer " + configService.get(AiConfigService.KEY_API_KEY))
+                    .GET().build(), HttpResponse.BodyHandlers.ofString());
             return resp.statusCode() == 200;
         } catch (Exception e) {
             return false;
@@ -165,11 +183,8 @@ public class AiChatService {
                     "model", configService.get(AiConfigService.KEY_MODEL),
                     "max_tokens", 4096,
                     "messages", List.of(Map.of("role", "user", "content", prompt))));
-            HttpRequest request = HttpRequest.newBuilder(URI.create(anthropicMessagesUrl()))
-                    .timeout(Duration.ofSeconds(120))
-                    .header("Content-Type", "application/json")
-                    .header("x-api-key", configService.get(AiConfigService.KEY_API_KEY))
-                    .header("anthropic-version", "2023-06-01")
+            HttpRequest request = anthropicRequestBuilder(anthropicMessagesUrl())
+                    .timeout(Duration.ofSeconds(180))
                     .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                     .build();
             HttpResponse<String> resp = http.send(request, HttpResponse.BodyHandlers.ofString());
