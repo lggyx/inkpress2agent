@@ -93,9 +93,15 @@ async function test(cap: string) {
             <div class="cap-title">{{ c.label }}</div>
             <div class="muted cap-note">{{ c.note }}</div>
           </div>
-          <el-tag size="small" :type="caps[c.key]?.configured ? 'success' : 'info'">
-            {{ caps[c.key]?.configured ? '已配置' : '未配置' }}
-          </el-tag>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+            <el-tag size="small" :type="caps[c.key]?.configured ? 'success' : 'info'">
+              {{ caps[c.key]?.configured ? '已配置' : '未配置' }}
+            </el-tag>
+            <el-tag v-if="(c.key === 'image' || c.key === 'embedding') && forms[c.key].protocol === 'anthropic'"
+                    size="small" type="warning">
+              ⚠ Anthropic 协议无此能力
+            </el-tag>
+          </div>
         </div>
 
         <div class="form-row">
