@@ -11,6 +11,8 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -85,12 +87,32 @@ public class CommentService {
         return content.length() <= 80 ? content : content.substring(0, 80) + "…";
     }
 
-    /** 前台可见评论：仅已过审的顶层评论（回复随父级带出由前端组装） */
-    public List<Comment> publishedOfArticle(Long articleId) {
-        return commentMapper.selectList(new LambdaQueryWrapper<Comment>()
+    /** 前台可见评论（含昵称批量解析）：仅已过审的顶层评论（回复随父级带出由前端组装） */
+    public List<Map<String, Object>> publishedOfArticle(Long articleId) {
+        List<Comment> comments = commentMapper.selectList(new LambdaQueryWrapper<Comment>()
                 .eq(Comment::getArticleId, articleId)
                 .eq(Comment::getStatus, "PUBLISHED")
                 .orderByAsc(Comment::getId));
+        if (comments.isEmpty()) {
+            return List.of();
+        }
+        List<Long> userIds = comments.stream().map(Comment::getUserId).distinct().toList();
+        Map<Long, String> nicknames = userMapper.selectBatchIds(userIds).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        cn.hengxing.inkpress.modules.auth.entity.User::getId,
+                        u -> u.getNickname() == null || u.getNickname().isBlank() ? "用户" + u.getId() : u.getNickname()));
+        List<Map<String, Object>> out = new ArrayList<>(comments.size());
+        for (Comment c : comments) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", c.getId());
+            item.put("userId", c.getUserId());
+            item.put("nickname", nicknames.getOrDefault(c.getUserId(), "用户" + c.getUserId()));
+            item.put("parentId", c.getParentId());
+            item.put("content", c.getContent());
+            item.put("createdAt", c.getCreatedAt() == null ? "" : c.getCreatedAt().toString());
+            out.add(item);
+        }
+        return out;
     }
 
     /** 博主端：待审核评论列表 */

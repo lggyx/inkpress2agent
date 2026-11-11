@@ -49,7 +49,7 @@ public class PublicArticleController {
     }
 
     @GetMapping("/{id}/comments")
-    public Result<List<Comment>> comments(@PathVariable Long id) {
+    public Result<List<Map<String, Object>>> comments(@PathVariable Long id) {
         return Result.ok(commentService.publishedOfArticle(id));
     }
 
