@@ -125,9 +125,19 @@ async function authFetch<T>(path: string, init: RequestInit): Promise<T> {
   }))
 }
 
-/** 刷新令牌旋转：换新 accessToken 并落库用户态；失败（过期/被轮换作废）清空本地态返回 null */
-export async function refreshTokens(): Promise<string | null> {
-  if (!process.client) return null
+/** 刷新令牌旋转：换新 accessToken 并落库用户态；失败（过期/被轮换作废）清空本地态返回 null。
+ *  单飞保护：并发调用共享同一次刷新请求，避免同一枚刷新令牌被多处同时旋转而互踢 */
+let refreshInflight: Promise<string | null> | null = null
+
+export function refreshTokens(): Promise<string | null> {
+  if (!process.client) return Promise.resolve(null)
+  if (!refreshInflight) {
+    refreshInflight = doRefreshTokens().finally(() => { refreshInflight = null })
+  }
+  return refreshInflight
+}
+
+async function doRefreshTokens(): Promise<string | null> {
   const refresh = localStorage.getItem(REFRESH_KEY)
   if (!refresh) return null
   try {

@@ -97,15 +97,21 @@ public class AuthService {
         return issueTokens(user, ip, userAgent);
     }
 
+    /** 旋转宽限期：旧刷新令牌标记为"宽限作废"（revoked_at = now + 宽限），宽限窗口内的重复刷新仍放行，
+     *  解决多标签/并发请求共用一枚刷新令牌的竞态互踢；窗口外即真作废（保留旋转的安全语义） */
+    private static final Duration REFRESH_GRACE = Duration.ofSeconds(60);
+
     @Transactional
     public AuthResponse refresh(String refreshToken, String ip, String userAgent) {
+        LocalDateTime now = LocalDateTime.now();
         RefreshToken stored = refreshTokenMapper.selectOne(
                 new LambdaQueryWrapper<RefreshToken>().eq(RefreshToken::getTokenHash, sha256(refreshToken)));
-        if (stored == null || stored.getRevokedAt() != null || stored.getExpiresAt().isBefore(LocalDateTime.now())) {
+        boolean revoked = stored != null && stored.getRevokedAt() != null && stored.getRevokedAt().isBefore(now);
+        if (stored == null || revoked || stored.getExpiresAt().isBefore(now)) {
             throw BizException.of(1004, "登录已过期，请重新登录");
         }
-        // 旋转：吊销旧令牌，签发新令牌
-        stored.setRevokedAt(LocalDateTime.now());
+        // 旋转：进入宽限期（窗口内可重复刷新），窗口外自动失效
+        stored.setRevokedAt(now.plus(REFRESH_GRACE));
         refreshTokenMapper.updateById(stored);
         User user = userMapper.selectById(stored.getUserId());
         if (user == null || !"ACTIVE".equals(user.getStatus())) {
