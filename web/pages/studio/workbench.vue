@@ -70,7 +70,7 @@ let pendingContent = ''
 
 // 右侧文档面板状态
 const docOpen = ref(true)
-const docTab = ref<'preview' | 'edit'>('preview')
+const docTab = ref<'preview' | 'outline' | 'edit'>('preview')
 const seoOpen = ref(false)
 
 // 对话流状态
@@ -114,7 +114,48 @@ function currentMd(): string {
   return pendingContent || ''
 }
 
+// 文章大纲：解析正文标题（跳过代码块），点击跳预览对应位置
+interface OutlineItem { level: number; text: string; occ: number }
+const outline = ref<OutlineItem[]>([])
+
+function updateOutline() {
+  const md = currentMd()
+  const items: OutlineItem[] = []
+  const occ: Record<string, number> = {}
+  let inCode = false
+  for (const line of md.split('\n')) {
+    const t = line.trim()
+    if (t.startsWith('```')) { inCode = !inCode; continue }
+    if (inCode) continue
+    const m = /^(#{1,6})\s+(.+)$/.exec(t)
+    if (m) {
+      const text = m[2].replace(/[#\s]+$/, '').trim()
+      if (!text) continue
+      occ[text] = (occ[text] || 0) + 1
+      items.push({ level: m[1].length, text, occ: occ[text] })
+    }
+  }
+  outline.value = items
+}
+
+function jumpHeading(o: OutlineItem) {
+  docTab.value = 'preview'
+  nextTick(() => {
+    const box = previewBox.value
+    if (!box) return
+    const hs = Array.from(box.querySelectorAll('h1,h2,h3,h4,h5,h6'))
+      .filter((h) => (h.textContent || '').trim() === o.text)
+    const el = (hs[o.occ - 1] || hs[0]) as HTMLElement | undefined
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      el.classList.add('ol-flash')
+      setTimeout(() => el.classList.remove('ol-flash'), 1300)
+    }
+  })
+}
+
 async function refreshPreview() {
+  updateOutline()
   if (docTab.value !== 'preview' || !previewBox.value || !VditorCtor) return
   try {
     await VditorCtor.preview(previewBox.value, currentMd(), {
@@ -124,7 +165,7 @@ async function refreshPreview() {
   } catch { /* 预览失败不打断 */ }
 }
 
-watch(docTab, (t) => { if (t === 'preview') nextTick(refreshPreview) })
+watch(docTab, () => nextTick(refreshPreview))
 watch(docOpen, (v) => { if (v) nextTick(refreshPreview) })
 
 // 主题切换：编辑器与预览同步换肤
@@ -193,6 +234,7 @@ async function initEditor() {
       if (pendingContent) vditor?.setValue(pendingContent)
       nextTick(refreshPreview)
     },
+    input: () => { updateOutline() },
     // Vditor 3.11：handler 返回值不会自动插入编辑器，须显式 insertValue
     upload: {
       handler: async (files: File[]): Promise<string[]> => {
@@ -571,6 +613,7 @@ onMounted(async () => {
           <div class="doc-head">
             <div class="tabs">
               <button :class="{ on: docTab === 'preview' }" @click="docTab = 'preview'">预览</button>
+              <button :class="{ on: docTab === 'outline' }" @click="docTab = 'outline'">大纲</button>
               <button :class="{ on: docTab === 'edit' }" @click="docTab = 'edit'">微调</button>
             </div>
             <span class="doc-hint">Vditor · 预览与微调</span>
@@ -579,6 +622,21 @@ onMounted(async () => {
             <div v-show="docTab === 'preview'" class="doc-preview">
               <div ref="previewBox" />
               <div v-if="!currentMd() && editorReady" class="muted" style="padding:24px;text-align:center">暂无正文，去对话里让 AI 写一段吧</div>
+            </div>
+            <div v-show="docTab === 'outline'" class="doc-outline">
+              <button
+                v-for="(o, i) in outline"
+                :key="i"
+                class="ol-item"
+                :style="{ paddingLeft: 10 + (o.level - 1) * 14 + 'px' }"
+                :title="'跳到：' + o.text"
+                @click="jumpHeading(o)"
+              >
+                <span class="ol-dot" :class="'lv' + o.level" />{{ o.text }}
+              </button>
+              <div v-if="!outline.length" class="muted" style="padding:18px;text-align:center">
+                正文里还没有标题——用 # 开头写一行（或让 AI 加小标题），大纲就有了
+              </div>
             </div>
             <div v-show="docTab === 'edit'" ref="editorBox" class="doc-editor" />
           </div>
@@ -1072,6 +1130,43 @@ onMounted(async () => {
   padding: 4px;
 }
 .doc-preview > div { padding: 12px 16px; }
+
+/* 大纲 */
+.doc-outline {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  border: 1px solid var(--sline);
+  border-radius: 12px;
+  background: var(--sinset);
+  padding: 6px;
+}
+.ol-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: .86em;
+  padding: 7px 10px;
+  border-radius: 8px;
+  transition: all .15s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ol-item:hover { color: var(--ink); background: rgba(128, 128, 128, .12); transform: translateX(2px); }
+.ol-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: var(--ink-faint); }
+.ol-dot.lv1 { background: var(--sprimary); }
+.ol-dot.lv2 { background: var(--ink-soft); }
+:deep(.ol-flash) { animation: olflash 1.3s ease; }
+@keyframes olflash {
+  0%, 100% { background: transparent; }
+  30% { background: rgba(217, 242, 79, .2); }
+}
 .doc-editor { flex: 1; min-width: 0; min-height: 0; }
 
 /* 预览内容暗色适配 */
