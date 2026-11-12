@@ -180,17 +180,6 @@ watchEffect(() => {
   min-height: 100vh;
   background: var(--sbg);
   color: var(--ink);
-  overflow: hidden;
-}
-/* 桌面端：外壳高度锁死为一屏，主区内部滚动（工作台三栏才能钉在视口内） */
-@media (min-width: 721px) {
-  .studio-shell {
-    height: 100vh;
-  }
-  .studio-main {
-    min-height: 0;
-    overflow: hidden;
-  }
 }
 
 /* 背景光晕：流动渐变 */

@@ -867,22 +867,16 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  height: 100vh;
-  /* 作为 studio-main 的 flex 子项，必须压掉 min-height:auto 地板——否则内容把面板撑高、对话框滚出视口 */
-  min-height: 0;
+  min-height: 100vh;
   padding: 16px 18px;
   min-width: 0;
-  overflow: hidden;
 }
 .wb-body {
-  flex: 1;
-  min-height: 0;
   display: grid;
   grid-template-columns: 340px minmax(0, 1fr) 236px;
-  /* 关键：行高锁死在可用视口内（minmax(0,1fr)），禁止内容把行撑高——三栏各自内部滚动 */
-  grid-template-rows: minmax(0, 1fr);
+  /* 文档流：中央文章随页面下滑；左右栏 sticky 钉住常驻 */
+  align-items: start;
   gap: 14px;
-  overflow: hidden;
 }
 
 /* ===== 顶栏 ===== */
@@ -1020,7 +1014,14 @@ onMounted(async () => {
 }
 
 /* ===== 聊天主舞台 ===== */
-.chat { flex: 1.15; padding: 16px 18px; min-width: 0; }
+.chat {
+  position: sticky;
+  top: 14px;
+  height: 70vh;
+  min-height: 480px;
+  padding: 16px 18px;
+  min-width: 0;
+}
 .chat-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .chip {
   display: inline-flex;
@@ -1302,8 +1303,7 @@ onMounted(async () => {
 .send:disabled { opacity: .4; }
 
 /* ===== 文档面板（中央编辑区） ===== */
-.doc { overflow: hidden; }
-.doc.closed { display: none; }
+.doc { min-width: 0; }
 .doc-inner {
   width: 100%;
   height: 100%;
@@ -1436,7 +1436,7 @@ onMounted(async () => {
 .doc-preview {
   flex: 1;
   min-width: 0;
-  overflow-y: auto;
+  /* 预览随页面滚动（不做内部滚动）：长文由页面滚动，左右栏 sticky 常驻 */
   border: 1px solid var(--sline);
   border-radius: 12px;
   background: var(--sinset);
@@ -1471,7 +1471,8 @@ onMounted(async () => {
   0%, 100% { background: transparent; }
   30% { background: rgba(217, 242, 79, .2); }
 }
-.doc-editor { flex: 1; min-width: 0; min-height: 0; }
+.doc-editor { flex: 1; min-width: 0; height: 70vh; }
+.ol { position: sticky; top: 14px; height: 70vh; min-height: 420px; }
 
 /* 预览内容暗色适配 */
 :deep(.vditor-reset) { color: var(--ink); font-size: 14.5px; line-height: 1.8; background: transparent; }
