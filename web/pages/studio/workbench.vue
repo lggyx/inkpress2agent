@@ -70,10 +70,17 @@ let vditor: {
 } | null = null
 let pendingContent = ''
 
-// 右侧文档面板状态
+// 中央文档面板状态（预览/微调）与 VS Code 式「生成代码」内联对话框
 const docOpen = ref(true)
-const docTab = ref<'preview' | 'outline' | 'edit'>('preview')
+const olOpen = ref(true)
+const docTab = ref<'preview' | 'edit'>('preview')
 const seoOpen = ref(false)
+const genOpen = ref(false)
+const genInput = ref('')
+const genBusy = ref(false)
+const genResult = ref('')
+const genModel = ref('')
+let genAbort = false
 
 // 对话流状态
 const chat = ref<ChatMsg[]>([])
@@ -504,6 +511,55 @@ function autoGrow(e: Event) {
   el.style.height = Math.min(el.scrollHeight, 150) + 'px'
 }
 
+// ===== VS Code 式「生成代码」内联对话框 =====
+function openGen() {
+  genOpen.value = true
+  genInput.value = ''
+  genResult.value = ''
+  genAbort = false
+  nextTick(() => (document.querySelector('.gen-input') as HTMLInputElement | null)?.focus())
+  // 模型徽章：管理员可读文本槽模型名，失败降级为「AI」
+  $api<{ capabilities: Record<string, { model?: string }> }>('GET', '/admin/ai-config')
+    .then((c) => { genModel.value = c.capabilities?.text?.model || 'AI' })
+    .catch(() => { genModel.value = 'AI' })
+}
+
+function closeGen() {
+  genOpen.value = false
+  genAbort = true
+  genInput.value = ''
+  genResult.value = ''
+}
+
+/** 生成：按指令流式产出 Markdown（默认代码块语境），完成后由用户决定插入光标处或丢弃 */
+async function runGen() {
+  const cmd = genInput.value.trim()
+  if (!cmd || genBusy.value) return
+  genBusy.value = true
+  genResult.value = ''
+  genAbort = false
+  const md = currentMd()
+  const instruction = `请为以下场景生成代码/内容（输出 Markdown，代码用围栏代码块包裹，不要解释性废话）：\n${cmd}` +
+    (md ? `\n\n【供参考的上下文】\n${md.slice(0, 2400)}` : '')
+  try {
+    const history = [{ role: 'user', content: instruction }]
+    await streamChat(history, (t) => {
+      if (genAbort) return
+      genResult.value += t
+    }, 'assistant')
+  } catch (e) {
+    genResult.value += `\n⚠ ${(e as Error).message}`
+  } finally { genBusy.value = false }
+}
+
+function insertGen() {
+  if (!vditor || !genResult.value.trim()) return
+  vditor.insertValue(genResult.value.trim() + '\n')
+  refreshPreview()
+  ElMessage.success('已插入光标处')
+  closeGen()
+}
+
 /** 按提纲续写（开题模块三）：把正文标题树作为提纲交给 AI，续写补全未完成部分并追加到文末 */
 async function continueByOutline() {
   updateOutline()
@@ -574,10 +630,10 @@ onMounted(async () => {
         <button class="btn primary" :disabled="saving" @click="save('PUBLISH')">
           {{ status === 'PUBLISHED' ? '更新发布' : '发布' }}
         </button>
-        <button class="btn icon" :class="{ on: docOpen }" title="预览面板" @click="docOpen = !docOpen">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
-            <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
-            <path d="M14.5 4.5v15" />
+        <button class="btn icon" :class="{ on: olOpen }" title="大纲面板" @click="olOpen = !olOpen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4.5 6.5h9M4.5 12h15M4.5 17.5h6" />
+            <circle cx="18.5" cy="6.5" r="1.6" />
           </svg>
         </button>
       </div>
@@ -667,38 +723,56 @@ onMounted(async () => {
         </div>
       </section>
 
-      <!-- 文档面板：预览 / 微调 -->
-      <aside class="pane doc" :class="{ closed: !docOpen }">
+      <!-- 中央：文档编辑器（预览 / 微调，VS Code 式主编辑区） -->
+      <section class="pane doc" :class="{ closed: !docOpen }">
         <div class="doc-inner">
           <div class="doc-head">
             <div class="tabs">
               <button :class="{ on: docTab === 'preview' }" @click="docTab = 'preview'">预览</button>
-              <button :class="{ on: docTab === 'outline' }" @click="docTab = 'outline'">大纲</button>
               <button :class="{ on: docTab === 'edit' }" @click="docTab = 'edit'">微调</button>
             </div>
-            <span class="doc-hint">Vditor · 预览与微调</span>
+            <div class="doc-head-r">
+              <button class="gen-trigger" title="AI 生成代码/内容（插入光标处）" @click="openGen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l1.9 4.7L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.3L12 3z" />
+                  <path d="M18.5 14l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z" />
+                </svg>
+                生成代码
+              </button>
+              <span class="doc-hint mono">{{ genModel || 'AI' }}</span>
+            </div>
           </div>
           <div class="doc-body">
             <div v-show="docTab === 'preview'" class="doc-preview">
               <div ref="previewBox" />
               <div v-if="!currentMd() && editorReady" class="muted" style="padding:24px;text-align:center">暂无正文，去对话里让 AI 写一段吧</div>
             </div>
-            <div v-show="docTab === 'outline'" class="doc-outline">
-              <button
-                v-for="(o, i) in outline"
-                :key="i"
-                class="ol-item"
-                :style="{ paddingLeft: 10 + (o.level - 1) * 14 + 'px' }"
-                :title="'跳到：' + o.text"
-                @click="jumpHeading(o)"
-              >
-                <span class="ol-dot" :class="'lv' + o.level" />{{ o.text }}
-              </button>
-              <div v-if="!outline.length" class="muted" style="padding:18px;text-align:center">
-                正文里还没有标题——用 # 开头写一行（或让 AI 加小标题），大纲就有了
-              </div>
-            </div>
             <div v-show="docTab === 'edit'" ref="editorBox" class="doc-editor" />
+
+            <!-- VS Code 式「生成代码」临时对话框 -->
+            <Transition name="gen-pop">
+              <div v-if="genOpen" class="gen-dlg" @keydown.esc="closeGen">
+                <div class="gen-bar">
+                  <input
+                    v-model="genInput"
+                    class="gen-input"
+                    :placeholder="genBusy ? '生成中，Esc 停止…' : '描述要生成的代码/内容，回车执行…'"
+                    :disabled="genBusy"
+                    @keydown.enter="runGen"
+                  >
+                  <button v-if="genBusy" class="gen-x stop" title="停止" @click="genAbort = true">■</button>
+                  <button v-else class="gen-x" title="关闭（Esc）" @click="closeGen">×</button>
+                </div>
+                <div v-if="genResult || genBusy" class="gen-result">
+                  <pre class="mono">{{ genResult || '…' }}</pre>
+                  <div v-if="!genBusy && genResult.trim()" class="gen-ops">
+                    <button class="gen-op primary" @click="insertGen">插入光标处</button>
+                    <button class="gen-op" @click="genInput = ''; genResult = ''">换个指令</button>
+                    <button class="gen-op" @click="closeGen">丢弃</button>
+                  </div>
+                </div>
+              </div>
+            </Transition>
           </div>
           <div class="doc-meta">
             <div class="meta-line">
@@ -716,6 +790,32 @@ onMounted(async () => {
               <input v-model="seoDescription" placeholder="SEO meta description">
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- 右栏：大纲 -->
+      <aside class="pane ol" :class="{ closed: !olOpen }">
+        <div class="ol-inner">
+          <div class="ol-head">
+            <span class="pane-label">大纲</span>
+            <span class="ol-count mono">{{ outline.length }} 节</span>
+          </div>
+          <div class="ol-body">
+            <button
+              v-for="(o, i) in outline"
+              :key="i"
+              class="ol-item"
+              :style="{ paddingLeft: 10 + (o.level - 1) * 14 + 'px' }"
+              :title="'跳到：' + o.text"
+              @click="jumpHeading(o)"
+            >
+              <span class="ol-dot" :class="'lv' + o.level" />{{ o.text }}
+            </button>
+            <div v-if="!outline.length" class="ol-empty">
+              正文还没有标题——用 # 开头写一行（或让 AI 加小标题），大纲就有了
+            </div>
+          </div>
+          <div class="ol-foot">点击条目跳到预览对应位置</div>
         </div>
       </aside>
     </div>
@@ -770,7 +870,8 @@ onMounted(async () => {
 .wb-body {
   flex: 1;
   min-height: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr) 236px;
   gap: 14px;
 }
 
@@ -907,7 +1008,7 @@ onMounted(async () => {
 }
 
 /* ===== 聊天主舞台 ===== */
-.chat { flex: 1.15; padding: 16px 18px; }
+.chat { flex: 1.15; padding: 16px 18px; min-width: 0; }
 .chat-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .chip {
   display: inline-flex;
@@ -1145,22 +1246,35 @@ onMounted(async () => {
 .send:active:not(:disabled) { transform: scale(.94); }
 .send:disabled { opacity: .4; }
 
-/* ===== 文档面板 ===== */
-.doc {
-  flex: 0 0 clamp(380px, 44%, 600px);
-  overflow: hidden;
-  transition: flex-basis .35s cubic-bezier(.2, .7, .3, 1), opacity .3s ease;
-}
-.doc.closed { flex-basis: 0%; opacity: 0; border-width: 0; pointer-events: none; }
+/* ===== 文档面板（中央编辑区） ===== */
+.doc { overflow: hidden; }
+.doc.closed { display: none; }
 .doc-inner {
-  width: clamp(380px, 100%, 600px);
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  padding: 14px 16px;
   gap: 10px;
+  min-width: 0;
 }
-.doc-head { display: flex; justify-content: space-between; align-items: center; }
+.doc-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.doc-head-r { display: flex; gap: 10px; align-items: center; }
+.gen-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .8em;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(217, 242, 79, .45);
+  background: transparent;
+  color: var(--sprimary);
+  transition: all .16s ease;
+}
+.gen-trigger svg { width: 14px; height: 14px; }
+.gen-trigger:hover { background: rgba(217, 242, 79, .12); transform: translateY(-1px); }
 .tabs { display: flex; gap: 4px; background: var(--sinset); border-radius: 11px; padding: 3px; }
 .tabs button {
   border: 0;
@@ -1180,7 +1294,90 @@ onMounted(async () => {
 }
 .doc-hint { font-size: .74em; color: var(--ink-faint); font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
 
-.doc-body { flex: 1; min-height: 0; display: flex; }
+.doc-body { flex: 1; min-height: 0; display: flex; position: relative; }
+
+/* ===== VS Code 式「生成代码」内联对话框 ===== */
+.gen-dlg {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  right: 14px;
+  z-index: 30;
+  background: var(--spop-solid, #161a28);
+  border: 1px solid rgba(138, 180, 248, .35);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+  overflow: hidden;
+}
+:root[data-theme='light'] .gen-dlg { box-shadow: 0 18px 50px rgba(0, 0, 0, .15); }
+.gen-pop-enter-active, .gen-pop-leave-active { transition: opacity .16s ease, transform .16s ease; }
+.gen-pop-enter-from, .gen-pop-leave-to { opacity: 0; transform: translateY(-6px); }
+.gen-bar { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--sline); }
+.gen-input {
+  flex: 1;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 2px 0 !important;
+  font-size: .9em;
+  color: var(--ink);
+  box-shadow: none !important;
+  outline: none !important;
+}
+.gen-input:focus { outline: none !important; box-shadow: none !important; border: 0 !important; }
+.gen-x {
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 1em;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.gen-x:hover { color: var(--ink); }
+.gen-x.stop { color: #f28b82; font-size: .8em; }
+.gen-result {
+  max-height: 42vh;
+  overflow-y: auto;
+  padding: 10px 14px 12px;
+  border-left: 2px solid var(--sprimary);
+  background: var(--sinset);
+}
+.gen-result pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--ink);
+  font-size: .84em;
+  line-height: 1.7;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+}
+.gen-ops { display: flex; gap: 8px; margin-top: 10px; }
+.gen-op {
+  font-size: .8em;
+  padding: 4px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--sline);
+  background: transparent;
+  color: var(--ink-soft);
+  transition: all .15s ease;
+}
+.gen-op:hover { color: var(--ink); border-color: rgba(217, 242, 79, .45); }
+.gen-op.primary {
+  color: #101012;
+  background: var(--sprimary);
+  border-color: var(--sprimary);
+  font-weight: 650;
+}
+.gen-op.primary:hover { filter: brightness(1.06); }
+
+/* ===== 右栏大纲 ===== */
+.ol { min-width: 0; }
+.ol.closed { display: none; }
+.ol-inner { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 14px; gap: 8px; min-width: 0; }
+.ol-head { display: flex; justify-content: space-between; align-items: center; }
+.ol-count { font-size: .72em; color: var(--ink-faint); }
+.ol-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.ol-empty { color: var(--ink-faint); font-size: .8em; padding: 16px 8px; text-align: center; line-height: 1.7; }
+.ol-foot { font-size: .72em; color: var(--ink-faint); border-top: 1px solid var(--sline); padding-top: 8px; }
 .doc-preview {
   flex: 1;
   min-width: 0;
@@ -1192,16 +1389,7 @@ onMounted(async () => {
 }
 .doc-preview > div { padding: 12px 16px; }
 
-/* 大纲 */
-.doc-outline {
-  flex: 1;
-  min-width: 0;
-  overflow-y: auto;
-  border: 1px solid var(--sline);
-  border-radius: 12px;
-  background: var(--sinset);
-  padding: 6px;
-}
+/* 大纲条目（右栏复用） */
 .ol-item {
   display: flex;
   align-items: center;
@@ -1211,7 +1399,7 @@ onMounted(async () => {
   border: 0;
   background: transparent;
   color: var(--ink-soft);
-  font-size: .86em;
+  font-size: .84em;
   padding: 7px 10px;
   border-radius: 8px;
   transition: all .15s ease;
@@ -1256,11 +1444,10 @@ onMounted(async () => {
 /* ===== 窄屏 ===== */
 @media (max-width: 1100px) {
   .wb { height: auto; min-height: 100vh; }
-  .wb-body { flex-direction: column; }
+  .wb-body { grid-template-columns: 1fr; }
   .chat { min-height: 480px; }
-  .doc { flex: 0 0 auto; }
-  .doc.closed { display: none; }
-  .doc-inner { width: 100%; }
+  .doc { min-height: 520px; }
+  .ol { display: none; }
   .doc-body { min-height: 360px; }
 }
 /* ===== 手机 ===== */
