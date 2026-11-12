@@ -876,7 +876,10 @@ onMounted(async () => {
   min-height: 0;
   display: grid;
   grid-template-columns: 340px minmax(0, 1fr) 236px;
+  /* 关键：行高锁死在可用视口内（minmax(0,1fr)），禁止内容把行撑高——三栏各自内部滚动 */
+  grid-template-rows: minmax(0, 1fr);
   gap: 14px;
+  overflow: hidden;
 }
 
 /* ===== 顶栏 ===== */
@@ -994,13 +997,15 @@ onMounted(async () => {
 /* ===== 面板通用：苹果式玻璃（中性化） ===== */
 .pane {
   position: relative;
-  background: var(--spane);
-  border: 1px solid rgba(255, 255, 255, .08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, .015));
+  border: 1px solid rgba(255, 255, 255, .09);
   border-radius: 14px;
   backdrop-filter: blur(24px) saturate(130%);
   -webkit-backdrop-filter: blur(24px) saturate(130%);
-  box-shadow: var(--shadow-pane);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .05);
   min-width: 0;
+  min-height: 0;   /* 允许在网格行内收缩，内部滚动区接管高度 */
+  overflow: hidden; /* 内容超出绝不撑大面板 */
   display: flex;
   flex-direction: column;
 }
@@ -1048,6 +1053,7 @@ onMounted(async () => {
   gap: 14px;
   padding: 6px 2px;
 }
+.chat { min-height: 0; }
 .hero {
   margin: auto;
   text-align: center;
