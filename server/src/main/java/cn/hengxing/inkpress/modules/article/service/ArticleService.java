@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ArticleService {
@@ -34,14 +35,14 @@ public class ArticleService {
     private final MarkdownRenderer markdownRenderer;
     private final ViewCountBuffer viewCountBuffer;
     private final cn.hengxing.inkpress.modules.messaging.service.NotificationService notificationService;
-    private final cn.hengxing.inkpress.modules.search.service.SearchService searchService;
+    private final cn.hengxing.inkpress.modules.search.service.SearchIndexPublisher searchIndexPublisher;
     private final cn.hengxing.inkpress.modules.review.service.ReviewService reviewService;
 
     public ArticleService(ArticleMapper articleMapper, ArticleTagMapper articleTagMapper,
                           TagMapper tagMapper, CategoryMapper categoryMapper,
                           MarkdownRenderer markdownRenderer, ViewCountBuffer viewCountBuffer,
                           cn.hengxing.inkpress.modules.messaging.service.NotificationService notificationService,
-                          cn.hengxing.inkpress.modules.search.service.SearchService searchService,
+                          cn.hengxing.inkpress.modules.search.service.SearchIndexPublisher searchIndexPublisher,
                           cn.hengxing.inkpress.modules.review.service.ReviewService reviewService) {
         this.articleMapper = articleMapper;
         this.articleTagMapper = articleTagMapper;
@@ -50,7 +51,7 @@ public class ArticleService {
         this.markdownRenderer = markdownRenderer;
         this.viewCountBuffer = viewCountBuffer;
         this.notificationService = notificationService;
-        this.searchService = searchService;
+        this.searchIndexPublisher = searchIndexPublisher;
         this.reviewService = reviewService;
     }
 
@@ -111,7 +112,8 @@ public class ArticleService {
         }
         replaceTags(article.getId(), req.tags());
         if ("PUBLISHED".equals(article.getStatus())) {
-            searchService.indexArticle(article);
+            // 索引同步走 RabbitMQ（事务提交后投递）；定时对账兜底最终一致
+            searchIndexPublisher.publishUpsert(article.getId());
         }
         return toResponse(article, req.tags());
     }
@@ -129,7 +131,7 @@ public class ArticleService {
         }
         articleMapper.updateById(article);
         if (pass) {
-            searchService.indexArticle(article);
+            searchIndexPublisher.publishUpsert(article.getId());
         }
         notificationService.notifyUser(article.getAuthorId(),
                 cn.hengxing.inkpress.modules.messaging.entity.Notification.TYPE_REVIEW,
@@ -155,7 +157,52 @@ public class ArticleService {
                 .eq(categoryId != null, Article::getCategoryId, categoryId)
                 .orderByDesc(Article::getPinned)
                 .orderByDesc(Article::getPublishedAt);
-        return articleMapper.selectPage(Page.of(page, size), qw).convert(a -> toResponse(a, null));
+        IPage<Article> p = articleMapper.selectPage(Page.of(page, size), qw);
+        // 注意：IPage.convert 会原地替换 records（映射为 null 会让 getRecords 全变 null），这里手工组装响应页
+        Page<ArticleResponse> out = new Page<>(p.getCurrent(), p.getSize(), p.getTotal());
+        out.setRecords(toResponses(p.getRecords()));
+        return out;
+    }
+
+    /** 列表页批量装配：整页只发 3 条聚合查询（分类/文章-标签关联/标签），消除逐行 N+1 */
+    private List<ArticleResponse> toResponses(List<Article> articles) {
+        if (articles.isEmpty()) {
+            return List.of();
+        }
+        // 1) 分类批量
+        List<Long> categoryIds = articles.stream().map(Article::getCategoryId)
+                .filter(id -> id != null).distinct().toList();
+        Map<Long, String> categoryNames = categoryIds.isEmpty() ? Map.of()
+                : categoryMapper.selectBatchIds(categoryIds).stream()
+                        .collect(java.util.stream.Collectors.toMap(Category::getId, Category::getName));
+        // 2) 文章-标签关联批量
+        List<Long> articleIds = articles.stream().map(Article::getId).toList();
+        List<ArticleTag> links = articleTagMapper.selectList(new LambdaQueryWrapper<ArticleTag>()
+                .in(ArticleTag::getArticleId, articleIds));
+        Map<Long, List<Long>> tagIdsByArticle = new java.util.LinkedHashMap<>();
+        for (ArticleTag link : links) {
+            tagIdsByArticle.computeIfAbsent(link.getArticleId(), k -> new ArrayList<>()).add(link.getTagId());
+        }
+        // 3) 标签批量
+        List<Long> allTagIds = links.stream().map(ArticleTag::getTagId).distinct().toList();
+        Map<Long, String> tagNames = allTagIds.isEmpty() ? Map.of()
+                : tagMapper.selectBatchIds(allTagIds).stream()
+                        .collect(java.util.stream.Collectors.toMap(Tag::getId, Tag::getName));
+
+        List<ArticleResponse> out = new ArrayList<>(articles.size());
+        for (Article a : articles) {
+            String categoryName = a.getCategoryId() == null ? null : categoryNames.get(a.getCategoryId());
+            List<String> tags = tagIdsByArticle.getOrDefault(a.getId(), List.of()).stream()
+                    .map(id -> tagNames.getOrDefault(id, ""))
+                    .filter(s -> !s.isBlank())
+                    .toList();
+            out.add(new ArticleResponse(a.getId(), a.getCategoryId(), categoryName, a.getTitle(),
+                    a.getContentMd(), a.getContentHtml(), a.getCoverUrl(), a.getSeoDescription(),
+                    a.getGeoSummary(), a.getStatus(), a.getSource(), a.getPinned() == 1,
+                    a.getViewCount(), a.getLikeCount(), a.getCommentCount(), tags,
+                    a.getPublishedAt(), a.getUpdatedAt()));
+        }
+        return out;
     }
 
     public ArticleResponse publicDetail(Long id) {
@@ -190,7 +237,7 @@ public class ArticleService {
         Article article = mustGet(id);
         article.setStatus("OFFLINE");
         articleMapper.updateById(article);
-        searchService.removeArticle(id);
+        searchIndexPublisher.publishDelete(id);
     }
 
     @PreAuthorize("hasRole('BLOGGER')")
@@ -199,7 +246,7 @@ public class ArticleService {
         Article article = mustGet(id);
         article.setDeleted(1);
         articleMapper.updateById(article);
-        searchService.removeArticle(id);
+        searchIndexPublisher.publishDelete(id);
     }
 
     public Article mustGet(Long id) {

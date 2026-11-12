@@ -65,6 +65,8 @@ public class StatsService {
         out.put("dailyPv", visitLogMapper.dailyPv(since));
         out.put("topArticles", withTitles(visitLogMapper.articleTop(since, 5)));
         out.put("outboundTop", outboundClickMapper.hostTop(since, 10));
+        // 互动构成（全站累计，非窗口内）：点赞/评论/文章数
+        out.put("interaction", articleMapper.interactionTotals());
         return out;
     }
 

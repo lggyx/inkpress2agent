@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { $api, useAuthUser, hydrateAuthUser } from '~/composables/useApi'
+import { $api, useAuthUser, hydrateAuthUser, visitorId } from '~/composables/useApi'
 
 interface Me {
   id: number
@@ -22,6 +22,19 @@ const digestSubscribed = ref(false)
 const devices = ref<DeviceRow[]>([])
 const issueName = ref('')
 const issuedToken = ref('')
+const clearBusy = ref(false)
+const clearMsg = ref('')
+
+/** 隐私承诺：一键清除本浏览器访客数据（浏览/出站记录） */
+async function clearVisitorData() {
+  clearBusy.value = true
+  try {
+    const r = await $api<{ visitsRemoved: number; clicksRemoved: number }>(
+      'POST', '/track/clear', { visitorId: visitorId() })
+    clearMsg.value = `已清除 ${r.visitsRemoved} 条浏览记录、${r.clicksRemoved} 条出站记录。`
+    ElMessage.success('访客数据已清除')
+  } catch (e) { ElMessage.error((e as Error).message) } finally { clearBusy.value = false }
+}
 
 onMounted(async () => {
   hydrateAuthUser()
@@ -128,6 +141,13 @@ async function revokeDevice(row: DeviceRow) {
           </tbody>
         </table>
         <p class="muted">令牌供本机 inkpress 分发工具使用（inkpress login）。</p>
+      </div>
+
+      <div class="card">
+        <div class="sec">隐私（访客数据）</div>
+        <p class="muted">站内浏览/出站点击仅以匿名访客标识（localStorage 随机串）聚合，用于「相关阅读」个性化排序，不采集 IP 与设备指纹。可随时一键清除本浏览器的全部访客记录。</p>
+        <el-button :disabled="clearBusy" @click="clearVisitorData">{{ clearBusy ? '清除中…' : '清除我的访客数据' }}</el-button>
+        <div v-if="clearMsg" class="ok-text">{{ clearMsg }}</div>
       </div>
     </div>
   </div>

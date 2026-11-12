@@ -1,0 +1,164 @@
+{
+  "generatedAt": "2026-11-12 10:52:17",
+  "queries": [
+    {
+      "query": "知识图谱",
+      "modes": {
+        "bm25": {
+          "effectiveMode": "bm25",
+          "degraded": false,
+          "total": 1,
+          "latencyMs": 44.9,
+          "top5": [
+            2
+          ]
+        },
+        "vector": {
+          "effectiveMode": "bm25",
+          "degraded": false,
+          "total": 1,
+          "latencyMs": 41.1,
+          "top5": [
+            2
+          ]
+        },
+        "hybrid": {
+          "effectiveMode": "hybrid",
+          "degraded": false,
+          "total": 1,
+          "latencyMs": 50.7,
+          "top5": [
+            2
+          ]
+        }
+      },
+      "overlap_bm25_hybrid_top5": 1
+    },
+    {
+      "query": "Spring Boot",
+      "modes": {
+        "bm25": {
+          "effectiveMode": "bm25",
+          "degraded": false,
+          "total": 1,
+          "latencyMs": 35.9,
+          "top5": [
+            1
+          ]
+        },
+        "vector": {
+          "effectiveMode": "bm25",
+          "degraded": false,
+          "total": 1,
+          "latencyMs": 34.2,
+          "top5": [
+            1
+          ]
+        },
+        "hybrid": {
+          "effectiveMode": "hybrid",
+          "degraded": false,
+          "total": 1,
+          "latencyMs": 53.6,
+          "top5": [
+            1
+          ]
+        }
+      },
+      "overlap_bm25_hybrid_top5": 1
+    },
+    {
+      "query": "JWT 鉴权",
+      "modes": {
+        "bm25": {
+          "effectiveMode": "bm25",
+          "degraded": false,
+          "total": 0,
+          "latencyMs": 32.5,
+          "top5": []
+        },
+        "vector": {
+          "effectiveMode": "bm25",
+          "degraded": false,
+          "total": 0,
+          "latencyMs": 33.3,
+          "top5": []
+        },
+        "hybrid": {
+          "effectiveMode": "hybrid",
+          "degraded": false,
+          "total": 0,
+          "latencyMs": 37.3,
+          "top5": []
+        }
+      },
+      "overlap_bm25_hybrid_top5": 0
+    },
+    {
+      "query": "Redis 缓存",
+      "modes": {
+        "bm25": {
+          "effectiveMode": "bm25",
+          "degraded": false,
+          "total": 1,
+          "latencyMs": 36.7,
+          "top5": [
+            1
+          ]
+        },
+        "vector": {
+          "effectiveMode": "bm25",
+          "degraded": false,
+          "total": 1,
+          "latencyMs": 37.4,
+          "top5": [
+            1
+          ]
+        },
+        "hybrid": {
+          "effectiveMode": "hybrid",
+          "degraded": false,
+          "total": 1,
+          "latencyMs": 50.7,
+          "top5": [
+            1
+          ]
+        }
+      },
+      "overlap_bm25_hybrid_top5": 1
+    },
+    {
+      "query": "Elasticsearch 检索",
+      "modes": {
+        "bm25": {
+          "effectiveMode": "bm25",
+          "degraded": false,
+          "total": 1,
+          "latencyMs": 15.7,
+          "top5": [
+            1
+          ]
+        },
+        "vector": {
+          "effectiveMode": "bm25",
+          "degraded": false,
+          "total": 1,
+          "latencyMs": 45.1,
+          "top5": [
+            1
+          ]
+        },
+        "hybrid": {
+          "effectiveMode": "hybrid",
+          "degraded": false,
+          "total": 1,
+          "latencyMs": 29.0,
+          "top5": [
+            1
+          ]
+        }
+      },
+      "overlap_bm25_hybrid_top5": 1
+    }
+  ]
+}

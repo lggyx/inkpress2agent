@@ -227,8 +227,12 @@ async function initEditor() {
     toolbar: [
       'undo', 'redo', '|', 'headings', 'bold', 'italic', 'strike', '|',
       'list', 'ordered-list', 'check', 'quote', '|',
-      'code-block', 'inline-code', 'link', 'table', 'upload', '|', 'edit-mode',
+      'code-block', 'inline-code', 'link', 'table', 'math', 'upload', '|', 'edit-mode',
     ],
+    math: {
+      engine: 'KaTeX',
+      src: '/vditor/dist/js/katex/katex.min.js',
+    },
     after: () => {
       editorReady.value = true
       if (pendingContent) vditor?.setValue(pendingContent)
@@ -277,12 +281,12 @@ async function onCoverUpload(e: Event) {
   } catch (e) { ElMessage.error((e as Error).message) } finally { input.value = '' }
 }
 
-async function save(action?: string, confirmLowScore?: boolean) {
-  if (!current.value || !title.value.trim()) { ElMessage.warning('标题必填'); return }
+async function save(action?: string, confirmLowScore?: boolean, silent = false) {
+  if (!title.value.trim()) { if (!silent) ElMessage.warning('标题必填'); return false }
   saving.value = true
   try {
     const saved = await $api<{ id: number; status: string }>('POST', '/studio/articles', {
-      id: current.value.id,
+      id: current.value?.id ?? null,
       title: title.value.trim(),
       contentMd: vditor?.getValue() ?? '',
       tags: tagsText.value.split(/[,，]/).map((t) => t.trim()).filter(Boolean),
@@ -290,27 +294,64 @@ async function save(action?: string, confirmLowScore?: boolean) {
       action: action ?? 'DRAFT',
       confirmLowScore,
     })
-    status.value = saved.status
-    current.value.status = saved.status
-    const row = rows.value.find((r) => r.id === current.value!.id)
-    if (row) row.status = saved.status
-    ElMessage.success(action === 'PUBLISH' ? '已发布' : '草稿已保存')
+    // 新建文章后绑定当前行，后续自动保存走更新路径
+    if (!current.value && saved.id) {
+      const row = rows.value.find((r) => r.id === saved.id)
+      if (row) current.value = row
+    }
+    if (current.value) {
+      status.value = saved.status
+      current.value.status = saved.status
+      const row = rows.value.find((r) => r.id === current.value!.id)
+      if (row) row.status = saved.status
+    }
+    if (!silent) ElMessage.success(action === 'PUBLISH' ? '已发布' : '草稿已保存')
+    lastSavedSnapshot = autoSnapshot()
     return true
   } catch (e) {
     const msg = (e as Error).message
     if (msg.includes('2005') || msg.includes('评审分数偏低')) {
       try {
-        const report = await $api<ReviewReport>('GET', `/studio/articles/${current.value.id}/ai-review/latest`).catch(() => null)
+        const report = await $api<ReviewReport>('GET', `/studio/articles/${current.value?.id}/ai-review/latest`).catch(() => null)
         await ElMessageBox.confirm(
           `${msg}${report ? `（评审 ${report.totalScore} 分）` : ''}\n确认仍然发布？`, '低分发布确认', { type: 'warning' })
-        return await save(action, true)
+        return await save(action, true, silent)
       } catch { /* 取消 */ }
-    } else {
+    } else if (!silent) {
       ElMessage.error(msg)
     }
     return false
   } finally { saving.value = false }
 }
+
+// ===== 草稿自动保存（开题模块二）：30s 检查脏快照，有变化且标题非空才静默落库 =====
+let lastSavedSnapshot = ''
+let autoSaveTimer: ReturnType<typeof setInterval> | null = null
+const lastAutoSavedAt = ref('')
+
+function autoSnapshot(): string {
+  return JSON.stringify([title.value, current.value?.id ?? 0, tagsText.value, currentMd(), coverUrl.value])
+}
+
+function startAutoSave() {
+  if (autoSaveTimer) return
+  lastSavedSnapshot = autoSnapshot()
+  autoSaveTimer = setInterval(() => {
+    if (saving.value || aiBusy.value) return
+    if (!current.value || !title.value.trim()) return
+    const snap = autoSnapshot()
+    if (snap === lastSavedSnapshot) return
+    save('DRAFT', undefined, true).then((ok) => {
+      if (ok) {
+        lastAutoSavedAt.value = new Date().toLocaleTimeString('zh-CN', { hour12: false })
+        // 首次自动保存前可能尚未建文，保存成功即有 id
+      }
+    })
+  }, 30_000)
+}
+
+onMounted(startAutoSave)
+onBeforeUnmount(() => { if (autoSaveTimer) clearInterval(autoSaveTimer) })
 
 async function runReview() {
   if (!current.value) { ElMessage.warning('先选择或保存一篇文章'); return }
@@ -461,6 +502,15 @@ function autoGrow(e: Event) {
   el.style.height = Math.min(el.scrollHeight, 150) + 'px'
 }
 
+/** 按提纲续写（开题模块三）：把正文标题树作为提纲交给 AI，续写补全未完成部分并追加到文末 */
+async function continueByOutline() {
+  updateOutline()
+  if (!outline.value.length) { ElMessage.warning('正文还没有标题提纲（# 开头的行）'); return }
+  const ol = outline.value.map((o) => '  '.repeat(o.level - 1) + '- ' + o.text).join('\n')
+  const md = currentMd()
+  await quick(`按以下提纲续写这篇文章：判断每个小节当前是否已有内容，只为空缺或过薄的小节补写 2-4 段内容（Markdown，沿用既有标题层级，不要重复已有文字），输出仅包含新增部分。\n\n【提纲】\n${ol}${md ? `\n\n【当前文章草稿】\n${md.slice(0, 3000)}` : ''}`, 'append')
+}
+
 function onDocClick(e: MouseEvent) {
   if (!swOpen.value) return
   if (!(e.target as HTMLElement).closest('.switcher')) swOpen.value = false
@@ -587,8 +637,10 @@ onMounted(async () => {
         <div class="quick-row">
           <button class="chip v-lavender" :disabled="aiBusy" @click="quick('润色全文并保持原有结构','replace')">润色全文</button>
           <button class="chip v-orange" :disabled="aiBusy" @click="quick('基于全文起一个更吸引人的标题','title')">起标题</button>
+          <button class="chip" :disabled="aiBusy" @click="continueByOutline()">按提纲续写</button>
           <button class="chip v-yellow" :disabled="aiBusy" @click="aiSummary()">摘要+标签</button>
           <button class="chip v-lime" :disabled="aiBusy" @click="aiImage()">AI 配图</button>
+          <span v-if="lastAutoSavedAt" class="autosaved mono">已自动保存 {{ lastAutoSavedAt }}</span>
         </div>
         <div class="composer">
           <textarea
@@ -1038,7 +1090,8 @@ onMounted(async () => {
 .dots i:nth-child(3) { animation-delay: .36s; }
 @keyframes blink { 50% { opacity: 1; transform: translateY(-2px); } }
 
-.quick-row { display: flex; gap: 8px; padding: 10px 0 8px; flex-wrap: wrap; }
+.quick-row { display: flex; gap: 8px; padding: 10px 0 8px; flex-wrap: wrap; align-items: center; }
+.autosaved { margin-left: auto; font-size: .74em; color: var(--ink-faint); }
 .composer {
   display: flex;
   gap: 10px;

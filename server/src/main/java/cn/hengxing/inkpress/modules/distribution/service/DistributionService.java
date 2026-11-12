@@ -22,11 +22,26 @@ public class DistributionService {
         this.articleMapper = articleMapper;
     }
 
+    /** 同平台连续失败熔断阈值（开题 7.2(5)：连续失败达到阈值即暂停并转人工处理） */
+    private static final int CIRCUIT_THRESHOLD = 3;
+
     @Transactional
     public Long create(Long articleId, String platform) {
         Article article = articleMapper.selectById(articleId);
         if (article == null || !"PUBLISHED".equals(article.getStatus()) || article.getDeleted() == 1) {
             throw BizException.of(2003, "文章不存在或未发布");
+        }
+        // 熔断检查：该平台最近 N 条记录全部失败 → 暂停自动分发，转剪贴板兜底/人工处理
+        List<DistributionRecord> recent = distributionRecordMapper.selectList(
+                new LambdaQueryWrapper<DistributionRecord>()
+                        .eq(DistributionRecord::getPlatform, platform)
+                        .orderByDesc(DistributionRecord::getId)
+                        .last("LIMIT " + CIRCUIT_THRESHOLD));
+        if (recent.size() >= CIRCUIT_THRESHOLD
+                && recent.stream().allMatch(r -> DistributionRecord.STATUS_FAILED.equals(r.getStatus()))) {
+            throw BizException.of(4002, "「" + platform + "」连续 " + recent.size()
+                    + " 次分发失败已熔断。请排查页面改版/风控后重试，或使用剪贴板兜底："
+                    + "inkpress clipboard <recordId>（复制排版内容，手动粘贴发布）");
         }
         DistributionRecord existing = distributionRecordMapper.selectOne(new LambdaQueryWrapper<DistributionRecord>()
                 .eq(DistributionRecord::getArticleId, articleId)

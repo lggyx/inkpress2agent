@@ -57,9 +57,12 @@ public class ReviewService {
         report.setKeywordDensity(score(P_KEYWORD, raw));
         report.setSeo(score(P_SEO, raw));
         report.setTotalScore(score(P_TOTAL, raw));
-        report.setSuggestion(raw);
-        // 关键分数缺失视为低置信，闸口不采纳
-        report.setConfidence(report.getTotalScore() != null ? "HIGH" : "LOW");
+        // 自评低置信（模板约定：结论标注低置信度）或关键分数缺失 → 不进自动闸口，建议人工复核
+        boolean selfMarkedLow = raw.contains("低置信度");
+        report.setConfidence(report.getTotalScore() != null && !selfMarkedLow ? "HIGH" : "LOW");
+        report.setSuggestion(selfMarkedLow && report.getConfidence().equals("LOW")
+                ? "【低置信度，建议人工复核】\n" + raw
+                : raw);
         reviewReportMapper.insert(report);
         return report;
     }

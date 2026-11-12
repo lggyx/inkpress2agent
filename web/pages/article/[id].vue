@@ -36,6 +36,24 @@ const commentText = ref('')
 const commentBusy = ref(false)
 const commentMsg = ref('')
 const related = ref<RelatedItem[]>([])
+// 双层嵌套评论：回复目标（null=发主评论）
+const replyTo = ref<CommentItem | null>(null)
+
+/** 双层嵌套树：根评论 + 直接子回复（后端 root_id 已归拢，展示两层足够） */
+const commentTree = computed(() => {
+  const roots: CommentItem[] = []
+  const children = new Map<number, CommentItem[]>()
+  for (const c of comments.value) {
+    const pid = c.parentId ?? 0
+    if (!pid) roots.push(c)
+    else {
+      const arr = children.get(pid) || []
+      arr.push(c)
+      children.set(pid, arr)
+    }
+  }
+  return roots.map((r) => ({ row: r, replies: children.get(r.id) || [] }))
+})
 
 onMounted(async () => {
   user.value = cachedUser()
@@ -73,13 +91,16 @@ async function submitComment() {
   commentBusy.value = true
   commentMsg.value = ''
   try {
-    const r = await $api<{ status: string }>('POST', `/articles/${id}/comments`, { content: commentText.value.trim() })
+    const payload: Record<string, unknown> = { content: commentText.value.trim() }
+    if (replyTo.value) payload.parentId = replyTo.value.id
+    const r = await $api<{ status: string }>('POST', `/articles/${id}/comments`, payload)
     if (r.status === 'PENDING_AUDIT') {
       commentMsg.value = '评论含敏感词，已转入人工审核，通过后展示。'
     } else {
-      commentMsg.value = '评论已发表。'
+      commentMsg.value = replyTo.value ? '回复已发表。' : '评论已发表。'
     }
     commentText.value = ''
+    replyTo.value = null
     comments.value = await $pub<CommentItem[]>(`/articles/${id}/comments`)
   } catch (e) {
     commentMsg.value = (e as Error).message
@@ -122,15 +143,27 @@ function fmtDate(s: string): string { return (s || '').replace('T', ' ').slice(0
       <section class="card comments">
         <h3>评论</h3>
         <div v-if="user" class="form-row">
-          <textarea v-model="commentText" rows="3" placeholder="写下你的评论…" />
-          <button class="primary" :disabled="commentBusy" @click="submitComment">发表评论</button>
+          <div v-if="replyTo" class="reply-bar">
+            回复 @{{ replyTo.nickname }}
+            <button class="linkish" @click="replyTo = null">取消</button>
+          </div>
+          <textarea v-model="commentText" rows="3" :placeholder="replyTo ? `回复 @${replyTo.nickname}…` : '写下你的评论…'" />
+          <button class="primary" :disabled="commentBusy" @click="submitComment">
+            {{ replyTo ? '发表回复' : '发表评论' }}
+          </button>
           <div v-if="commentMsg" class="ok-text">{{ commentMsg }}</div>
         </div>
         <p v-else class="muted"><NuxtLink to="/login">登录</NuxtLink> 后参与评论。</p>
         <div v-if="!comments.length" class="muted">还没有评论。</div>
-        <div v-for="c in comments" :key="c.id" class="comment-item">
-          <div class="c-head"><b>{{ c.nickname }}</b><span class="muted">{{ fmtDate(c.createdAt) }}</span></div>
-          <div class="c-body">{{ c.content }}</div>
+        <div v-for="node in commentTree" :key="node.row.id" class="comment-item">
+          <div class="c-head"><b>{{ node.row.nickname }}</b><span class="muted">{{ fmtDate(node.row.createdAt) }}</span></div>
+          <div class="c-body">{{ node.row.content }}</div>
+          <div v-if="user" class="c-ops"><button class="linkish" @click="replyTo = node.row; commentText = ''">回复</button></div>
+          <div v-for="c in node.replies" :key="c.id" class="comment-item reply">
+            <div class="c-head"><b>{{ c.nickname }}</b><span class="muted">{{ fmtDate(c.createdAt) }}</span></div>
+            <div class="c-body">{{ c.content }}</div>
+            <div v-if="user" class="c-ops"><button class="linkish" @click="replyTo = c; commentText = ''">回复</button></div>
+          </div>
         </div>
       </section>
 
@@ -155,6 +188,19 @@ function fmtDate(s: string): string { return (s || '').replace('T', ' ').slice(0
 .a-actions { display: flex; align-items: center; gap: 16px; margin-top: 26px; border-top: 1px solid var(--line); padding-top: 16px; }
 .comments h3, .related h3 { margin: 0 0 12px; }
 .comment-item { border-top: 1px dashed var(--line); padding: 10px 0; }
+.comment-item.reply { margin-left: 34px; border-top: 1px dashed var(--line); }
+.c-ops { margin-top: 4px; }
+.c-ops .linkish { font-size: .8em; }
+.reply-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--primary-soft);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  font-size: .88em;
+}
 .c-head { display: flex; gap: 10px; align-items: baseline; }
 .c-body { color: var(--ink-soft); margin-top: 2px; }
 .rel-item { display: block; padding: 6px 0; color: var(--ink); border-top: 1px dashed var(--line); }

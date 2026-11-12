@@ -21,6 +21,7 @@ const aiTotalSlots = 4
 const daily = ref<DailyRow[]>([])
 const topArticles = ref<TopArticle[]>([])
 const outboundTop = ref<{ host?: string; platform?: string; cnt: number }[]>([])
+const interaction = ref<{ likes: number; comments: number; published: number }>({ likes: 0, comments: 0, published: 0 })
 
 const today = new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })
 
@@ -95,6 +96,12 @@ async function load() {
     daily.value = ov.value.dailyPv || []
     topArticles.value = ov.value.topArticles || []
     outboundTop.value = ov.value.outboundTop || []
+    const it = ov.value.interaction || {}
+    interaction.value = {
+      likes: Number(it.likes || 0),
+      comments: Number(it.comments || 0),
+      published: Number(it.published || 0),
+    }
   } else {
     ElMessage.error((ov.reason as Error).message)
   }
@@ -111,6 +118,12 @@ async function load() {
 }
 
 function onResize() { if (chartReady && chart) chart.resize() }
+
+/** 互动构成条宽：以三项最大值为基准的百分比 */
+function barW(v: number): string {
+  const max = Math.max(interaction.value.likes, interaction.value.comments, interaction.value.published, 1)
+  return Math.max(6, Math.round((v / max) * 100)) + '%'
+}
 
 onMounted(async () => {
   await load()
@@ -237,6 +250,28 @@ watch(themeRef, () => { if (chartReady) renderChart() })
           <div v-if="!outboundTop.length" class="muted" style="padding:14px 4px">暂无出站记录</div>
         </div>
       </div>
+
+      <!-- 互动构成（开题模块六）：全站累计点赞/评论/文章 -->
+      <div class="panel-card int-card">
+        <div class="c-head">互动构成 · 全站累计</div>
+        <div class="int-list">
+          <div class="int-row">
+            <span class="int-label">点赞</span>
+            <div class="int-bar"><i :style="{ width: barW(interaction.likes) }" /></div>
+            <span class="mono int-num">{{ interaction.likes }}</span>
+          </div>
+          <div class="int-row">
+            <span class="int-label">评论</span>
+            <div class="int-bar"><i :style="{ width: barW(interaction.comments) }" /></div>
+            <span class="mono int-num">{{ interaction.comments }}</span>
+          </div>
+          <div class="int-row">
+            <span class="int-label">已发布文章</span>
+            <div class="int-bar"><i :style="{ width: barW(interaction.published) }" /></div>
+            <span class="mono int-num">{{ interaction.published }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -350,6 +385,25 @@ watch(themeRef, () => { if (chartReady) renderChart() })
 }
 .out-row:last-child { border-bottom: 0; }
 .o-host { color: var(--ink-soft); font-size: .85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 互动构成 */
+.int-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
+.int-label { width: 88px; flex-shrink: 0; color: var(--ink-soft); font-size: .86em; }
+.int-bar {
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(128, 128, 128, .14);
+  overflow: hidden;
+}
+.int-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sprimary-deep), var(--sprimary));
+  transition: width .4s cubic-bezier(.2, .7, .3, 1);
+}
+.int-num { width: 44px; text-align: right; color: var(--ink); font-size: .85em; }
 
 @media (max-width: 1000px) {
   .stat-grid { grid-template-columns: 1fr 1fr; }

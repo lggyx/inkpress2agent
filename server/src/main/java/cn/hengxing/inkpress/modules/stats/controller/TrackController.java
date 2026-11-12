@@ -87,6 +87,27 @@ public class TrackController {
         return ResponseEntity.status(HttpStatus.FOUND).location(uri).build();
     }
 
+    public record ClearRequest(String visitorId) {
+    }
+
+    /**
+     * 隐私承诺（开题 7.2(6)）：访客数据一键清除——按 visitorId 删除其全部浏览与出站记录。
+     * 只认请求体里的 visitorId（与上报一致），不涉及 IP/设备指纹。
+     */
+    @PostMapping("/api/track/clear")
+    public Object clear(@RequestBody ClearRequest req) {
+        if (req.visitorId() == null || req.visitorId().length() < 8 || req.visitorId().length() > 64) {
+            throw BizException.of(2501, "visitorId 非法");
+        }
+        long visits = visitLogMapper.delete(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<VisitLog>()
+                        .eq(VisitLog::getVisitorId, req.visitorId()));
+        long clicks = outboundClickMapper.delete(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<OutboundClick>()
+                        .eq(OutboundClick::getVisitorId, req.visitorId()));
+        return Map.of("code", 0, "message", "ok", "data", Map.of("visitsRemoved", visits, "clicksRemoved", clicks));
+    }
+
     private String clientIp(HttpServletRequest request) {
         String ip = request.getHeader("X-Real-IP");
         return ip == null || ip.isBlank() ? request.getRemoteAddr() : ip;
