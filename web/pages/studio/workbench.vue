@@ -1026,7 +1026,7 @@ onMounted(async () => {
   top: 14px;
   height: 70vh;
   min-height: 480px;
-  padding: 16px 18px;
+  padding: 12px 14px;
   min-width: 0;
 }
 .chat-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -1063,12 +1063,16 @@ onMounted(async () => {
   flex-direction: column;
   gap: 14px;
   padding: 6px 2px;
+  /* 会话区隐藏滚动条：滚轮照常滚，视觉上不出现条 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.chat-body::-webkit-scrollbar { display: none; }
 .chat { min-height: 0; }
 .hero {
   margin: auto;
   text-align: center;
-  padding: 24px 18px;
+  padding: 8px 8px;
   width: 100%;
 }
 .hero-badge {
@@ -1079,12 +1083,12 @@ onMounted(async () => {
   color: var(--primary);
   border: 1px solid rgba(217, 242, 79, .35);
   border-radius: 999px;
-  padding: 4px 14px;
-  margin-bottom: 16px;
+  padding: 3px 12px;
+  margin-bottom: 10px;
   animation: rise .4s ease both;
 }
 .hero-title {
-  font-size: 1.7em;
+  font-size: 1.5em;
   font-weight: 800;
   margin: 0 0 8px;
   letter-spacing: .5px;
@@ -1094,26 +1098,26 @@ onMounted(async () => {
   color: transparent;
   animation: rise .45s ease .05s both;
 }
-.hero-sub { color: var(--ink-faint); font-size: .9em; margin: 0; animation: rise .5s ease .1s both; }
+.hero-sub { color: var(--ink-faint); font-size: .84em; margin: 0; animation: rise .5s ease .1s both; }
 
 /* ===== 颜色卡快捷指令（暗底高饱和卡 + 黑胶囊，参考 KNOCK 风格） ===== */
 .cmd-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  max-width: 470px;
-  margin: 24px auto 0;
+  gap: 10px;
+  max-width: 430px;
+  margin: 10px auto 0;
 }
 .cmd {
   position: relative;
   overflow: hidden;
   text-align: left;
   border: 0;
-  border-radius: 18px;
-  padding: 15px 15px 13px;
+  border-radius: 16px;
+  padding: 12px 12px 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3);
   transition: transform .25s cubic-bezier(.34, 1.56, .64, 1), box-shadow .25s ease, filter .25s ease;
@@ -1136,8 +1140,8 @@ onMounted(async () => {
 .cmd .b1 { width: 130px; height: 130px; right: -40px; bottom: -54px; }
 .cmd .b2 { width: 54px; height: 54px; right: 30px; top: -26px; opacity: .8; }
 .cmd-title { font-weight: 800; font-size: 1em; position: relative; letter-spacing: .3px; }
-.cmd-sub { font-size: .76em; opacity: .68; line-height: 1.55; position: relative; }
-.cmd-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; position: relative; }
+.cmd-sub { font-size: .7em; opacity: .68; line-height: 1.4; position: relative; }
+.cmd-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; position: relative; }
 .cmd .pill {
   background: #15171e;
   color: #fff;
@@ -1262,7 +1266,7 @@ onMounted(async () => {
 .dots i:nth-child(3) { animation-delay: .36s; }
 @keyframes blink { 50% { opacity: 1; transform: translateY(-2px); } }
 
-.quick-row { display: flex; gap: 8px; padding: 10px 0 8px; flex-wrap: wrap; align-items: center; }
+.quick-row { display: flex; gap: 8px; padding: 6px 0 4px; flex-wrap: wrap; align-items: center; }
 .autosaved { margin-left: auto; font-size: .74em; color: var(--ink-faint); }
 .composer {
   display: flex;
