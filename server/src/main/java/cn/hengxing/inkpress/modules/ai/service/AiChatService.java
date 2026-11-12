@@ -50,9 +50,14 @@ public class AiChatService {
 
     /** SSE 流式多轮对话：前端直传 messages 历史（studio 工作台用），assistant 模板作为系统提示 */
     public SseEmitter chatStreamMessages(List<Map<String, String>> messages) {
+        return chatStreamMessages(messages, "assistant");
+    }
+
+    /** 按 persona 路由系统提示模板：assistant=工作台写作助手，article_qa=文章页读者问答助手 */
+    public SseEmitter chatStreamMessages(List<Map<String, String>> messages, String category) {
         requireConfigured(AiConfigService.CAP_TEXT);
         SseEmitter emitter = new SseEmitter(180_000L);
-        String system = configService.mustTemplate("assistant").getContent();
+        String system = configService.mustTemplate(category).getContent();
         HttpRequest request = anthropic()
                 ? anthropicMessagesRequest(messages, system, true)
                 : openaiMessagesRequest(messages, system, true);

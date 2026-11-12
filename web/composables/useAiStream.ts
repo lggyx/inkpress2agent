@@ -90,10 +90,12 @@ export async function streamAi(
   return sendAndRead(makeSend({ category, content }), onToken)
 }
 
-/** 多轮直传流式对话：messages 历史由前端持有（studio 工作台对话流） */
+/** 多轮直传流式对话：messages 历史由前端持有（studio 工作台对话流 / 文章页问答）。
+ *  persona: assistant=工作台写作助手（缺省），reader=文章页读者问答助手 */
 export async function streamChat(
   messages: { role: string; content: string }[],
   onToken: (token: string) => void,
+  persona?: 'assistant' | 'reader',
 ): Promise<string> {
-  return sendAndRead(makeSend({ messages }), onToken)
+  return sendAndRead(makeSend({ messages, persona }), onToken)
 }

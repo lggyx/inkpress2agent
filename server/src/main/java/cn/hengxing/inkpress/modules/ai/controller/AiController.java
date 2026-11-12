@@ -62,7 +62,7 @@ public class AiController {
         this.embeddingService = embeddingService;
     }
 
-    /** SSE 流式 AI 对话：{category,content} 模板模式 或 {messages:[...]} 多轮直传（studio 工作台） */
+    /** SSE 流式 AI 对话：{category,content} 模板模式 或 {messages:[...],persona?} 多轮直传（studio 工作台/文章页问答） */
     @PostMapping(path = "/ai/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chat(@RequestBody Map<String, Object> body) {
         Object messages = body.get("messages");
@@ -78,7 +78,10 @@ public class AiController {
                     hist.add(row);
                 }
             }
-            return aiChatService.chatStreamMessages(hist);
+            // persona=reader → 文章页问答助手模板；缺省 assistant（工作台写作助手）
+            String category = "reader".equals(String.valueOf(body.getOrDefault("persona", "")))
+                    ? "article_qa" : "assistant";
+            return aiChatService.chatStreamMessages(hist, category);
         }
         String category = body.get("category") == null ? "" : String.valueOf(body.get("category"));
         String content = body.get("content") == null ? "" : String.valueOf(body.get("content"));

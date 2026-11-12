@@ -60,10 +60,11 @@ async function send(text?: string) {
   scrollBottom()
   try {
     const history = chat.value.slice(0, idx).map((m) => ({ role: m.role, content: m.content }))
+    // persona=reader：文章问答助手人设（区别于工作台写作助手）
     await streamChat([...history, { role: 'user', content: msg + context }], (t) => {
       chat.value[idx].content += t
       scrollBottom()
-    })
+    }, 'reader')
   } catch (e) {
     chat.value[idx].content += `\n⚠ ${(e as Error).message}`
   } finally {
