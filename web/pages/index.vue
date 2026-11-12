@@ -32,9 +32,6 @@ function fmtDate(s: string): string {
 
 <template>
   <div>
-    <!-- 首次打开的协作光标开场动画（本会话一次，跳过 reduced-motion/窄屏） -->
-    <SwarmIntro />
-
     <!-- Hero：站名 + 签名 + 胶囊 CTA（Pure 式居中） -->
     <section class="hero">
       <div class="hero-mark grad-title">Ink</div>
