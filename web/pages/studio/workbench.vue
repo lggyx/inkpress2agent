@@ -175,7 +175,15 @@ async function refreshPreview() {
   } catch { /* 预览失败不打断 */ }
 }
 
-watch(docTab, () => nextTick(refreshPreview))
+watch(docTab, (t) => {
+  nextTick(() => {
+    refreshPreview()
+    // 切到微调时若编辑器在视口外，滚到可见（sticky 文档头下）
+    if (t === 'edit' && editorBox.value) {
+      editorBox.value.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  })
+})
 watch(docOpen, (v) => { if (v) nextTick(refreshPreview) })
 
 // 主题切换：编辑器与预览同步换肤
@@ -747,13 +755,7 @@ onMounted(async () => {
             </div>
           </div>
           <div class="doc-body">
-            <div v-show="docTab === 'preview'" class="doc-preview">
-              <div ref="previewBox" />
-              <div v-if="!currentMd() && editorReady" class="muted" style="padding:24px;text-align:center">暂无正文，去对话里让 AI 写一段吧</div>
-            </div>
-            <div v-show="docTab === 'edit'" ref="editorBox" class="doc-editor" />
-
-            <!-- VS Code 式「生成代码」临时对话框 -->
+            <!-- VS Code 式「生成代码」临时对话框（sticky：滚动时仍钉在可视顶部） -->
             <Transition name="gen-pop">
               <div v-if="genOpen" class="gen-dlg" @keydown.esc="closeGen">
                 <div class="gen-bar">
@@ -777,6 +779,11 @@ onMounted(async () => {
                 </div>
               </div>
             </Transition>
+            <div v-show="docTab === 'preview'" class="doc-preview">
+              <div ref="previewBox" />
+              <div v-if="!currentMd() && editorReady" class="muted" style="padding:24px;text-align:center">暂无正文，去对话里让 AI 写一段吧</div>
+            </div>
+            <div v-show="docTab === 'edit'" ref="editorBox" class="doc-editor" />
           </div>
           <div class="doc-meta">
             <div class="meta-line">
@@ -1313,7 +1320,22 @@ onMounted(async () => {
   gap: 10px;
   min-width: 0;
 }
-.doc-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+/* 文档头 sticky：页面下滑时 tab/生成按钮始终可达 */
+.doc-head {
+  position: sticky;
+  top: 14px;
+  z-index: 20;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin: -10px -14px 0;
+  border-radius: 12px;
+  background: var(--srail);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
 .doc-head-r { display: flex; gap: 10px; align-items: center; }
 .gen-trigger {
   display: inline-flex;
@@ -1349,24 +1371,25 @@ onMounted(async () => {
 }
 .doc-hint { font-size: .74em; color: var(--ink-faint); font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
 
-.doc-body { flex: 1; min-height: 0; display: flex; position: relative; }
+.doc-body { min-height: 0; display: flex; flex-direction: column; position: relative; gap: 10px; }
 
 /* ===== VS Code 式「生成代码」内联对话框 ===== */
 .gen-dlg {
-  position: absolute;
-  top: 10px;
-  left: 14px;
-  right: 14px;
-  z-index: 30;
+  position: fixed;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(620px, 92vw);
+  z-index: 60;
   background: var(--spop-solid, #161a28);
-  border: 1px solid rgba(138, 180, 248, .35);
+  border: 1px solid rgba(217, 242, 79, .3);
   border-radius: 12px;
   box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
   overflow: hidden;
 }
 :root[data-theme='light'] .gen-dlg { box-shadow: 0 18px 50px rgba(0, 0, 0, .15); }
-.gen-pop-enter-active, .gen-pop-leave-active { transition: opacity .16s ease, transform .16s ease; }
-.gen-pop-enter-from, .gen-pop-leave-to { opacity: 0; transform: translateY(-6px); }
+.gen-pop-enter-active, .gen-pop-leave-active { transition: opacity .16s ease; }
+.gen-pop-enter-from, .gen-pop-leave-to { opacity: 0; }
 .gen-bar { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--sline); }
 .gen-input {
   flex: 1;
@@ -1433,6 +1456,22 @@ onMounted(async () => {
 .ol-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
 .ol-empty { color: var(--ink-faint); font-size: .8em; padding: 16px 8px; text-align: center; line-height: 1.7; }
 .ol-foot { font-size: .72em; color: var(--ink-faint); border-top: 1px solid var(--sline); padding-top: 8px; }
+
+/* 细滚动条（对话流/大纲/生成结果） */
+.chat-body::-webkit-scrollbar,
+.ol-body::-webkit-scrollbar,
+.gen-result::-webkit-scrollbar,
+.doc-preview::-webkit-scrollbar { width: 6px; }
+.chat-body::-webkit-scrollbar-thumb,
+.ol-body::-webkit-scrollbar-thumb,
+.gen-result::-webkit-scrollbar-thumb,
+.doc-preview::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, .28);
+  border-radius: 4px;
+}
+.chat-body::-webkit-scrollbar-track,
+.ol-body::-webkit-scrollbar-track,
+.gen-result::-webkit-scrollbar-track { background: transparent; }
 .doc-preview {
   flex: 1;
   min-width: 0;
