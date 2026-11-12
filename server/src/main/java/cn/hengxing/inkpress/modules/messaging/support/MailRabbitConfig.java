@@ -58,7 +58,9 @@ public class MailRabbitConfig {
         return BindingBuilder.bind(mailDeadLetterQueue()).to(mailDeadLetterExchange()).with("#");
     }
 
+    /** 全局唯一 Jackson 消息转换器（@Primary）：邮件与检索队列共用，避免多 Bean 歧义导致生产者回退 JDK 序列化而消费者按 JSON 解析的不一致 */
     @Bean
+    @org.springframework.context.annotation.Primary
     public MessageConverter mailMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }

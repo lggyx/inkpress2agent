@@ -5,8 +5,6 @@ import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
-import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -56,11 +54,5 @@ public class SearchRabbitConfig {
     @Bean
     public Binding searchDlqBinding() {
         return BindingBuilder.bind(searchDeadLetterQueue()).to(searchDeadLetterExchange()).with("#");
-    }
-
-    /** 与邮件模块共用 Jackson 消息转换风格（各自独立 Bean，RabbitTemplate 全局生效一份即可） */
-    @Bean
-    public MessageConverter searchMessageConverter() {
-        return new Jackson2JsonMessageConverter();
     }
 }

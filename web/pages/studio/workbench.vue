@@ -4,6 +4,8 @@ import { $api, accessToken } from '~/composables/useApi'
 import { streamChat } from '~/composables/useAiStream'
 import { useTheme } from '~/composables/useTheme'
 
+const route = useRoute()
+
 interface ArticleRow {
   id: number
   title: string
@@ -521,6 +523,12 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 onMounted(async () => {
   await initEditor()
   await loadList()
+  // 支持外部直达：/studio/workbench?article=<id>（文章页「编辑此文」入口）
+  const qid = Number(route.query.article)
+  if (qid && (!current.value || current.value.id !== qid)) {
+    const row = rows.value.find((r) => r.id === qid)
+    if (row) await openArticle(row)
+  }
 })
 </script>
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { $pub, $api, visitorId, accessToken, cachedUser, type UserInfo } from '~/composables/useApi'
+import { useAuthUser } from '~/composables/useApi'
 
 interface ArticleDetail {
   id: number
@@ -31,6 +32,8 @@ useSeoMeta({
 const liked = ref(false)
 const likeCount = ref(0)
 const user = ref<UserInfo | null>(null)
+const authUser = useAuthUser()
+const isBlogger = computed(() => !!authUser.value?.roles?.includes('BLOGGER'))
 const comments = ref<CommentItem[]>([])
 const commentText = ref('')
 const commentBusy = ref(false)
@@ -126,6 +129,9 @@ function fmtDate(s: string): string { return (s || '').replace('T', ' ').slice(0
         <div class="a-tags" v-if="article.tags?.length">
           <span class="tag-chip" v-for="t in article.tags" :key="t">{{ t }}</span>
         </div>
+        <div v-if="isBlogger" class="edit-entry">
+          <NuxtLink :to="`/studio/workbench?article=${article.id}`" class="edit-link">✎ 编辑此文（博主端工作台）</NuxtLink>
+        </div>
         <!-- 服务端渲染的深度排版正文（M4/M3 contentHtml） -->
         <div class="article-content" v-html="article.contentHtml" />
         <AiSummary :article-id="article.id" :title="article.title" :content-html="article.contentHtml || ''" />
@@ -184,6 +190,16 @@ function fmtDate(s: string): string { return (s || '').replace('T', ' ').slice(0
 .a-title { margin: 0 0 8px; }
 .a-meta { display: flex; gap: 14px; }
 .a-tags { margin: 10px 0 0; }
+.edit-entry { margin-top: 10px; }
+.edit-link {
+  color: var(--primary);
+  font-size: .85em;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  padding: 3px 12px;
+  transition: all .16s ease;
+}
+.edit-link:hover { border-color: var(--primary); text-decoration: none; }
 .article-content { margin-top: 18px; }
 .a-actions { display: flex; align-items: center; gap: 16px; margin-top: 26px; border-top: 1px solid var(--line); padding-top: 16px; }
 .comments h3, .related h3 { margin: 0 0 12px; }

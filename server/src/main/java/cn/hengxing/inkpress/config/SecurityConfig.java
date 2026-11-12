@@ -38,8 +38,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/api/health", "/actuator/health").permitAll()
                         // 一键退订：邮件链接直达，免登录
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/unsubscribe").permitAll()
-                        // M6 统计采集与公开榜：游客可上报/可读
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/track/visit").permitAll()
+                        // M6 统计采集与公开榜：游客可上报/可读；画像一键清除为匿名隐私权利
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/track/visit", "/api/track/clear").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/r", "/api/stats/hot", "/api/graph", "/rss.xml").permitAll()
                         // 游客可读：公开文章、搜索、分类、标签、媒体资产
                         .requestMatchers(org.springframework.http.HttpMethod.GET,

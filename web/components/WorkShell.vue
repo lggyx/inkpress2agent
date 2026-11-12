@@ -122,6 +122,27 @@ watchEffect(() => {
         </template>
       </nav>
       <div class="rail-bottom">
+        <!-- 跨端入口：博主端↔管理端按角色显示 -->
+        <NuxtLink
+          v-if="area === 'studio' && user?.roles?.includes('ADMIN')"
+          to="/admin" class="rail-btn" title="管理端"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l7.5 3v5.5c0 4.6-3.2 7.9-7.5 9.5-4.3-1.6-7.5-4.9-7.5-9.5V6l7.5-3z" />
+            <path d="M9 12l2.2 2.2L15.5 10" />
+          </svg>
+          <span class="rail-tip">管理端</span>
+        </NuxtLink>
+        <NuxtLink
+          v-if="area === 'admin' && user?.roles?.includes('BLOGGER')"
+          to="/studio/workbench" class="rail-btn" title="博主端"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l1.9 4.7L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.3L12 3z" />
+            <path d="M18.5 14l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z" />
+          </svg>
+          <span class="rail-tip">博主端</span>
+        </NuxtLink>
         <button class="rail-btn" :title="theme === 'dark' ? '切换浅色' : '切换深色'" @click="toggleTheme()">
           <svg v-if="theme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
             <circle cx="12" cy="12" r="4.2" />
