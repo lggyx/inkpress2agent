@@ -868,8 +868,11 @@ onMounted(async () => {
   flex-direction: column;
   gap: 14px;
   height: 100vh;
+  /* 作为 studio-main 的 flex 子项，必须压掉 min-height:auto 地板——否则内容把面板撑高、对话框滚出视口 */
+  min-height: 0;
   padding: 16px 18px;
   min-width: 0;
+  overflow: hidden;
 }
 .wb-body {
   flex: 1;
