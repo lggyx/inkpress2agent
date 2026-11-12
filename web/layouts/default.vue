@@ -44,10 +44,10 @@ onBeforeUnmount(() => {
         <NuxtLink to="/" class="brand">InkPress</NuxtLink>
         <nav class="nav">
           <NuxtLink to="/">首页</NuxtLink>
-          <NavSearch />
           <NuxtLink to="/graph">图谱</NuxtLink>
         </nav>
         <div class="header-right">
+          <NavSearch />
           <ThemeToggle />
           <template v-if="user">
             <NuxtLink v-if="user.roles.includes('BLOGGER')" to="/studio" class="muted">博主端</NuxtLink>

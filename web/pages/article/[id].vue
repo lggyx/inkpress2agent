@@ -107,6 +107,7 @@ function fmtDate(s: string): string { return (s || '').replace('T', ' ').slice(0
         </div>
         <!-- 服务端渲染的深度排版正文（M4/M3 contentHtml） -->
         <div class="article-content" v-html="article.contentHtml" />
+        <AiSummary :article-id="article.id" :title="article.title" :content-html="article.contentHtml || ''" />
         <div class="a-actions">
           <button class="primary" :class="{ liked }" @click="toggleLike">
             {{ liked ? '已赞' : '点赞' }} · {{ likeCount }}
@@ -114,6 +115,9 @@ function fmtDate(s: string): string { return (s || '').replace('T', ' ').slice(0
           <span class="muted">{{ article.commentCount }} 条评论</span>
         </div>
       </article>
+
+      <!-- AI 问答悬浮窗（全页级） -->
+      <AiChatFab :article-id="article.id" :title="article.title" :content-html="article.contentHtml || ''" />
 
       <section class="card comments">
         <h3>评论</h3>
