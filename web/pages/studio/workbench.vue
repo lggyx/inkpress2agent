@@ -3,6 +3,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { $api, accessToken } from '~/composables/useApi'
 import { streamChat } from '~/composables/useAiStream'
 import { useTheme } from '~/composables/useTheme'
+import { renderAiMd } from '~/utils/aiMd'
 
 const route = useRoute()
 
@@ -683,11 +684,14 @@ onMounted(async () => {
           <template v-else>
             <div v-for="(m, i) in chat" :key="i" class="bubble" :class="m.role">
               <div class="b-role">{{ m.role === 'user' ? '我' : 'AI' }}</div>
-              <div class="b-content">
-                <template v-if="m.content">{{ m.content }}</template>
-                <span v-else-if="i === chat.length - 1 && aiBusy" class="dots"><i /><i /><i /></span>
-                <template v-else>…</template>
-              </div>
+              <div
+                v-if="m.content && !(i === chat.length - 1 && aiBusy)"
+                class="b-content md"
+                v-html="renderAiMd(m.content)"
+              />
+              <div v-else-if="m.content" class="b-content">{{ m.content }}</div>
+              <div v-else-if="i === chat.length - 1 && aiBusy" class="dots"><i /><i /><i /></div>
+              <div v-else class="b-content">…</div>
               <div
                 v-if="m.role === 'assistant' && m.content && i === chat.length - 1 && !aiBusy"
                 class="b-actions"
@@ -1175,6 +1179,48 @@ onMounted(async () => {
 }
 .b-role { font-size: .72em; color: var(--ink-faint); margin-bottom: 3px; letter-spacing: 1px; }
 .b-content { white-space: pre-wrap; word-break: break-word; }
+/* Markdown 渲染内容：white-space 交回文档流，元素按 md 排 */
+.b-content.md { white-space: normal; }
+.md :deep(p) { margin: .35em 0; }
+.md :deep(pre) {
+  background: var(--sinset);
+  border: 1px solid var(--sline);
+  border-radius: 8px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  margin: .5em 0;
+}
+.md :deep(pre code) {
+  background: transparent;
+  padding: 0;
+  font-size: .82em;
+  color: var(--ink);
+  white-space: pre;
+}
+.md :deep(code) {
+  background: var(--sinset);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: .84em;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  color: var(--sprimary);
+}
+.md :deep(ul), .md :deep(ol) { margin: .4em 0; padding-left: 1.3em; }
+.md :deep(li) { margin: .18em 0; }
+.md :deep(h1), .md :deep(h2), .md :deep(h3), .md :deep(h4) { margin: .6em 0 .3em; font-weight: 700; }
+.md :deep(h1) { font-size: 1.12em; }
+.md :deep(h2) { font-size: 1.05em; }
+.md :deep(h3), .md :deep(h4) { font-size: .98em; }
+.md :deep(blockquote) {
+  margin: .5em 0;
+  padding: 4px 12px;
+  border-left: 3px solid var(--sprimary);
+  color: var(--ink-soft);
+}
+.md :deep(a) { color: var(--sprimary); text-decoration: underline; text-underline-offset: 2px; }
+.md :deep(table) { border-collapse: collapse; margin: .5em 0; font-size: .84em; }
+.md :deep(th), .md :deep(td) { border: 1px solid var(--sline); padding: 4px 9px; }
+.md :deep(hr) { border: 0; border-top: 1px dashed var(--sline); margin: .6em 0; }
 .b-actions { display: flex; gap: 8px; margin-top: 9px; }
 .b-actions button {
   font-size: .76em;

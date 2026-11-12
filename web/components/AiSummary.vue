@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { $api, accessToken } from '~/composables/useApi'
+import { renderAiMd } from '~/utils/aiMd'
 
 // 文章 AI 总结卡：按需生成（/ai/summary），localStorage 按 articleId 缓存避免重复花费
 const props = defineProps<{ articleId: number; title: string; contentHtml: string }>()
@@ -63,7 +64,7 @@ async function generate() {
         {{ busy ? '生成中…' : summary ? '重新生成' : '生成总结' }}
       </button>
     </div>
-    <p v-if="summary" class="sum-body">{{ summary }}</p>
+    <p v-if="summary" class="sum-body md" v-html="renderAiMd(summary)" />
     <div v-if="tags.length" class="sum-tags">
       <span v-for="t in tags" :key="t" class="tag-chip">{{ t }}</span>
     </div>
@@ -92,7 +93,16 @@ async function generate() {
   padding: 4px 12px;
   border-radius: 999px;
 }
-.sum-body { color: var(--ink); margin: 12px 0 0; line-height: 1.8; white-space: pre-wrap; }
+.sum-body { color: var(--ink); margin: 12px 0 0; line-height: 1.8; }
+.sum-body.md :deep(p) { margin: .4em 0; }
+.sum-body.md :deep(code) {
+  background: var(--primary-soft);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: .88em;
+  color: var(--primary);
+}
+.sum-body.md :deep(ul), .sum-body.md :deep(ol) { margin: .4em 0; padding-left: 1.3em; }
 .sum-tags { margin-top: 10px; }
 .sum-hint { margin: 10px 0 0; font-size: .88em; }
 </style>

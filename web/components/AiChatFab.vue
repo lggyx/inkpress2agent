@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { $api, accessToken } from '~/composables/useApi'
 import { streamChat } from '~/composables/useAiStream'
+import { renderAiMd } from '~/utils/aiMd'
 
 // 文章页 AI 问答悬浮窗：右下角悬浮球 → 对话模态框（携带全文上下文，多轮流式）
 const props = defineProps<{ articleId: number; title: string; contentHtml: string }>()
@@ -102,9 +103,12 @@ onBeforeUnmount(() => { open.value = false })
               <button class="ai-close" @click="close">×</button>
             </header>
             <div ref="chatBody" class="ai-body">
-              <div v-for="(m, i) in chat" :key="i" class="bubble" :class="m.role">
-                <div class="b-content">{{ m.content || '…' }}</div>
-              </div>
+            <div v-for="(m, i) in chat" :key="i" class="bubble" :class="m.role">
+              <div
+                class="b-content md"
+                v-html="m.content ? renderAiMd(m.content) : '…'"
+              />
+            </div>
               <div v-if="chat.length <= 1" class="sug-row">
                 <button v-for="s in suggestions" :key="s" class="sug" @click="send(s)">{{ s }}</button>
               </div>
@@ -219,7 +223,33 @@ onBeforeUnmount(() => { open.value = false })
   align-self: flex-start;
   background: var(--card-soft);
 }
-.b-content { white-space: pre-wrap; word-break: break-word; color: var(--ink); }
+.b-content { word-break: break-word; color: var(--ink); }
+/* Markdown 渲染样式（与工作台气泡一致） */
+.md { line-height: 1.7; }
+.md :deep(p) { margin: .35em 0; }
+.md :deep(pre) {
+  background: rgba(0, 0, 0, .2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  margin: .5em 0;
+}
+.md :deep(pre code) { background: transparent; padding: 0; font-size: .82em; color: var(--ink); }
+.md :deep(code) {
+  background: rgba(0, 0, 0, .2);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: .84em;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  color: var(--primary);
+}
+.md :deep(ul), .md :deep(ol) { margin: .4em 0; padding-left: 1.3em; }
+.md :deep(h1), .md :deep(h2), .md :deep(h3), .md :deep(h4) { margin: .6em 0 .3em; font-weight: 700; }
+.md :deep(blockquote) { margin: .5em 0; padding: 4px 12px; border-left: 3px solid var(--primary); color: var(--ink-soft); }
+.md :deep(a) { color: var(--primary); }
+.md :deep(table) { border-collapse: collapse; margin: .5em 0; font-size: .84em; }
+.md :deep(th), .md :deep(td) { border: 1px solid var(--line); padding: 4px 9px; }
 .sug-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0; }
 .sug {
   font-size: .82em;
