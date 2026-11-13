@@ -1,6 +1,5 @@
 package cn.hengxing.inkpress.common;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,7 +11,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 
 /** 接口限流（Redis 固定窗口计数）：登录/注册/AI/评论等敏感端点按 IP 限制 */
 @Component
@@ -31,7 +29,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
             new Rule("POST", "/api/ai/summary", 10, Duration.ofMinutes(1)));
 
     private final StringRedisTemplate redis;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public RateLimitFilter(StringRedisTemplate redis) {
         this.redis = redis;
@@ -60,10 +57,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 redis.expire(key, rule.window());
             }
             if (count != null && count > rule.limit()) {
+                // 注意：不能用 Map.of 组装（data=null 会 NPE），NPE 会在响应已过半时炸掉错误处理，
+                // 表现为客户端收到 403 空响应而非 429（getWriter 冲突日志刷屏的根源）
                 response.setStatus(429);
                 response.setContentType("application/json;charset=UTF-8");
-                response.getWriter().write(objectMapper.writeValueAsString(
-                        Map.of("code", 429, "message", "请求过于频繁，请稍后再试", "data", null)));
+                response.getWriter().write(
+                        "{\"code\":429,\"message\":\"请求过于频繁，请稍后再试\",\"data\":null}");
                 return;
             }
         } catch (Exception e) {

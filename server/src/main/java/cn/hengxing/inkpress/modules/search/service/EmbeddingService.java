@@ -29,8 +29,9 @@ public class EmbeddingService {
         this.configService = configService;
     }
 
+    /** embedding 独立能力槽是否可用（此前误耦合到 text 槽，导致只配 embedding 时向量臂静默失效） */
     public boolean available() {
-        return configService.isConfigured();
+        return configService.configured(AiConfigService.CAP_EMBEDDING);
     }
 
     /** 文本转向量；失败返回 null（调用方降级为 BM25）；独立 embedding 能力槽，Anthropic 协议无此接口直接降级 */

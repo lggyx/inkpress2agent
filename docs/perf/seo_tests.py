@@ -3,14 +3,18 @@
 GEO 摘要成功率（发布→异步生成→轮询）/ sitemap 完备性 / JSON-LD 合法性。
 HTTP 层走 curl 子进程（本机 python urllib 直连 8912 偶发截断，curl 实测稳定）。
 输出 docs/seo-test-result.json。
+
+用法：python docs/perf/seo_tests.py
+环境变量：INKPRESS_BASE（默认 http://127.0.0.1:8912，走本机/局域网入口，禁止打公网）
+          INKPRESS_SMOKE_EMAIL / INKPRESS_SMOKE_PASSWORD（必填，不再内置任何账号口令）
 """
-import io, sys, json, time, re, subprocess, urllib.parse
+import io, sys, json, time, re, subprocess, urllib.parse, os
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-BASE = 'http://127.0.0.1:8912'
-S = r'D:\final-work\inkpress\docs\perf\_tmp'
-import os
+BASE = os.environ.get('INKPRESS_BASE', 'http://127.0.0.1:8912')
+S = Path(__file__).resolve().parent / '_tmp'
 os.makedirs(S, exist_ok=True)
 _seq = 0
 
@@ -45,7 +49,12 @@ def jsoncall(path, payload=None, token=None, method=None):
 
 
 def login():
-    _, r = jsoncall('/api/auth/login', {'email': 'smoke@test.local', 'password': 'Smoke2026!pass'})
+    email = os.environ.get('INKPRESS_SMOKE_EMAIL', '')
+    password = os.environ.get('INKPRESS_SMOKE_PASSWORD', '')
+    if not email or not password:
+        print('缺少 INKPRESS_SMOKE_EMAIL / INKPRESS_SMOKE_PASSWORD 环境变量，无法登录')
+        sys.exit(2)
+    _, r = jsoncall('/api/auth/login', {'email': email, 'password': password})
     return r['data']['accessToken']
 
 
@@ -130,8 +139,6 @@ results['crawler_ua'] = {
 }
 
 # ---------- 5) GEO 摘要成功率（发布 → 异步生成 → 轮询断言非空） ----------
-_, r = jsoncall('/api/auth/login', {'email': 'smoke@test.local', 'password': 'Smoke2026!pass'})
-token = r['data']['accessToken']
 title = f'GEO 摘要自动生成验证-{int(time.time())}'
 _, r = jsoncall('/api/studio/articles', {
     'title': title,
@@ -181,7 +188,8 @@ if m:
         ld_ok = False
 results['json_ld'] = {'present': bool(m), 'pass': ld_ok, 'fields': ld_fields}
 
-with open(r'D:\final-work\inkpress\docs\seo-test-result.json', 'w', encoding='utf-8') as f:
+out_path = Path(__file__).resolve().parent.parent / 'seo-test-result.json'
+with open(out_path, 'w', encoding='utf-8') as f:
     json.dump(results, f, ensure_ascii=False, indent=2)
 
 print(json.dumps(results, ensure_ascii=False, indent=1))

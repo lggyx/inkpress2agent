@@ -3,13 +3,17 @@
 输出 docs/rrf-experiment-result.json，供论文「检索平衡」小节引用。
 
 注意：向量臂依赖 embedding 槽配置（管理端 AI 配置页）。未配置时：
-vector/hybrid 自动降级为 bm25（响应 mode 字段会标注），本脚本如实记录降级状态。
+vector/hybrid 自动回落 bm25（响应 mode 字段标注 effectiveMode；degraded 仅表示 ES 宕机降级）。
 配置 Key 后重跑本脚本即可获得真实三路对比数据。
+
+用法：python docs/perf/rrf_experiment.py
+环境变量：INKPRESS_BASE（默认 http://127.0.0.1:8912，走本机/局域网入口，禁止打公网）
 """
-import io, sys, json, time, urllib.request
+import io, sys, json, time, os, urllib.request
+from pathlib import Path
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-BASE = 'http://127.0.0.1:8912'
+BASE = os.environ.get('INKPRESS_BASE', 'http://127.0.0.1:8912')
 
 QUERIES = ['知识图谱', 'Spring Boot', 'JWT 鉴权', 'Redis 缓存', 'Elasticsearch 检索']
 MODES = ['bm25', 'vector', 'hybrid']
@@ -43,6 +47,7 @@ for kw in QUERIES:
     print(kw, json.dumps({m: (row['modes'][m]['effectiveMode'], row['modes'][m]['latencyMs'])
                           for m in MODES}, ensure_ascii=False))
 
-with open(r'D:\final-work\inkpress\docs\rrf-experiment-result.json', 'w', encoding='utf-8') as f:
+out_path = Path(__file__).resolve().parent.parent / 'rrf-experiment-result.json'
+with open(out_path, 'w', encoding='utf-8') as f:
     json.dump(out, f, ensure_ascii=False, indent=2)
-print('saved -> docs/rrf-experiment-result.json')
+print('saved ->', out_path)

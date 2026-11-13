@@ -1,17 +1,17 @@
 {
   "meta_coverage": {
-    "total": 3,
-    "covered": 3,
+    "total": 19,
+    "covered": 19,
     "rate": 100.0,
     "target": 100,
     "pass": true
   },
   "rss": {
     "status": 200,
-    "itemCount": 3,
-    "expect": 3,
+    "itemCount": 19,
+    "expect": 19,
     "hasChannel": true,
-    "pubDateCount": 3,
+    "pubDateCount": 19,
     "pass": true
   },
   "outbound": {
@@ -25,13 +25,13 @@
     "pass": true
   },
   "geo_success": {
-    "articleId": 8,
+    "articleId": 21,
     "pass": true
   },
   "sitemap": {
     "status": 200,
-    "urlCount": 5,
-    "articlesCovered": 3,
+    "urlCount": 21,
+    "articlesCovered": 19,
     "missing": [],
     "xmlParseOk": true,
     "pass": true

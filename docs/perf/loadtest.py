@@ -1,18 +1,34 @@
 """InkPress 核心接口压测：50 并发（开题 5.2 指标：P95 < 500ms、错误率 < 1%）
 覆盖公开文章列表 / 文章详情 / 站内检索 / SSR 首页四条核心读路径。
 输出每端口的 P50/P95/P99、错误率与吞吐，结果写 docs/load-test-result.json。
+
+用法：python docs/perf/loadtest.py
+环境变量：INKPRESS_BASE（默认 http://127.0.0.1:8912，压测一律走本机/局域网入口，禁止打公网）
 """
-import io, sys, json, time, threading, statistics, urllib.request, urllib.error
+import io, sys, json, time, threading, os, urllib.request, urllib.error
+from pathlib import Path
 from collections import defaultdict
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-BASE = 'http://127.0.0.1:8912'
+BASE = os.environ.get('INKPRESS_BASE', 'http://127.0.0.1:8912')
 CONCURRENCY = 50
 REQUESTS = 200  # 每端口总请求数
 
+# 详情目标动态解析：取第一篇已发布文章（避免硬编码 id 在不同环境 404）
+def first_published_id():
+    try:
+        with urllib.request.urlopen(BASE + '/api/articles?page=1&size=1', timeout=10) as r:
+            recs = (json.loads(r.read()).get('data') or {}).get('records') or []
+            return str(recs[0]['id']) if recs else '1'
+    except Exception:
+        return '1'
+
+ARTICLE_ID = first_published_id()
+print('loadtest base:', BASE, '| detail target: /api/articles/' + ARTICLE_ID)
+
 TARGETS = {
     'articles_list': '/api/articles?page=1&size=10',
-    'article_detail': '/api/articles/2',
+    'article_detail': f'/api/articles/{ARTICLE_ID}',
     'search': '/api/search?keyword=%E5%9B%BE%E8%B0%B1',
     'ssr_home': '/',
 }
@@ -87,7 +103,8 @@ for name, url in TARGETS.items():
     print(f"{name:16s} P50={r['p50']:>7}ms P95={r['p95']:>7}ms P99={r['p99']:>7}ms "
           f"errRate={r['errorRate']:>5}% rps={r['rps']:>7}")
 
-with open(r'D:\final-work\inkpress\docs\load-test-result.json', 'w', encoding='utf-8') as f:
-    json.dump({'concurrency': CONCURRENCY, 'generatedAt': time.strftime('%Y-%m-%d %H:%M:%S'), 'results': out},
+out_path = Path(__file__).resolve().parent.parent / 'load-test-result.json'
+with open(out_path, 'w', encoding='utf-8') as f:
+    json.dump({'concurrency': CONCURRENCY, 'base': BASE, 'generatedAt': time.strftime('%Y-%m-%d %H:%M:%S'), 'results': out},
               f, ensure_ascii=False, indent=2)
-print('\nsaved -> docs/load-test-result.json')
+print('\nsaved ->', out_path)
