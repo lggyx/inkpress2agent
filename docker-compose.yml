@@ -1,9 +1,9 @@
-name: inkpress
+name: inkpress2agent
 
 services:
   mysql:
     image: mysql:8.0
-    container_name: inkpress-mysql
+    container_name: inkpress2agent-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_inkpress_local}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-inkpress}
@@ -22,7 +22,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: inkpress-redis
+    container_name: inkpress2agent-redis
     command: redis-server --appendonly yes
     volumes:
       - redis-data:/data
@@ -35,7 +35,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.13-management
-    container_name: inkpress-rabbitmq
+    container_name: inkpress2agent-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-inkpress}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-inkpress123}
@@ -50,7 +50,7 @@ services:
 
   elasticsearch:
     build: ./deploy/elasticsearch
-    container_name: inkpress-es
+    container_name: inkpress2agent-es
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
@@ -67,7 +67,7 @@ services:
 
   server:
     build: ./server
-    container_name: inkpress-server
+    container_name: inkpress2agent-server
     environment:
       MYSQL_HOST: mysql
       MYSQL_PORT: "3306"
@@ -98,7 +98,7 @@ services:
 
   web:
     build: ./web
-    container_name: inkpress-web
+    container_name: inkpress2agent-web
     environment:
       NUXT_API_BASE: http://server:8080/api
       NUXT_PUBLIC_API_BASE: /api
@@ -113,13 +113,12 @@ services:
     restart: unless-stopped
 
   nginx:
-    image: nginx:1.27-alpine
-    container_name: inkpress-nginx
+    # 配置烘进镜像（见 deploy/nginx/Dockerfile），不再 bind mount 宿主机文件
+    build: ./deploy/nginx
+    container_name: inkpress2agent-nginx
     ports:
       # 绑定全部网卡（局域网设备可访问）；如需仅本机，改回 "127.0.0.1:${INKPRESS_PORT:-8912}:80"
       - "${INKPRESS_PORT:-8912}:80"
-    volumes:
-      - ./deploy/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       mysql:
         condition: service_healthy
@@ -130,9 +129,14 @@ services:
     restart: unless-stopped
 
 volumes:
-  # 旧原型残留的 mysql-data / es-data 卷保持不动（数据仍在盘上），
-  # 新工程使用独立数据卷，避免与旧 schema 冲突。
+  # 老原型（D:\WorkSpace\inkpress，项目名 inkpress）保留 inkpress-* 容器名与卷名；
+  # 本工程改名 inkpress2agent 让路。数据卷用 name: 钉住既有卷，
+  # 避免按新项目名生成空卷导致演示数据丢失。
   mysql-data-v2:
+    name: inkpress_mysql-data-v2
   redis-data:
+    name: inkpress_redis-data
   rabbitmq-data:
+    name: inkpress_rabbitmq-data
   es-data-v2:
+    name: inkpress_es-data-v2
