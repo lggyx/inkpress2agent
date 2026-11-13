@@ -35,3 +35,4 @@ tmp/
 # 项目内部工作目录
 .workbuddy/
 .zcode/
+"docs/perf/_tmp/"  
