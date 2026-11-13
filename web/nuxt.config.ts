@@ -26,12 +26,36 @@ export default defineNuxtConfig({
     }
   },
   css: ['~/assets/css/main.css'],
+  build: {
+    vite: {
+      build: {
+        rollupOptions: {
+          output: {
+            // 首屏主 chunk 1.1MB → 大依赖各自成 chunk：并行加载 + 长缓存（各页引用才拉取）
+            manualChunks(id) {
+              if (id.includes('node_modules')) {
+                if (id.includes('echarts')) return 'vendor-echarts'
+                if (id.includes('element-plus') || id.includes('@element-plus')) return 'vendor-element'
+                if (id.includes('vditor')) return 'vendor-vditor'
+                if (id.includes('katex')) return 'vendor-katex'
+                if (id.includes('marked') || id.includes('dompurify')) return 'vendor-markdown'
+              }
+              return undefined
+            },
+          },
+        },
+      },
+    },
+  },
   routeRules: {
     // 前台内容页走 SSR/ISR，利于 SEO 与首屏
     '/': { isr: 60 },
     '/article/**': { isr: 60 },
-    '/archive': { isr: 300 },
+    '/categories': { isr: 300 },
+    '/tags': { isr: 300 },
     '/graph': { ssr: false },
+    // 搜索页依赖 query 交互，客户端渲染
+    '/search': { ssr: false },
     // 门户根路径直接落到默认功能页（/admin 已有仪表盘、/studio 已有工作台，不再重定向）
     '/studio': { redirect: { to: '/studio/workbench', statusCode: 302 } },
     // 博主端 / 管理员端 / 个人中心为纯 SPA

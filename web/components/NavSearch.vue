@@ -110,6 +110,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', escHandler))
           </NuxtLink>
           <div v-if="searching" class="ns-empty">检索中…</div>
           <div v-else-if="keyword.trim() && !hits.length" class="ns-empty">无匹配内容</div>
+          <NuxtLink
+            v-if="keyword.trim()"
+            :to="`/search?keyword=${encodeURIComponent(keyword.trim())}`"
+            class="ns-row ns-all"
+            @click="pick()"
+          >
+            查看全部结果 <span class="p-arrow">›</span>
+          </NuxtLink>
         </div>
       </Transition>
     </div>
@@ -150,6 +158,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', escHandler))
           </NuxtLink>
           <div v-if="searching" class="ns-empty">检索中…</div>
           <div v-else-if="keyword.trim() && !hits.length" class="ns-empty">无匹配内容</div>
+          <NuxtLink
+            v-if="keyword.trim()"
+            :to="`/search?keyword=${encodeURIComponent(keyword.trim())}`"
+            class="ns-row ns-all"
+            @click="pick()"
+          >
+            查看全部结果 <span class="p-arrow">›</span>
+          </NuxtLink>
         </div>
       </div>
     </Transition>

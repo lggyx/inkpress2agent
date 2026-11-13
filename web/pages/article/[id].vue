@@ -172,12 +172,16 @@ function fmtDate(s: string): string { return (s || '').replace('T', ' ').slice(0
       <article class="card">
         <h1 class="a-title">{{ article.title }}</h1>
         <div class="a-meta muted">
-          <span v-if="article.categoryName">{{ article.categoryName }}</span>
+          <span v-if="article.categoryName">
+            <NuxtLink :to="`/categories?selected=${article.categoryId}`" class="chip-link">{{ article.categoryName }}</NuxtLink>
+          </span>
           <span>{{ fmtDate(article.publishedAt) }}</span>
           <span>{{ article.viewCount }} 阅读</span>
         </div>
         <div class="a-tags" v-if="article.tags?.length">
-          <span class="tag-chip" v-for="t in article.tags" :key="t">{{ t }}</span>
+          <span class="tag-chip" v-for="t in article.tags" :key="t">
+            <NuxtLink :to="`/tags?tag=${encodeURIComponent(t)}`" class="chip-link">{{ t }}</NuxtLink>
+          </span>
         </div>
         <div v-if="isBlogger" class="edit-entry">
           <NuxtLink :to="`/studio/workbench?article=${article.id}`" class="edit-link">✎ 编辑此文（博主端工作台）</NuxtLink>
@@ -245,6 +249,8 @@ function fmtDate(s: string): string { return (s || '').replace('T', ' ').slice(0
 .a-title { margin: 0 0 8px; }
 .a-meta { display: flex; gap: 14px; }
 .a-tags { margin: 10px 0 0; }
+.chip-link { color: inherit; text-decoration: none; }
+.chip-link:hover { color: var(--primary, #9ef01a); }
 .edit-entry { margin-top: 10px; }
 .edit-link {
   color: var(--primary);

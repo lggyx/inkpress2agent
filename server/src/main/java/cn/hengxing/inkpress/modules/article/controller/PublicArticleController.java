@@ -39,8 +39,9 @@ public class PublicArticleController {
     @GetMapping
     public Result<IPage<ArticleResponse>> page(@RequestParam(defaultValue = "1") int page,
                                               @RequestParam(defaultValue = "10") int size,
-                                              @RequestParam(required = false) Long categoryId) {
-        return Result.ok(articleService.publicPage(page, size, categoryId));
+                                              @RequestParam(required = false) Long categoryId,
+                                              @RequestParam(required = false) Long tagId) {
+        return Result.ok(articleService.publicPage(page, size, categoryId, tagId));
     }
 
     @GetMapping("/{id}")

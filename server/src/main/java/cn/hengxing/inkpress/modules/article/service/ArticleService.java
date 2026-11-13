@@ -163,13 +163,25 @@ public class ArticleService {
         return articleMapper.selectPage(Page.of(page, size), qw).convert(a -> toResponse(a, null));
     }
 
-    public IPage<ArticleResponse> publicPage(int page, int size, Long categoryId) {
+    public IPage<ArticleResponse> publicPage(int page, int size, Long categoryId, Long tagId) {
         LambdaQueryWrapper<Article> qw = new LambdaQueryWrapper<Article>()
                 .eq(Article::getStatus, "PUBLISHED")
                 .eq(Article::getDeleted, 0)
                 .eq(categoryId != null, Article::getCategoryId, categoryId)
                 .orderByDesc(Article::getPinned)
                 .orderByDesc(Article::getPublishedAt);
+        // 标签筛选：先经关联表解析文章集合（公开列表体量小，两步查询足够，无需 join）
+        if (tagId != null) {
+            List<Long> ids = articleTagMapper.selectList(new LambdaQueryWrapper<ArticleTag>()
+                            .eq(ArticleTag::getTagId, tagId))
+                    .stream().map(ArticleTag::getArticleId).toList();
+            if (ids.isEmpty()) {
+                Page<ArticleResponse> empty = new Page<>(page, size, 0);
+                empty.setRecords(List.of());
+                return empty;
+            }
+            qw.in(Article::getId, ids);
+        }
         IPage<Article> p = articleMapper.selectPage(Page.of(page, size), qw);
         // 注意：IPage.convert 会原地替换 records（映射为 null 会让 getRecords 全变 null），这里手工组装响应页
         Page<ArticleResponse> out = new Page<>(p.getCurrent(), p.getSize(), p.getTotal());

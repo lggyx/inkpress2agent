@@ -42,10 +42,12 @@ onBeforeUnmount(() => {
     <header class="site-header" :class="{ 'not-top': notTop }">
       <div class="container header-inner">
         <NuxtLink to="/" class="brand">InkPress</NuxtLink>
-        <nav class="nav">
-          <NuxtLink to="/">首页</NuxtLink>
-          <NuxtLink to="/graph">图谱</NuxtLink>
-        </nav>
+<nav class="nav">
+  <NuxtLink to="/">首页</NuxtLink>
+  <NuxtLink to="/categories">分类</NuxtLink>
+  <NuxtLink to="/tags">标签</NuxtLink>
+  <NuxtLink to="/graph">图谱</NuxtLink>
+</nav>
         <div class="header-right">
           <NavSearch />
           <ThemeToggle />
@@ -68,6 +70,10 @@ onBeforeUnmount(() => {
         <span class="muted">© {{ new Date().getFullYear() }} InkPress</span>
         <span class="muted">·</span>
         <a href="/rss.xml" target="_blank" class="muted">RSS</a>
+        <span class="muted">·</span>
+        <NuxtLink to="/categories" class="muted">分类</NuxtLink>
+        <span class="muted">·</span>
+        <NuxtLink to="/tags" class="muted">标签</NuxtLink>
         <span class="muted">·</span>
         <NuxtLink to="/graph" class="muted">图谱</NuxtLink>
         <span class="muted">·</span>
