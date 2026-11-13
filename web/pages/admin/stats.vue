@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { base } from '~/composables/useApi'
+
 interface Overview {
   days: number
   pv: number
@@ -16,7 +18,7 @@ const pvBox = ref<HTMLElement | null>(null)
 const regionBox = ref<HTMLElement | null>(null)
 
 async function load() {
-  const resp = await fetch(`/api/admin/stats/overview?days=${days.value}`, {
+  const resp = await fetch(base() + `/admin/stats/overview?days=${days.value}`, {
     headers: { Authorization: 'Bearer ' + (localStorage.getItem('inkpress.access') ?? '') },
   })
   const json = await resp.json()

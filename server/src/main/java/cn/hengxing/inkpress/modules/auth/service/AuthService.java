@@ -41,12 +41,15 @@ public class AuthService {
     private final JavaMailSender mailSender;
     private final SecureRandom random = new SecureRandom();
     private final Duration refreshTtl;
+    /** SMTP 是否真实配置（application.yml 默认假主机 smtp.local = 未配置）；发送失败时决定验证码日志是否脱敏 */
+    private final boolean smtpConfigured;
 
     public AuthService(UserMapper userMapper, UserRoleMapper userRoleMapper,
                        RefreshTokenMapper refreshTokenMapper, EmailCodeMapper emailCodeMapper,
                        PasswordEncoder passwordEncoder, JwtService jwtService,
                        JavaMailSender mailSender,
-                       @Value("${inkpress.jwt.refresh-token-ttl}") Duration refreshTtl) {
+                       @Value("${inkpress.jwt.refresh-token-ttl}") Duration refreshTtl,
+                       @Value("${spring.mail.host}") String smtpHost) {
         this.userMapper = userMapper;
         this.userRoleMapper = userRoleMapper;
         this.refreshTokenMapper = refreshTokenMapper;
@@ -55,6 +58,7 @@ public class AuthService {
         this.jwtService = jwtService;
         this.mailSender = mailSender;
         this.refreshTtl = refreshTtl;
+        this.smtpConfigured = smtpHost != null && !smtpHost.isBlank() && !"smtp.local".equals(smtpHost);
     }
 
     /** 注册：创建未激活用户并发放邮箱验证码；首个用户自动授予 BLOGGER+ADMIN */
@@ -221,10 +225,26 @@ public class AuthService {
             msg.setText("您的验证码是：" + code + "，10 分钟内有效。");
             mailSender.send(msg);
         } catch (Exception e) {
-            // 开发期未配置 SMTP 时输出到日志，保证注册流程可验证
-            org.slf4j.LoggerFactory.getLogger(AuthService.class)
-                    .warn("SMTP 未配置，验证码发送失败 email={} code={}", email, code);
+            // 验证码日志分级：开发期（SMTP 未配置）输出明文保证注册流程可走通；
+            // SMTP 已配置但发送失败（生产事故场景）绝不打印明文验证码，防止日志侧信道
+            org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuthService.class);
+            if (smtpConfigured) {
+                log.warn("SMTP 发送失败（已配置，请检查 SMTP_HOST/账号/网络），验证码已生成入库 email={} code=****{}（尾两位）",
+                        maskEmail(email), code.length() >= 2 ? code.substring(code.length() - 2) : "**");
+            } else {
+                log.warn("SMTP 未配置（开发模式）：验证码输出到日志 email={} code={}；生产部署请配置 SMTP_HOST，届时不再打印",
+                        maskEmail(email), code);
+            }
         }
+    }
+
+    /** 邮箱脱敏：m***@domain */
+    private static String maskEmail(String email) {
+        int at = email == null ? -1 : email.indexOf('@');
+        if (at <= 0) {
+            return "***";
+        }
+        return email.charAt(0) + "***" + email.substring(at);
     }
 
     private void consumeCode(String email, String purpose, String code) {

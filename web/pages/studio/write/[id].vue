@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { $api, $pub, accessToken } from '~/composables/useApi'
+import { $api, $pub, accessToken, base } from '~/composables/useApi'
 import { streamAi } from '~/composables/useAiStream'
 
 const route = useRoute()
@@ -135,7 +135,7 @@ async function onCoverUpload(e: Event) {
 async function uploadMediaOnly(f: File): Promise<string> {
   const fd = new FormData()
   fd.append('file', f)
-  const resp = await fetch('/api/media/upload', {
+  const resp = await fetch(base() + '/media/upload', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + (accessToken() || '') },
     body: fd,

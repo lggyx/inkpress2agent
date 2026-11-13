@@ -14,7 +14,7 @@ class JwtServiceTest {
     private static final String SECRET = "inkpress-unit-test-secret-key-0123456789abcdef";
 
     private JwtService service(Duration ttl) {
-        return new JwtService(SECRET, ttl);
+        return new JwtService(SECRET, ttl, "http://127.0.0.1:8912");
     }
 
     @Test
@@ -43,7 +43,7 @@ class JwtServiceTest {
     @Test
     void crossSecretRejected() {
         String token = service(Duration.ofMinutes(5)).createAccessToken(1L);
-        JwtService other = new JwtService(SECRET + "-different", Duration.ofMinutes(5));
+        JwtService other = new JwtService(SECRET + "-different", Duration.ofMinutes(5), "http://127.0.0.1:8912");
         assertNull(other.parseAccessToken(token));
     }
 

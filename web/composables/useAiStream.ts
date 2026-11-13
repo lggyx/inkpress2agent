@@ -3,13 +3,13 @@
  * EventSource 无法带 Authorization 头，一律用 fetch ReadableStream。
  * 服务端事件：token（增量文本）/ done（结束）/ error（失败，data 为文案）。
  */
-import { accessToken, refreshTokens } from './useApi'
+import { accessToken, refreshTokens, base } from './useApi'
 
 function makeSend(body: unknown) {
   return async () => {
     const token = accessToken()
     if (!token) throw new Error('请先登录')
-    return fetch('/api/ai/chat', {
+    return fetch(base() + '/ai/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

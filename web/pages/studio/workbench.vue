@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { $api, accessToken } from '~/composables/useApi'
+import { $api, accessToken, base } from '~/composables/useApi'
 import { streamChat } from '~/composables/useAiStream'
 import { useTheme } from '~/composables/useTheme'
 import { renderAiMd } from '~/utils/aiMd'
@@ -281,7 +281,7 @@ async function initEditor() {
 async function uploadMediaOnly(f: File): Promise<string> {
   const fd = new FormData()
   fd.append('file', f)
-  const resp = await fetch('/api/media/upload', {
+  const resp = await fetch(base() + '/media/upload', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + (accessToken() || '') },
     body: fd,

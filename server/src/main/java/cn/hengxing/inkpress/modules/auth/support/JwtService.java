@@ -15,11 +15,28 @@ import java.util.Date;
 @Component
 public class JwtService {
 
+    private static final String DEV_DEFAULT_SECRET = "inkpress-local-dev-secret-change-me";
+
     private final SecretKey key;
     private final Duration accessTtl;
 
     public JwtService(@Value("${inkpress.jwt.secret}") String secret,
-                      @Value("${inkpress.jwt.access-token-ttl}") Duration accessTtl) {
+                      @Value("${inkpress.jwt.access-token-ttl}") Duration accessTtl,
+                      @Value("${inkpress.mail.public-base-url:http://127.0.0.1:8912}") String publicBaseUrl) {
+        // 启动强校验：对外部署（public-base-url 非 loopback）拒绝默认密钥——
+        // application.yml 注释声称"本地缺省时启动报错提示"，此前并无实现，默认密钥会静默生效
+        boolean loopback = publicBaseUrl.contains("//127.0.0.1") || publicBaseUrl.contains("//localhost")
+                || publicBaseUrl.contains("//[::1]");
+        if (!loopback && DEV_DEFAULT_SECRET.equals(secret)) {
+            throw new IllegalStateException(
+                    "拒绝启动：检测到对外部署（inkpress.public-base-url=" + publicBaseUrl
+                            + "）仍在使用本地默认 JWT 密钥。请通过环境变量 INKPRESS_JWT_SECRET 注入强随机密钥"
+                            + "（建议 openssl rand -hex 32 生成）。");
+        }
+        if (DEV_DEFAULT_SECRET.equals(secret)) {
+            org.slf4j.LoggerFactory.getLogger(JwtService.class)
+                    .warn("使用本地默认 JWT 密钥（仅限本机开发）；对外部署必须设置 INKPRESS_JWT_SECRET");
+        }
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessTtl = accessTtl;
     }

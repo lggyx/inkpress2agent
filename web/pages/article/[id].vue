@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { $pub, $api, visitorId, accessToken, cachedUser, type UserInfo } from '~/composables/useApi'
+import { $pub, $api, visitorId, accessToken, base, cachedUser, type UserInfo } from '~/composables/useApi'
 import { useAuthUser } from '~/composables/useApi'
 import { renderMath } from '~/utils/mathRender'
 
@@ -113,7 +113,7 @@ onMounted(async () => {
   likeCount.value = article.value?.likeCount ?? 0
   if (article.value) {
     // M6 浏览上报（匿名访客），失败不打扰阅读
-    fetch('/api/track/visit', {
+    fetch(base() + '/track/visit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ visitorId: visitorId(), path: route.fullPath, articleId: article.value.id }),

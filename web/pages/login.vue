@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { saveAuth, type AuthData } from '~/composables/useApi'
+import { saveAuth, base, type AuthData } from '~/composables/useApi'
 
 const tab = ref<'login' | 'register' | 'reset'>('login')
 const email = ref('')
@@ -12,7 +12,7 @@ const error = ref('')
 const notice = ref('')
 
 async function post<T>(path: string, body: unknown): Promise<T> {
-  const resp = await fetch('/api' + path, {
+  const resp = await fetch(base() + path, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })

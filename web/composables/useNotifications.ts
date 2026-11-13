@@ -1,4 +1,4 @@
-import { accessToken, refreshTokens } from './useApi'
+import { accessToken, refreshTokens, base } from './useApi'
 
 export interface NotifyItem {
   id: number
@@ -29,7 +29,7 @@ export function useNotifications() {
   async function startStream() {
     if (!process.client || !accessToken()) return
     try {
-      const resp = await fetch('/api/notifications/stream', {
+      const resp = await fetch(base() + '/notifications/stream', {
         headers: { Authorization: 'Bearer ' + accessToken() },
       })
       if (!resp.ok || !resp.body) throw new Error('SSE HTTP ' + resp.status)

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { base } from '~/composables/useApi'
+
 interface GraphNode { id: string; type: string; name: string; weight: number }
 interface GraphLink { source: string; target: string; weight: number; kind: string }
 interface GraphData { nodes: GraphNode[]; links: GraphLink[] }
@@ -7,7 +9,7 @@ interface GraphData { nodes: GraphNode[]; links: GraphLink[] }
 const container = ref<HTMLElement | null>(null)
 
 onMounted(async () => {
-  const resp = await fetch('/api/graph')
+  const resp = await fetch(base() + '/graph')
   const json = await resp.json()
   if (json.code !== 0) return
   render(json.data as GraphData)

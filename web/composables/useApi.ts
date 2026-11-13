@@ -107,9 +107,11 @@ async function unwrap<T>(p: Promise<Response>): Promise<T> {
   return json.data as T
 }
 
-function base(): string {
+/** API 基址：SSR 容器内直连 server，浏览器走 Nginx 相对路径。
+ *  供 fetch 直连场景（SSE 流、上传等 $api 未覆盖的调用）拼路径，禁止硬编码 '/api'——
+ *  本地 npm run dev（:3000）下硬编码相对路径不经过 Nitro 代理会全部 404 */
+export function base(): string {
   const cfg = useRuntimeConfig()
-  // SSR 在容器内直连 server；浏览器经 Nginx 相对路径
   return import.meta.server ? (cfg.apiBase as string) : (cfg.public.apiBase as string)
 }
 
