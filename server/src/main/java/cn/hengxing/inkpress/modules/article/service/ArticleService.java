@@ -37,13 +37,21 @@ public class ArticleService {
     private final cn.hengxing.inkpress.modules.messaging.service.NotificationService notificationService;
     private final cn.hengxing.inkpress.modules.search.service.SearchIndexPublisher searchIndexPublisher;
     private final cn.hengxing.inkpress.modules.review.service.ReviewService reviewService;
+    private final cn.hengxing.inkpress.modules.ai.service.AiChatService aiChatService;
+    private final cn.hengxing.inkpress.modules.ai.service.AiConfigService aiConfigService;
+
+    /** 发布后异步补齐 GEO/SEO 摘要的单线程执行器（串行避免并发写同一文章） */
+    private final java.util.concurrent.ExecutorService summaryExecutor =
+            java.util.concurrent.Executors.newSingleThreadExecutor();
 
     public ArticleService(ArticleMapper articleMapper, ArticleTagMapper articleTagMapper,
                           TagMapper tagMapper, CategoryMapper categoryMapper,
                           MarkdownRenderer markdownRenderer, ViewCountBuffer viewCountBuffer,
                           cn.hengxing.inkpress.modules.messaging.service.NotificationService notificationService,
                           cn.hengxing.inkpress.modules.search.service.SearchIndexPublisher searchIndexPublisher,
-                          cn.hengxing.inkpress.modules.review.service.ReviewService reviewService) {
+                          cn.hengxing.inkpress.modules.review.service.ReviewService reviewService,
+                          cn.hengxing.inkpress.modules.ai.service.AiChatService aiChatService,
+                          cn.hengxing.inkpress.modules.ai.service.AiConfigService aiConfigService) {
         this.articleMapper = articleMapper;
         this.articleTagMapper = articleTagMapper;
         this.tagMapper = tagMapper;
@@ -53,6 +61,8 @@ public class ArticleService {
         this.notificationService = notificationService;
         this.searchIndexPublisher = searchIndexPublisher;
         this.reviewService = reviewService;
+        this.aiChatService = aiChatService;
+        this.aiConfigService = aiConfigService;
     }
 
     /** 创建或更新草稿；博主本人稿件可直接发布，agent 来稿强制 PENDING_REVIEW */
@@ -114,6 +124,8 @@ public class ArticleService {
         if ("PUBLISHED".equals(article.getStatus())) {
             // 索引同步走 RabbitMQ（事务提交后投递）；定时对账兜底最终一致
             searchIndexPublisher.publishUpsert(article.getId());
+            // GEO/SEO 摘要异步补齐（论文 6.6 成功率指标）：作者没跑 AI 摘要时自动生成，不阻塞发布
+            autoFillSummaries(article);
         }
         return toResponse(article, req.tags());
     }
@@ -132,6 +144,7 @@ public class ArticleService {
         articleMapper.updateById(article);
         if (pass) {
             searchIndexPublisher.publishUpsert(article.getId());
+            autoFillSummaries(article);
         }
         notificationService.notifyUser(article.getAuthorId(),
                 cn.hengxing.inkpress.modules.messaging.entity.Notification.TYPE_REVIEW,
@@ -255,6 +268,58 @@ public class ArticleService {
             throw BizException.of(2003, "文章不存在");
         }
         return article;
+    }
+
+    /** 发布后异步补齐 GEO/SEO 双摘要（论文 6.6）：只填空缺字段、不覆盖作者已生成内容；AI 未配置时静默跳过。
+     *  任务在事务提交后调度——事务内执行会与发布事务争抢同一文章行锁，拖死响应 */
+    private void autoFillSummaries(Article article) {
+        if (!aiConfigService.isConfigured()) {
+            return;
+        }
+        boolean needGeo = article.getGeoSummary() == null || article.getGeoSummary().isBlank();
+        boolean needSeo = article.getSeoDescription() == null || article.getSeoDescription().isBlank();
+        if (!needGeo && !needSeo) {
+            return;
+        }
+        Long articleId = article.getId();
+        String contentMd = article.getContentMd();
+        Runnable task = () -> {
+            try {
+                Map<String, Object> r = aiChatService.generateSummary(contentMd);
+                Article fresh = articleMapper.selectById(articleId);
+                if (fresh == null) {
+                    return;
+                }
+                boolean dirty = false;
+                String geo = String.valueOf(r.getOrDefault("geoSummary", ""));
+                String seo = String.valueOf(r.getOrDefault("seoDescription", ""));
+                if (needGeo && (fresh.getGeoSummary() == null || fresh.getGeoSummary().isBlank()) && !geo.isBlank()) {
+                    fresh.setGeoSummary(geo);
+                    dirty = true;
+                }
+                if (needSeo && (fresh.getSeoDescription() == null || fresh.getSeoDescription().isBlank()) && !seo.isBlank()) {
+                    fresh.setSeoDescription(seo);
+                    dirty = true;
+                }
+                if (dirty) {
+                    articleMapper.updateById(fresh);
+                }
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(ArticleService.class)
+                        .warn("发布后自动摘要生成失败 articleId={}", articleId, e);
+            }
+        };
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            summaryExecutor.submit(task);
+                        }
+                    });
+        } else {
+            summaryExecutor.submit(task);
+        }
     }
 
     private void replaceTags(Long articleId, List<String> tags) {

@@ -8,12 +8,14 @@ interface ArticleDetail {
   contentHtml: string
   coverUrl: string
   seoDescription: string
+  geoSummary: string
   categoryName: string
   tags: string[]
   viewCount: number
   likeCount: number
   commentCount: number
   publishedAt: string
+  updatedAt: string
 }
 
 interface RelatedItem { id: number; title: string; manual: boolean; sharedTags: number }
@@ -24,9 +26,50 @@ const id = route.params.id as string
 
 const { data: article, error } = await useAsyncData(`article-${id}`, () => $pub<ArticleDetail>(`/articles/${id}`))
 
+// 站点源：SSR 内同步求值（useSeoMeta/useHead 的回调在 Nuxt 实例外触发，不能在里面调 useRequestURL）
+const siteOrigin = import.meta.server ? useRequestURL().origin : window.location.origin
+
+// 正文首图兜底 og:image（封面缺省时）
+const firstImage = computed(() => {
+  const m = /<img[^>]+src="([^"]+)"/.exec(article.value?.contentHtml || '')
+  return m ? m[1] : ''
+})
+const ogImage = computed(() => {
+  const raw = article.value?.coverUrl || firstImage.value
+  if (!raw) return undefined
+  return raw.startsWith('http') ? raw : siteOrigin.value + raw
+})
+
 useSeoMeta({
   title: () => article.value ? `${article.value.title} - InkPress` : 'InkPress',
   description: () => article.value?.seoDescription || '',
+  ogTitle: () => article.value ? `${article.value.title} - InkPress` : 'InkPress',
+  ogDescription: () => article.value?.seoDescription || '',
+  ogType: 'article',
+  ogImage: () => ogImage.value,
+  ogUrl: () => siteOrigin.value ? `${siteOrigin.value}/article/${id}` : undefined,
+})
+
+// canonical 防多入口重复内容 + JSON-LD Article 结构化数据（生成式引擎提取）
+useHead({
+  link: () => article.value ? [{ rel: 'canonical', href: `${siteOrigin.value}/article/${article.value.id}` }] : [],
+  script: () => {
+    const a = article.value
+    if (!a) return []
+    const ld = {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: a.title,
+      description: a.seoDescription || '',
+      datePublished: a.publishedAt || undefined,
+      dateModified: a.updatedAt || a.publishedAt || undefined,
+      author: { '@type': 'Organization', name: 'InkPress' },
+      keywords: (a.tags || []).join(', '),
+      image: ogImage.value || undefined,
+      mainEntityOfPage: `${siteOrigin.value}/article/${a.id}`,
+    }
+    return [{ type: 'application/ld+json', innerHTML: JSON.stringify(ld) }]
+  },
 })
 
 const liked = ref(false)
@@ -132,6 +175,11 @@ function fmtDate(s: string): string { return (s || '').replace('T', ' ').slice(0
         <div v-if="isBlogger" class="edit-entry">
           <NuxtLink :to="`/studio/workbench?article=${article.id}`" class="edit-link">✎ 编辑此文（博主端工作台）</NuxtLink>
         </div>
+        <!-- GEO：结构化「核心结论」摘要区块，供生成式引擎直接提取 -->
+        <div v-if="article.geoSummary" class="geo-box">
+          <div class="geo-badge">核心结论 · GEO</div>
+          <p class="geo-text">{{ article.geoSummary }}</p>
+        </div>
         <!-- 服务端渲染的深度排版正文（M4/M3 contentHtml） -->
         <div class="article-content" v-html="article.contentHtml" />
         <AiSummary :article-id="article.id" :title="article.title" :content-html="article.contentHtml || ''" />
@@ -201,6 +249,24 @@ function fmtDate(s: string): string { return (s || '').replace('T', ' ').slice(0
 }
 .edit-link:hover { border-color: var(--primary); text-decoration: none; }
 .article-content { margin-top: 18px; }
+.geo-box {
+  margin: 18px 0 0;
+  padding: 14px 18px;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+}
+.geo-badge {
+  display: inline-block;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 4px;
+  padding: 1px 8px;
+  font-size: .8em;
+  font-weight: 650;
+  margin-bottom: 8px;
+}
+.geo-text { margin: 0; color: var(--ink); line-height: 1.8; }
 .a-actions { display: flex; align-items: center; gap: 16px; margin-top: 26px; border-top: 1px solid var(--line); padding-top: 16px; }
 .comments h3, .related h3 { margin: 0 0 12px; }
 .comment-item { border-top: 1px dashed var(--line); padding: 10px 0; }

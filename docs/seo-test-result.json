@@ -1,0 +1,50 @@
+{
+  "meta_coverage": {
+    "total": 3,
+    "covered": 3,
+    "rate": 100.0,
+    "target": 100,
+    "pass": true
+  },
+  "rss": {
+    "status": 200,
+    "itemCount": 3,
+    "expect": 3,
+    "hasChannel": true,
+    "pubDateCount": 3,
+    "pass": true
+  },
+  "outbound": {
+    "status": 302,
+    "pass": true
+  },
+  "crawler_ua": {
+    "status": 200,
+    "hasTitle": true,
+    "hasContentNode": true,
+    "pass": true
+  },
+  "geo_success": {
+    "articleId": 8,
+    "pass": true
+  },
+  "sitemap": {
+    "status": 200,
+    "urlCount": 5,
+    "articlesCovered": 3,
+    "missing": [],
+    "xmlParseOk": true,
+    "pass": true
+  },
+  "json_ld": {
+    "present": true,
+    "pass": true,
+    "fields": [
+      "headline",
+      "description",
+      "datePublished",
+      "author",
+      "mainEntityOfPage"
+    ]
+  }
+}

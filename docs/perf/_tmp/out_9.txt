@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel>
+<title>InkPress</title>
+<link>http://127.0.0.1:8912</link>
+<description>InkPress 个人博客与文章管理系统</description>
+<item>
+<title>GEO 验证-自动摘要链路</title>
+<link>http://127.0.0.1:8912/article/5</link>
+<guid>http://127.0.0.1:8912/article/5</guid>
+<pubDate>Fri, 13 Nov 2026 10:06:13 +0800</pubDate>
+<description>GEO验证聚焦发布后自动摘要链路，通过Redis缓冲、MQ索引同步与RRF混合检索优化内容索引与召回效率，实现生成式引擎场景下的高可用验证与检索增强。</description>
+</item>
+<item>
+<title>M8 图谱冒烟文章</title>
+<link>http://127.0.0.1:8912/article/2</link>
+<guid>http://127.0.0.1:8912/article/2</guid>
+<pubDate>Wed, 11 Nov 2026 10:25:42 +0800</pubDate>
+<description>围绕图谱技术展开，探讨相关阅读与标签共现机制，通过图谱结构实现内容关联与标签推荐，帮助用户发现更多相关主题，提升信息检索与知识发现效率。</description>
+</item>
+<item>
+<title>Spring Boot 个人博客系统架构与实践</title>
+<link>http://127.0.0.1:8912/article/1</link>
+<guid>http://127.0.0.1:8912/article/1</guid>
+<pubDate>Wed, 11 Nov 2026 01:40:17 +0800</pubDate>
+<description>基于 Spring Boot 3.3 的个人博客与文章管理系统架构实践：MyBatis-Plus、Elasticsearch 混合检索、RabbitMQ 异步投递与 Redis 计数。</description>
+</item>
+</channel></rss>

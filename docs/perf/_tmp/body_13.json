@@ -1,0 +1,1 @@
+{"title": "GEO 摘要自动生成验证-1794536571", "contentMd": "# GEO 验证\n\n这篇用于验证发布后 GEO 摘要自动生成链路，包含 Redis 缓冲、MQ 索引同步与 RRF 检索要点。", "tags": ["geo-test"], "action": "PUBLISH"}
