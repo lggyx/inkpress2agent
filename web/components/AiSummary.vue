@@ -2,6 +2,7 @@
 import { ElMessage } from 'element-plus'
 import { $api, accessToken } from '~/composables/useApi'
 import { renderAiMd } from '~/utils/aiMd'
+import { renderMath } from '~/utils/mathRender'
 
 // 文章 AI 总结卡：按需生成（/ai/summary），localStorage 按 articleId 缓存避免重复花费
 const props = defineProps<{ articleId: number; title: string; contentHtml: string }>()
@@ -12,6 +13,10 @@ const busy = ref(false)
 const asked = ref(false)
 
 const CACHE_KEY = `inkpress.ai-summary.${props.articleId}`
+
+// 公式渲染：DOMPurify 净化后的 HTML 经 v-html 上屏后，再对文本节点执行 KaTeX 渲染
+const sumBody = ref<HTMLElement>()
+watch(summary, () => nextTick(() => renderMath(sumBody.value)))
 
 function stripHtml(html: string): string {
   return html
@@ -64,7 +69,7 @@ async function generate() {
         {{ busy ? '生成中…' : summary ? '重新生成' : '生成总结' }}
       </button>
     </div>
-    <p v-if="summary" class="sum-body md" v-html="renderAiMd(summary)" />
+    <p v-if="summary" ref="sumBody" class="sum-body md" v-html="renderAiMd(summary)" />
     <div v-if="tags.length" class="sum-tags">
       <span v-for="t in tags" :key="t" class="tag-chip">{{ t }}</span>
     </div>

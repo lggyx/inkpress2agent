@@ -65,12 +65,31 @@ export function clearAuth(): void {
   useAuthUser().value = null
 }
 
+/**
+ * UUID v4 降级生成：crypto.randomUUID 仅在安全上下文（HTTPS/localhost）可用，
+ * 纯 HTTP 部署（局域网 IP / 域名 HTTP）下为 undefined，直接调用会让页面挂载崩溃。
+ */
+function fallbackUuid(): string {
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const b = crypto.getRandomValues(new Uint8Array(16))
+    b[6] = (b[6] & 0x0f) | 0x40
+    b[8] = (b[8] & 0x3f) | 0x80
+    const hex = Array.from(b, x => x.toString(16).padStart(2, '0')).join('')
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+  })
+}
+
 /** 匿名访客 ID（M6 画像聚合），localStorage 持久 */
 export function visitorId(): string {
   if (!process.client) return ''
   let id = localStorage.getItem(VISITOR_KEY)
   if (!id) {
-    id = 'v-' + crypto.randomUUID().replace(/-/g, '').slice(0, 20)
+    const raw = crypto.randomUUID ? crypto.randomUUID() : fallbackUuid()
+    id = 'v-' + raw.replace(/-/g, '').slice(0, 20)
     localStorage.setItem(VISITOR_KEY, id)
   }
   return id

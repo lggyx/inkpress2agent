@@ -7,12 +7,14 @@
     "dev": "nuxt dev",
     "build": "nuxt build",
     "preview": "nuxt preview",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "postinstall": "node scripts/copy-vditor.mjs"
   },
   "dependencies": {
     "dompurify": "^3.4.17",
     "echarts": "^5.5.1",
     "element-plus": "^2.8.8",
+    "katex": "^0.16.47",
     "marked": "^18.2.0",
     "nuxt": "^3.14.0",
     "vditor": "^3.10.8",

@@ -1,6 +1,8 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
+# postinstall（copy-vditor）在 npm ci 时执行，需先有 scripts/ 目录
+COPY scripts ./scripts
 # 本机网络对 npm registry 偶发抖动，容器内固定走 npmmirror
 RUN npm ci --registry=https://registry.npmmirror.com
 COPY . .

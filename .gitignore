@@ -9,6 +9,9 @@ node_modules/
 .output/
 dist/
 
+# Vditor 静态资产（postinstall 从 node_modules 拷贝的构建产物，勿入库）
+public/vditor/
+
 # 环境变量与密钥（禁止入库）
 .env
 .env.*

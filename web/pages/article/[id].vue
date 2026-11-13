@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { $pub, $api, visitorId, accessToken, cachedUser, type UserInfo } from '~/composables/useApi'
 import { useAuthUser } from '~/composables/useApi'
+import { renderMath } from '~/utils/mathRender'
 
 interface ArticleDetail {
   id: number
@@ -25,6 +26,12 @@ const route = useRoute()
 const id = route.params.id as string
 
 const { data: article, error } = await useAsyncData(`article-${id}`, () => $pub<ArticleDetail>(`/articles/${id}`))
+
+// 数学公式渲染：服务端 escapeHtml 后的正文（$...$ / $$...$$ 为纯文本）挂载后由 KaTeX 客户端渲染。
+// onMounted 覆盖 SSR/ISR 直达（数据已就绪、watch 不触发），watch 覆盖客户端导航与刷新。
+const contentBox = ref<HTMLElement>()
+onMounted(() => renderMath(contentBox.value))
+watch(() => article.value?.contentHtml, () => nextTick(() => renderMath(contentBox.value)))
 
 // 站点源：SSR 内同步求值（useSeoMeta/useHead 的回调在 Nuxt 实例外触发，不能在里面调 useRequestURL）
 const siteOrigin = import.meta.server ? useRequestURL().origin : window.location.origin
@@ -180,8 +187,8 @@ function fmtDate(s: string): string { return (s || '').replace('T', ' ').slice(0
           <div class="geo-badge">核心结论 · GEO</div>
           <p class="geo-text">{{ article.geoSummary }}</p>
         </div>
-        <!-- 服务端渲染的深度排版正文（M4/M3 contentHtml） -->
-        <div class="article-content" v-html="article.contentHtml" />
+    <!-- 服务端渲染的深度排版正文（M4/M3 contentHtml；公式由客户端 KaTeX 渲染） -->
+    <div ref="contentBox" class="article-content" v-html="article.contentHtml" />
         <AiSummary :article-id="article.id" :title="article.title" :content-html="article.contentHtml || ''" />
         <div class="a-actions">
           <button class="primary" :class="{ liked }" @click="toggleLike">

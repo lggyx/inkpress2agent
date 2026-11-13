@@ -2,6 +2,7 @@
 import { $api, accessToken } from '~/composables/useApi'
 import { streamChat } from '~/composables/useAiStream'
 import { renderAiMd } from '~/utils/aiMd'
+import { renderMath } from '~/utils/mathRender'
 
 // 文章页 AI 问答悬浮窗：右下角悬浮球 → 对话模态框（携带全文上下文，多轮流式）
 const props = defineProps<{ articleId: number; title: string; contentHtml: string }>()
@@ -37,6 +38,10 @@ function scrollBottom() {
     if (chatBody.value) chatBody.value.scrollTop = chatBody.value.scrollHeight
   })
 }
+
+// 公式渲染：仅在流式结束（busy 转 false）后执行——流式中渲染会闪断半截公式。
+// 输入链：marked → DOMPurify.sanitize → v-html → 本渲染，未净化内容不会进入 DOM。
+watch(busy, (v) => { if (!v) nextTick(() => renderMath(chatBody.value)) })
 
 function openChat() {
   open.value = true

@@ -88,6 +88,8 @@ async function initEditor(pendingContent: string) {
     height: 480,
     mode: 'wysiwyg',
     placeholder: '开始写作…（Markdown，所见即所得）',
+    // 公式：KaTeX 引擎，静态资源由 public/vditor/dist 提供（npm postinstall 拷贝）
+    math: { engine: 'KaTeX', src: '/vditor/dist/js/katex/katex.min.js' },
     // vditor 3.11 必填：按文章维度的本地草稿缓存（未保存内容不丢失）
     cache: { id: 'inkpress-write-' + articleId, enable: true },
     // 拖拽/粘贴上传：文件经服务器中转上传到云 OSS，成功后显式插入正文（图片/视频）

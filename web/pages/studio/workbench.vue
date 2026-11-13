@@ -170,6 +170,8 @@ async function refreshPreview() {
   try {
     await VditorCtor.preview(previewBox.value, currentMd(), {
       cdn: '/vditor',
+      // 公式：显式指定本地 KaTeX 源（Vditor 预览默认无 src，会回退到 CDN，国内不稳定）
+      math: { engine: 'KaTeX', src: '/vditor/dist/js/katex/katex.min.js' },
       theme: { current: themeRef.value, path: '/vditor/dist/css/content-theme' },
     })
   } catch { /* 预览失败不打断 */ }
