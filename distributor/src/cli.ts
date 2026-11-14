@@ -71,6 +71,20 @@ async function main(): Promise<void> {
       if (!task) {
         throw new Error(`待分发列表中找不到 #${recordId}（已填充/已发布的记录不再出现）`);
       }
+      // 发布前授权检查（B 档）：未登录直接拦截并给出修复命令
+      if (task.platform !== 'stub') {
+        const { metaOf } = await import('./platform-meta.js');
+        const { checkAuth } = await import('./auth.js');
+        const meta = metaOf(task.platform);
+        const st = await checkAuth(meta.platform, meta.loginUrl, meta.loggedInSelector);
+        if (!st.loggedIn) {
+          console.error(`[${task.platform}] 授权未通过：${st.note ?? '未登录'}`);
+          console.error(`先执行：inkpress auth login ${task.platform}，或用 clipboard ${recordId} 人工兜底`);
+          process.exitCode = 1;
+          return;
+        }
+        console.log(`[${task.platform}] 授权检查通过（${st.authType}）`);
+      }
       console.log(`开始分发 #${task.recordId} [${task.platform}] ${task.title}`);
       const opts: RunOptions = {
         timeoutSec: Number(arg('--timeout') ?? 900),
@@ -97,6 +111,34 @@ async function main(): Promise<void> {
       console.log('请在目标平台编辑器中粘贴并手动发布；发布后把外链回报给站点（站内分发记录可补录）。');
       return;
     }
+    case 'auth': {
+      // B 档授权三分法：auth status / auth login <platform>
+      const sub = rest[0];
+      const { metaOf, allPlatforms } = await import('./platform-meta.js');
+      const { checkAuth, authLogin, allStatuses } = await import('./auth.js');
+      if (sub === 'status') {
+        const rows: string[] = [];
+        for (const meta of allPlatforms()) {
+          if (meta.authType === 'user_handoff') {
+            rows.push(`${meta.platform.padEnd(8)} ${meta.displayName}  [${meta.authType}]  ${meta.handoffNote ?? ''}`);
+            continue;
+          }
+          const st = await checkAuth(meta.platform, meta.loginUrl, meta.loggedInSelector);
+          rows.push(`${meta.platform.padEnd(8)} ${meta.displayName}  [${st.authType}]  ${st.loggedIn ? '✅ 已登录' : '❌ 未登录/失效'}  ${st.note ?? ''}`);
+        }
+        console.log(rows.join('\n'));
+        return;
+      }
+      if (sub === 'login') {
+        const platform = rest[1];
+        if (!platform) throw new Error('用法：auth login <platform>（可选：' + allPlatforms().filter(m => m.authType !== 'user_handoff').map(m => m.platform).join(' / ') + '）');
+        const meta = metaOf(platform);
+        const st = await authLogin(meta.platform, meta.loginUrl, meta.loggedInSelector);
+        console.log(st.loggedIn ? `${platform} 授权成功，profile 已持久化` : `${platform} 登录未完成：${st.note}`);
+        return;
+      }
+      throw new Error('用法：auth status | auth login <platform>');
+    }
     default:
       console.log(`InkPress 本机分发工具
 
@@ -105,9 +147,14 @@ async function main(): Promise<void> {
       签发设备令牌并保存到本地 config.json（明文仅存本机，站内个人中心可吊销）
   pending
       拉取待分发任务列表（设备令牌鉴权）
+  auth status
+      查看所有平台授权状态（browser 型自动探测 Cookie 有效性）
+  auth login <platform>
+      打开有头浏览器完成平台登录，profile 持久化（juejin / csdn / zhihu / wechat）
   run <recordId> [--timeout 秒=900] [--headless] [--keep-open]
       打开平台编辑器自动填充草稿 → 回报 filled → 等待人工发布 → 捕获外链回报 report
       真实平台默认有头（用持久化 profile 保留平台登录态），stub 冒烟默认无头
+      发布前自动检查授权态：未登录会提示先执行 auth login
   clipboard <recordId>
       剪贴板兜底（自动化失败/风控熔断时用）：复制排版内容，人工粘贴发布`);
       process.exitCode = cmd === undefined ? 0 : 1;

@@ -1,0 +1,175 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InkPress 易拉宝 · 野兽派白纸代码 80x180cm</title>
+<style>
+/* ═══ 易拉宝 v3 = demo-brutal.html（用户定稿野兽派浅色版）的竖版化 ═══
+   纸白底 #F5F3EE × 粗黑描边 × 硬阴影 × 荧光绿/蓝/橙碰撞 × 淡代码纹理背景
+   渲染画布 1440×3240（= 80×180cm @ 1:2.25），导出后无损放大印刷
+   排版：3 米可读主标题、5 秒讲完飞轮、底部二维码 */
+:root {
+  --paper: #F5F3EE; --ink: #111111;
+  --lime: #C8F04B; --blue: #3B4CE0; --orange: #FF6B2C; --pink: #FF4D8D;
+  --border: 6px solid var(--ink);
+  --shadow: 22px 22px 0 var(--ink);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1440px; height: 3240px; overflow: hidden;
+  background: var(--paper); color: var(--ink);
+  font-family: "Arial Black", "Microsoft YaHei", sans-serif; }
+
+/* 代码背景（淡） */
+.codebg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  font: 700 15px/2 ui-monospace, Consolas, monospace; color: rgba(17,17,17,.10); }
+.codebg pre { position: absolute; margin: 0; white-space: pre; }
+.codebg b { color: rgba(59,76,224,.30); }
+
+.wrap { position: relative; z-index: 1; padding: 60px 70px 0; }
+
+/* 顶部品牌 */
+.brand { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
+.brand .logo { font-size: 56px; font-weight: 900; letter-spacing: 2px; }
+.brand .logo .lime { background: var(--lime); padding: 2px 14px; }
+.brand .track { font-size: 24px; font-weight: 800; letter-spacing: 2px;
+  background: var(--ink); color: var(--lime); padding: 12px 24px; }
+/* 页头右侧双二维码卡 */
+.wxcc { display: flex; align-items: center; gap: 20px; }
+.wxcc img { width: 260px; height: auto; background: #fff; border: 4px solid var(--ink); box-shadow: 10px 10px 0 var(--pink); }
+.wxcc:last-of-type img { box-shadow: 10px 10px 0 var(--blue); }
+.wxcc .t { font-size: 21px; font-weight: 900; line-height: 1.5; max-width: 260px; }
+.wxcc .t .bg-p { background: var(--pink); color: #fff; padding: 0 10px; white-space: nowrap; }
+.wxcc .t .bg-l { background: var(--lime); padding: 0 10px; white-space: nowrap; }
+
+/* kicker + 主标题 */
+.kicker { display: inline-block; background: var(--ink); color: var(--lime); font: 800 30px/1 Arial, sans-serif; letter-spacing: 6px; padding: 16px 30px; transform: rotate(-1.2deg); margin-bottom: 32px; }
+h1 { font-size: 112px; line-height: 1.04; font-weight: 900; letter-spacing: -2px; margin: 0; }
+h1 .lime { background: var(--lime); padding: 0 20px; display: inline-block; transform: rotate(-.6deg); }
+h1 .blue { color: var(--blue); }
+h1 .stroke { color: transparent; -webkit-text-stroke: 4px var(--ink); }
+.sub { margin-top: 28px; font-size: 33px; font-weight: 700; line-height: 1.55; max-width: 1230px; }
+.sub .hl-b { background: var(--blue); color: #fff; padding: 2px 14px; }
+.sub .hl-o { background: var(--orange); color: #fff; padding: 2px 14px; }
+
+/* 主视觉插画：机械手（白框+硬阴影） */
+ .hero-img { margin: 40px 0 0; border: var(--border); box-shadow: var(--shadow); width: 100%; display: block; }
+
+/* 飞轮三段（竖排大卡） */
+.blocks { margin-top: 48px; display: flex; flex-direction: column; gap: 36px; }
+ .blk { border: var(--border); box-shadow: var(--shadow); padding: 30px 46px; background: #fff;
+  display: grid; grid-template-columns: 200px 1fr; gap: 44px; align-items: center; }
+.blk .num { font-size: 130px; font-weight: 900; line-height: 1; }
+.blk h2 { font-size: 52px; font-weight: 900; margin: 0 0 18px; line-height: 1.2; }
+.blk p { font-size: 26px; line-height: 1.6; font-weight: 600; margin: 0; }
+.blk p b { background: var(--ink); color: #fff; padding: 1px 10px; }
+.blk1 { background: var(--lime); transform: rotate(-.5deg); }
+.blk2 { background: var(--blue); color: #fff; transform: rotate(.5deg); }
+.blk2 .num { color: var(--lime); }
+.blk2 p b { background: var(--lime); color: var(--ink); }
+.blk3 { background: var(--orange); color: #fff; transform: rotate(-.4deg); }
+.blk3 .num { color: #fff; }
+.blk3 h2 { background: #fff; color: var(--ink); display: inline-block; padding: 0 14px; }
+.blk3 p b { background: #fff; color: var(--orange); }
+
+/* 数字墙 */
+.wall { margin-top: 44px; border: var(--border); box-shadow: var(--shadow);
+  display: grid; grid-template-columns: 1fr 1fr; background: #fff; }
+.wall .cell { padding: 34px 30px; text-align: center; }
+.wall .cell:nth-child(1) { border-right: var(--border); border-bottom: var(--border); background: var(--lime); }
+.wall .cell:nth-child(2) { border-bottom: var(--border); background: var(--pink); color: #fff; }
+.wall .cell:nth-child(3) { border-right: var(--border); background: var(--blue); color: #fff; }
+.wall .cell:nth-child(4) { background: var(--orange); color: #fff; }
+.wall .v { font-size: 84px; font-weight: 900; letter-spacing: -1px; line-height: 1; }
+.wall .k { margin-top: 18px; font-size: 26px; font-weight: 800; letter-spacing: 2px; }
+
+/* 二维码 CTA 区 */
+.qr-area { margin-top: 48px; display: flex; align-items: center; gap: 60px; }
+.qr-area img { width: 340px; height: 340px; background: #fff; border: var(--border); box-shadow: var(--shadow); }
+.qr-area .txt { flex: 1; }
+.qr-area .s1 { font-size: 56px; font-weight: 900; line-height: 1.35; }
+.qr-area .s1 .bg-l { background: var(--lime); padding: 0 16px; }
+.qr-area .s1 .bg-p { background: var(--pink); color: #fff; padding: 0 16px; }
+.qr-area .url { display: inline-block; margin-top: 30px; font-size: 46px; font-weight: 900;
+  background: var(--ink); color: #fff; padding: 20px 40px; box-shadow: 12px 12px 0 var(--blue); }
+.qr-area .acc { margin-top: 24px; font-size: 26px; font-weight: 700; color: #444; line-height: 1.6; }
+
+/* 底部赛道条 */
+.track { margin-top: 60px; border: var(--border); background: var(--ink); padding: 30px 0;
+  display: flex; justify-content: center; gap: 50px; }
+.track span { font-size: 44px; font-weight: 900; color: var(--lime); letter-spacing: 8px; }
+.track .dot { width: 18px; height: 18px; background: var(--lime); align-self: center; }
+</style>
+</head>
+<body>
+
+<div class="codebg" aria-hidden="true">
+  <pre style="top:60px;left:50px;"> 564  private void applyFeedback(Long id, String verdict) {
+ 565      memoryService.insert(userId, category, content);
+ 566      if (verdict.equals("APPLIED")) metrics.record(verbatim + 1);</pre>
+  <pre style="top:520px;right:60px;text-align:right;"> 210  geo = render("结论先行+要点分条");
+ 211  sitemap.touch(article.id);</pre>
+  <pre style="top:1080px;left:60px;"> 88   @PostMapping("/run/finish")
+ 89   distill(r.userId, r.feedbacks);</pre>
+  <pre style="top:1640px;right:80px;"> 42   SELECT id, title FROM article WHERE status='PUBLISHED';</pre>
+  <pre style="top:2200px;left:70px;"> 12   const loop = () => { feedback(); memory(); inject(); };</pre>
+  <pre style="top:2760px;right:70px;"> 137  return Result.ok(Map.of("adopt", 1.2));</pre>
+</div>
+
+<div class="wrap">
+
+  <div class="brand">
+    <span class="logo">INK<span class="lime">PRESS</span></span>
+    <div class="wxcc">
+      <div class="t">线上体验<br><span class="bg-l">扫码开逛</span><br>117.72.154.28</div>
+      <img src="qr_site.png" alt="" style="box-shadow: 10px 10px 0 var(--blue);">
+    </div>
+    <div class="wxcc">
+      <div class="t">内测群<br><span class="bg-p">扫码加入</span><br>Bohack &amp; InkPress</div>
+      <img src="qr_wx_sq.png" alt="">
+    </div>
+    <span class="track">BOHACK<br>2026 · T69</span>
+  </div>
+
+  <div class="kicker">会自我进化的 AI 博客</div>
+  <h1>文章<span class="lime">自己长</span>，<br>流量<span class="blue">自己来</span>。<br><span class="stroke">BOHACK 2026</span></h1>
+  <p class="sub">Agent 从<span class="hl-b">开发轨迹</span>里蒸馏文章 · GEO 让 AI 搜索引擎<span class="hl-o">主动引用</span> · 每一次反馈都让下一篇更好</p>
+
+  <div class="blocks">
+    <div class="blk blk1"><span class="num">01</span>
+      <div><h2>Agent 自动成文 · 内容供给</h2>
+        <p>Skill 结合<b>本地会话轨迹</b>，定期检查新技术采用与新变动，自动蒸馏成文章初稿——项目生长，博客就生长。</p></div></div>
+    <div class="blk blk2"><span class="num">02</span>
+      <div><h2>GEO / SEO 全自动推流</h2>
+        <p>发布即生成<b>「核心结论」摘要</b>供 AI 搜索引擎直接引用；JSON-LD / sitemap / RSS 全链自动，文章越来越容易获得流量。</p></div></div>
+    <div class="blk blk3"><span class="num">03</span>
+      <div><h2>进化闭环 · 越写越好</h2>
+        <p>采纳与修正沉淀为<b>写作记忆</b>注入下一次生成——同一任务第二轮，修改幅度 29.9% → 1.2%。</p></div></div>
+  </div>
+
+  <div class="wall">
+    <div class="cell"><div class="v">3000+</div><div class="k">语料训练规模</div></div>
+    <div class="cell"><div class="v">65%+</div><div class="k">GEO 引用率预估目标</div></div>
+    <div class="cell"><div class="v">100%</div><div class="k">摘要自动生成</div></div>
+    <div class="cell"><div class="v">1.2%</div><div class="k">二轮修改幅度</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:48px;">
+    <img src="pffs_C01_pipeline.png" style="width:100%;border:6px solid #111;box-shadow:22px 22px 0 #111;background:#fff;display:block;">
+    <img src="pffs_C04_loop.png" style="width:100%;border:6px solid #111;box-shadow:22px 22px 0 #111;background:#fff;display:block;">
+  </div>
+
+  <div class="qr-area">
+    <div class="txt">
+      <div class="s1">线上体验<br><span class="bg-l">117.72.154.28</span></div>
+      <div class="acc">进化面板 / AI 检索 / 写作记忆 现场可玩 · 双码入口见页头</div>
+    </div>
+  </div>
+
+  <div class="track">
+    <span>反馈</span><span class="dot"></span><span>记忆</span><span class="dot"></span><span>注入</span><span class="dot"></span><span>指标</span><span class="dot"></span><span>回退</span>
+  </div>
+
+</div>
+</body>
+</html>

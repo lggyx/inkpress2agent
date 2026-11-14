@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InkPress · 白纸代码色卡预览 v7</title>
+<style>
+/* ═══ v7「白纸代码 · 色卡」═══
+   暖纸白底 #FBFBF9 × 极淡代码纹理（真实源码片段+行号+指标数字）× 六色实色卡
+   零渐变零辉光；卡=白身+左色条+mono色标签；卡色即语义 */
+:root {
+  --bg: #FBFBF9; --card: #FFFFFF; --ink: #1A1A1E;
+  --line: rgba(0,0,0,.09); --code: rgba(24,24,27,.055);
+  --ink2: #52525B; --ink3: #A1A1AA;
+  --indigo: #4F46E5; --orange: #EA580C; --teal: #0D9488;
+  --violet: #7C3AED; --lime: #65A30D; --rose: #E11D48;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 16px/1.65 -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; }
+::selection { background: #4F46E5; color: #fff; }
+a { color: inherit; text-decoration: none; }
+.mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
+
+/* ═══ 代码背景层（T1 手稿 + T2 数字锚点）═══ */
+.codebg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.codebg pre { position: absolute; margin: 0; font: 400 12px/1.7 ui-monospace, Consolas, monospace;
+  color: var(--code); white-space: pre; user-select: none; }
+.codebg .num { position: absolute; font: 700 20px/1 ui-monospace, monospace;
+  color: rgba(24,24,27,.10); letter-spacing: 2px; }
+.codebg .num b { color: rgba(79,70,229,.16); }
+
+/* ═══ 顶栏 ═══ */
+.top { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 28px;
+  height: 64px; padding: 0 clamp(18px, 4vw, 44px);
+  background: rgba(251,251,249,.88); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.top .logo { font-weight: 800; font-size: 20px; }
+.top .logo i { font-style: normal; color: var(--indigo); }
+.top nav { display: flex; gap: 20px; flex: 1; font-size: 14px; color: var(--ink2); }
+.top nav a:hover { color: var(--ink); }
+.top .stats { font-size: 12px; color: var(--ink3); }
+.top .stats b { color: var(--indigo); font-weight: 700; }
+
+/* ═══ 布局 ═══ */
+.wrap { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 44px); }
+section { padding: clamp(40px, 8vh, 72px) 0; }
+.shead { display: flex; align-items: baseline; gap: 14px; margin-bottom: 26px; }
+.shead .no { font: 700 13px/1 ui-monospace, monospace; color: var(--ink3); letter-spacing: 2px; }
+.shead h2 { font-size: clamp(24px, 3.4vw, 34px); font-weight: 800; letter-spacing: -.5px; margin: 0; }
+.shead .en { font-size: 12px; letter-spacing: 3px; color: var(--ink3); text-transform: uppercase; }
+
+/* ═══ Hero ═══ */
+.hero { padding: clamp(48px, 10vh, 96px) 0 44px; }
+.hero .chip { display: inline-block; font: 700 13px/1 ui-monospace, monospace; letter-spacing: 2px;
+  color: var(--indigo); border: 1px solid var(--indigo); border-radius: 999px; padding: 8px 18px; margin-bottom: 26px; }
+.hero h1 { font-size: clamp(34px, 6vw, 58px); line-height: 1.25; font-weight: 900; letter-spacing: -1px; margin: 0 0 22px; }
+.hero h1 .c1 { color: var(--indigo); } .hero h1 .c2 { color: var(--orange); } .hero h1 .c3 { color: var(--teal); }
+.hero .lede { max-width: 640px; font-size: clamp(15px, 1.8vw, 18px); color: var(--ink2); margin: 0 0 30px; }
+.hero .lede b { color: var(--ink); }
+.hero .cursor { display: inline-block; width: .55em; height: 1.1em; background: var(--indigo);
+  vertical-align: text-bottom; animation: blink 1.1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ═══ 六色卡网格 ═══ */
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+@media (max-width: 860px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .cards { grid-template-columns: 1fr; } }
+.cc { --c: var(--indigo); position: relative; background: var(--card); border: 1px solid var(--line);
+  border-radius: 14px; padding: 22px 24px 18px; transition: transform .18s, border-color .18s; }
+.cc::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 5px;
+  border-radius: 0 4px 4px 0; background: var(--c); transition: width .18s; }
+.cc:hover { transform: translateY(-4px); border-color: var(--c); }
+.cc:hover::before { width: 8px; }
+.cc .tag { display: flex; justify-content: space-between; font: 700 11px/1 ui-monospace, monospace;
+  letter-spacing: 1.5px; color: var(--c); margin-bottom: 14px; }
+.cc .tag .hex { color: var(--ink3); font-weight: 400; }
+.cc h3 { margin: 0 0 6px; font-size: 20px; font-weight: 800; }
+.cc p { margin: 0 0 16px; font-size: 13.5px; color: var(--ink2); line-height: 1.6; }
+.cc .foot { display: flex; justify-content: space-between; align-items: baseline; }
+.cc .foot .v { font: 700 30px/1 ui-monospace, monospace; color: var(--c); }
+.cc .foot .k { font-size: 12px; color: var(--ink3); }
+
+/* ═══ 文章列表 ═══ */
+.posts { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--card); }
+.post { display: grid; grid-template-columns: 96px 1fr auto; align-items: center; gap: 18px;
+  padding: 16px 22px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .15s; }
+.post:last-child { border-bottom: 0; }
+.post:hover { background: var(--bg); }
+.post .pd { font: 400 12px/1 ui-monospace, monospace; color: var(--ink3); }
+.post .pt { font-size: 16px; font-weight: 650; }
+.post .pt:hover { color: var(--indigo); }
+.post .pc { font: 700 10px/1 ui-monospace, monospace; letter-spacing: 1px; padding: 4px 10px;
+  border-radius: 999px; color: var(--cc); border: 1px solid var(--cc); }
+.post .pc.i { --cc: var(--indigo); } .post .pc.t { --cc: var(--teal); } .post .pc.o { --cc: var(--orange); }
+
+/* ═══ 进化面板预览 ═══ */
+.evo { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 720px) { .evo { grid-template-columns: 1fr; } }
+.big { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 26px 28px; position: relative; overflow: hidden; }
+.big::after { content: ""; position: absolute; right: -30px; top: -30px; width: 120px; height: 120px;
+  border-radius: 50%; background: var(--c); opacity: .07; }
+.big .v { font: 800 clamp(44px, 6vw, 64px)/1 ui-monospace, monospace; color: var(--c); letter-spacing: -2px; }
+.big .v small { font-size: .45em; color: var(--ink3); font-weight: 400; }
+.big .k { margin-top: 10px; font-size: 14px; color: var(--ink2); }
+.big.o { --c: var(--orange); } .big.t { --c: var(--teal); }
+.mem { border: 1px solid var(--line); border-radius: 14px; background: var(--card); margin-top: 18px; }
+.mem .row { display: grid; grid-template-columns: 40px 1fr auto; gap: 14px; align-items: center;
+  padding: 14px 20px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.mem .row:last-child { border-bottom: 0; }
+.mem .idx { font: 700 12px ui-monospace, monospace; color: var(--orange); }
+.mem .new { font: 700 10px/1 ui-monospace, monospace; color: var(--orange); border: 1px solid var(--orange);
+  border-radius: 999px; padding: 3px 8px; }
+.mem .tm { font: 400 11px ui-monospace, monospace; color: var(--ink3); }
+
+/* ═══ 终端卡 ═══ */
+.term { background: #17171B; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+.term .bar { display: flex; gap: 8px; padding: 12px 18px; border-bottom: 1px solid #26262C; }
+.term .bar i { width: 10px; height: 10px; border-radius: 50%; background: #33333B; }
+.term .bar span { margin-left: 10px; font: 400 11px ui-monospace, monospace; color: #6a6a74; }
+.term .body { padding: 20px 24px; font: 400 13px/2 ui-monospace, monospace; color: #A8A8B2; }
+.term .body b { color: #D9F24F; font-weight: 500; }
+
+.foot { padding: 30px 0 60px; text-align: center; font-size: 12px; color: var(--ink3); }
+.foot .note { font-family: ui-monospace, monospace; }
+</style>
+</head>
+<body>
+
+<!-- 代码背景层：真实源码片段（本项目 ArticleService / render-rollup.js 摘录）+ 指标数字锚点 -->
+<div class="codebg" aria-hidden="true">
+  <pre style="top:40px;left:20px;"> 564   private void applyFeedback(Long articleId, String verdict) {
+ 565       // 采纳 → 写作记忆
+ 566       memoryService.insert(userId, category, content, source);
+ 567       if (verdict.equals("APPLIED")) {
+ 568           metrics.record(verbatim + 1);
+ 569       }
+ 570   }</pre>
+  <pre style="top:380px;right:30px;"> 118   const lines = md.split("\n");
+ 119   for (const line of lines) {
+ 120     ctx.fillText(line, x, y);
+ 121     y += lh; // 易拉宝逐行绘制
+ 122   }</pre>
+  <pre style="top:900px;left:40%;">  88   @PostMapping("/run/finish")
+  89   public Result finish(@RequestBody Run r) {
+  90       // 蒸馏 → 记忆 → 注入下一次
+  91       distill(r.userId, r.feedbacks);
+  92   }</pre>
+  <pre style="top:1500px;right:60px;"> 210   geo = render("结论先行+要点分条");
+ 211   seo = meta.description(content);
+ 212   sitemap.touch(article.id);
+ 213   rss.publish(article);</pre>
+  <pre style="top:2100px;left:24px;">  42   SELECT id, title FROM article
+  43   WHERE status = 'PUBLISHED'
+  44   ORDER BY published_at DESC;</pre>
+  <span class="num" style="top:250px;left:44%;">29.9% → <b>1.2%</b></span>
+  <span class="num" style="top:760px;left:8%;">7/<b>7</b> GEO</span>
+  <span class="num" style="top:1180px;right:10%;">35 篇</span>
+  <span class="num" style="top:1900px;left:30%;">100%</span>
+  <span class="num" style="top:2380px;right:22%;">run #4</span>
+</div>
+
+<header class="top">
+  <span class="logo">Ink<i>Press</i></span>
+  <nav><a href="#">文章</a><a href="#">检索</a><a href="#">图谱</a><a href="#">进化面板</a><a href="#">工作台</a></nav>
+  <span class="stats mono">35 篇 · 采纳率 <b>100%</b> · run #4</span>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <span class="chip">BOHACK 2026 · 日新赛道</span>
+    <h1>Agent 从开发轨迹写文章，<br>GEO 让流量<span class="c1">自己来</span>，<br>每一次反馈让下一篇<span class="c2">更好</span><span class="c3">。</span><span class="cursor"></span></h1>
+    <p class="lede">InkPress 是一个<b>会自我进化的 AI 博客</b>：Skill 结合本地会话轨迹自动成文，发布即生成 AI 可引用的结构化摘要，读者的每一次反馈都沉淀为写作记忆。</p>
+  </div>
+
+  <section>
+    <div class="shead"><span class="no">01</span><h2>六个子系统</h2><span class="en">Color Cards</span></div>
+    <div class="cards">
+      <div class="cc" style="--c:var(--indigo)"><div class="tag"><span>WORKBENCH</span><span class="hex">#4F46E5</span></div><h3>AI 创作台</h3><p>三栏创作流 · 命令卡 · AI 生成代码内联微调</p><div class="foot"><span class="v">6</span><span class="k">写作模板</span></div></div>
+      <div class="cc" style="--c:var(--teal)"><div class="tag"><span>SEARCH</span><span class="hex">#0D9488</span></div><h3>混合检索</h3><p>BM25 + 向量 RRF 三臂 · ES 宕机自动降级</p><div class="foot"><span class="v">3</span><span class="k">检索臂</span></div></div>
+      <div class="cc" style="--c:var(--orange)"><div class="tag"><span>EVOLUTION</span><span class="hex">#EA580C</span></div><h3>自我进化</h3><p>反馈 → 记忆 → 注入 · 修改幅度 29.9%→1.2%</p><div class="foot"><span class="v">12</span><span class="k">写作记忆</span></div></div>
+      <div class="cc" style="--c:var(--violet)"><div class="tag"><span>GRAPH</span><span class="hex">#7C3AED</span></div><h3>知识图谱</h3><p>标签共现 + 手动关联 · 相关阅读个性化</p><div class="foot"><span class="v">35</span><span class="k">节点</span></div></div>
+      <div class="cc" style="--c:var(--rose)"><div class="tag"><span>GEO / SEO</span><span class="hex">#E11D48</span></div><h3>双引擎推流</h3><p>核心结论先行 · sitemap/RSS/JSON-LD 全自动</p><div class="foot"><span class="v">7/7</span><span class="k">量化测试</span></div></div>
+      <div class="cc" style="--c:var(--lime)"><div class="tag"><span>DISTRIBUTION</span><span class="hex">#65A30D</span></div><h3>多端分发</h3><p>排版转换 · 12 平台适配 · 人工一键兜底</p><div class="foot"><span class="v">4</span><span class="k">已发布平台</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead"><span class="no">02</span><h2>最新文章</h2><span class="en">From Agent</span></div>
+    <div class="posts">
+      <div class="post"><span class="pd">2026-11-14</span><span class="pt">【蓝桥杯】进阶-状态压缩动态规划的典型题型深入分析</span><span class="pc i">算法</span></div>
+      <div class="post"><span class="pd">2026-11-14</span><span class="pt">内容创作的 SEO 与 GEO 双轨优化</span><span class="pc t">SEO</span></div>
+      <div class="post"><span class="pd">2026-11-13</span><span class="pt">浏览器自动化分发的脆弱性与兜底</span><span class="pc o">分发</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead"><span class="no">03</span><h2>进化进行时</h2><span class="en">Evolution</span></div>
+    <div class="evo">
+      <div class="big o"><div class="v">1.2<small>%</small></div><div class="k">第二轮平均修改幅度（首轮 29.9%）——AI 越写越贴合你的风格</div></div>
+      <div class="big t"><div class="v">12<small> 条</small></div><div class="k">写作记忆 · 全部来自真实反馈的蒸馏入库</div></div>
+    </div>
+    <div class="mem">
+      <div class="row"><span class="idx">01</span><span>开头不用「随着互联网的发展」这类套话</span><span class="new">NEW</span><span class="tm">08:41</span></div>
+      <div class="row"><span class="idx">02</span><span>段落控制在三句以内，先结论后展开</span><span class="new">NEW</span><span class="tm">08:41</span></div>
+      <div class="row"><span class="idx">03</span><span>技术结论必须落到可复现的命令或配置</span><span style="font:700 10px/1 ui-monospace,monospace;color:var(--ink3)">RUN1</span><span class="tm">08:12</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead"><span class="no">04</span><h2>Agent 工作现场</h2><span class="en">Live Terminal</span></div>
+    <div class="term">
+      <div class="bar"><i></i><i></i><i></i><span>inkpress — agent</span></div>
+      <div class="body">
+        <div><b>trace</b>  发现变动：接入 StepFun step-5-preview（文本槽）→ 可成文素材 +1</div>
+        <div><b>trace</b>  发现变动：修复 V23 蒸馏模板占位符 → 可成文素材 +1</div>
+        <div><b>draft</b>  按 12 条写作记忆生成《本周工程复盘》初稿 … <span style="color:#D9F24F">▮</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <span class="note">v7 白纸代码·色卡 — 反馈按区块说：加强 / 减弱 / 去掉</span>
+  </div>
+
+</div>
+</body>
+</html>

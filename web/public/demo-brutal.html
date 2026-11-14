@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InkPress · 野兽派白纸代码 v8</title>
+<style>
+/* ═══ v8 野兽派（Brutalism）× 白纸代码 × 大色块 ═══
+   无导航无页头无文章列表——纯视觉海报页；
+   特征：粗黑描边、硬阴影（offset shadow，不是辉光）、超大字、色块碰撞、刻意的生硬对齐 */
+:root {
+  --paper: #F5F3EE;
+  --ink: #111111;
+  --lime: #C8F04B;
+  --blue: #3B4CE0;
+  --orange: #FF6B2C;
+  --pink: #FF4D8D;
+  --border: 4px solid var(--ink);
+  --shadow: 14px 14px 0 var(--ink);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--paper); color: var(--ink);
+  font-family: "Arial Black", "Microsoft YaHei", sans-serif; overflow-x: hidden; }
+
+/* 代码背景：整页平铺的淡代码 */
+.codebg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  font: 700 13px/1.9 ui-monospace, Consolas, monospace; color: rgba(17,17,17,.13); }
+.codebg pre { position: absolute; margin: 0; white-space: pre; }
+.codebg b { color: rgba(59,76,224,.35); }
+
+/* 主容器 */
+.wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 90px 40px 140px; }
+
+/* ── 海报标题区：超大字 + 硬阴影块 ── */
+.hero { margin-bottom: 110px; }
+.kicker { display: inline-block; background: var(--ink); color: var(--lime);
+  font: 800 20px/1 Arial, sans-serif; letter-spacing: 6px; padding: 16px 30px; transform: rotate(-1.2deg); }
+h1 { font-size: clamp(64px, 11vw, 150px); line-height: .98; font-weight: 900; letter-spacing: -3px;
+  margin: 30px 0 0; text-transform: uppercase; }
+h1 .lime { background: var(--lime); padding: 0 18px; display: inline-block; transform: rotate(-.6deg); }
+h1 .stroke { color: transparent; -webkit-text-stroke: 3px var(--ink); }
+h1 .blue { color: var(--blue); }
+.hero .sub { margin-top: 44px; font-size: clamp(18px, 2.4vw, 26px); font-weight: 700; max-width: 760px; line-height: 1.5; }
+.hero .sub .hl-b { background: var(--blue); color: #fff; padding: 2px 12px; }
+.hero .sub .hl-o { background: var(--orange); color: #fff; padding: 2px 12px; }
+
+/* ── 三大色块：飞轮三段 ── */
+.blocks { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 40px; margin: 130px 0; }
+@media (max-width: 920px) { .blocks { grid-template-columns: 1fr; } }
+.blk { border: var(--border); box-shadow: var(--shadow); padding: 44px 38px 38px; background: var(--paper); }
+.blk .num { font-size: 110px; font-weight: 900; line-height: 1; margin-bottom: 20px; }
+.blk h2 { font-size: clamp(26px, 3vw, 36px); font-weight: 900; line-height: 1.2; margin: 0 0 20px; }
+.blk p { font-size: 17px; line-height: 1.7; font-weight: 500; margin: 0; }
+.blk p b { background: rgba(17,17,17,.92); color: #fff; padding: 1px 8px; }
+.blk1 { background: var(--lime); transform: rotate(-.8deg); }
+.blk1 .num, .blk1 h2 { color: var(--ink); }
+.blk2 { background: var(--blue); color: #fff; transform: rotate(.8deg); }
+.blk2 .num { color: var(--lime); } .blk2 h2 { color: #fff; }
+.blk2 p b { background: var(--lime); color: var(--ink); }
+.blk3 { background: var(--orange); color: #fff; transform: rotate(-.5deg); }
+.blk3 .num { color: #fff; } .blk3 h2 { color: var(--ink); background: #fff; display: inline-block; padding: 0 10px; }
+.blk3 p b { background: #fff; color: var(--orange); }
+
+/* ── 数字墙：超大数据 ── */
+.wall { border: var(--border); background: #fff; box-shadow: var(--shadow);
+  display: grid; grid-template-columns: repeat(4, 1fr); }
+.wall .cell { padding: 46px 20px; text-align: center; border-right: var(--border); }
+.wall .cell:last-child { border-right: 0; }
+.wall .v { font-size: clamp(40px, 5.5vw, 74px); font-weight: 900; letter-spacing: -2px; line-height: 1; }
+.wall .k { margin-top: 16px; font-size: 15px; font-weight: 800; letter-spacing: 1px; }
+.wall .c1 { background: var(--lime); } .wall .c2 { background: var(--pink); color: #fff; }
+.wall .c3 { background: var(--blue); color: #fff; } .wall .c4 { background: var(--orange); color: #fff; }
+
+/* ── 巨型标语条 ── */
+.marquee { margin: 130px calc(50% - 50vw) 0; border-top: var(--border); border-bottom: var(--border);
+  background: var(--ink); overflow: hidden; padding: 26px 0; }
+.marquee .lane { display: flex; gap: 70px; width: max-content; animation: mq 22s linear infinite; }
+.marquee span { font-size: 44px; font-weight: 900; color: var(--lime); white-space: nowrap; letter-spacing: 4px; }
+.marquee span i { font-style: normal; color: #fff; }
+@keyframes mq { to { transform: translateX(-50%); } }
+
+/* ── 底部宣言 + 二维码 ── */
+.decl { margin-top: 130px; text-align: center; }
+.decl .big { font-size: clamp(30px, 4.4vw, 56px); font-weight: 900; line-height: 1.35; }
+.decl .big .bg-l { background: var(--lime); padding: 0 14px; }
+.decl .big .bg-p { background: var(--pink); color: #fff; padding: 0 14px; }
+.qrbox { display: flex; align-items: center; justify-content: center; gap: 46px; margin-top: 60px; flex-wrap: wrap; }
+.qrbox img { width: 230px; height: 230px; background: #fff; border: var(--border); box-shadow: 12px 12px 0 var(--blue); }
+.qrbox .scan { text-align: left; }
+.qrbox .scan .s1 { font-size: clamp(20px, 2.6vw, 30px); font-weight: 900; line-height: 1.4; }
+.qrbox .scan .s1 .bg-l { background: var(--lime); padding: 0 12px; }
+.qrbox .scan .s2 { display: inline-block; margin-top: 18px; font: 900 clamp(18px, 2.2vw, 26px)/1 Arial, sans-serif;
+  background: var(--ink); color: #fff; padding: 16px 32px; box-shadow: 8px 8px 0 var(--orange); }
+.decl .url { display: inline-block; margin-top: 54px; font: 900 clamp(24px, 3vw, 36px)/1 Arial, sans-serif;
+  background: var(--ink); color: #fff; padding: 20px 44px; box-shadow: 10px 10px 0 var(--lime); }
+</style>
+</head>
+<body>
+
+<div class="codebg" aria-hidden="true">
+  <pre style="top:30px;left:40px;"> 564  private void applyFeedback(Long id, String verdict) {
+ 565      memoryService.insert(userId, category, content);
+ 566      if (verdict.equals("APPLIED")) metrics.record(verbatim + 1);
+ 567  }</pre>
+  <pre style="top:120px;right:60px;text-align:right;"> 210  geo = render("结论先行");
+ 211  sitemap.touch(id);
+ 212  rss.publish(article);</pre>
+  <pre style="top:56%;left:20px;"> 88  @PostMapping("/run/finish")
+ 89  distill(r.userId, r.feedbacks);</pre>
+  <pre style="top:70%;right:140px;"> 42  SELECT id, title FROM article
+ 43  WHERE status='PUBLISHED';</pre>
+  <pre style="bottom:120px;left:35%;"> 12  const loop = () => { feedback(); memory(); inject(); };</pre>
+</div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <span class="kicker">INKPRESS · 会自我进化的 AI 博客</span>
+    <h1>文章<span class="lime">自己长</span>，<br>流量<span class="blue">自己来</span>。<br><span class="stroke">BOHACK 2026</span></h1>
+    <p class="sub">Agent 从<span class="hl-b">开发轨迹</span>里蒸馏文章 · GEO 让 AI 搜索引擎<span class="hl-o">主动引用</span> · 每一次反馈都让下一篇更好</p>
+  </div>
+
+  <div class="blocks">
+    <div class="blk blk1">
+      <div class="num">01</div>
+      <h2>Agent 自动成文</h2>
+      <p>Skill 结合<b>本地会话轨迹</b>，定期检查新技术采用与新变动，自动蒸馏成文章初稿——项目生长，博客就生长。</p>
+    </div>
+    <div class="blk blk2">
+      <div class="num">02</div>
+      <h2>GEO / SEO 推流</h2>
+      <p>发布即生成<b>「核心结论」摘要</b>，AI 搜索引擎直接引用；JSON-LD / sitemap / RSS 全链自动，文章越来越容易获得流量。</p>
+    </div>
+    <div class="blk blk3">
+      <div class="num">03</div>
+      <h2>进化闭环</h2>
+      <p>每一次采纳与修正沉淀为<b>写作记忆</b>注入下一次生成——同一任务第二轮，修改幅度 29.9% → 1.2%。</p>
+    </div>
+  </div>
+
+  <div class="wall">
+    <div class="cell c1"><div class="v">35 篇</div><div class="k">全量真实语料</div></div>
+    <div class="cell c2"><div class="v">7/7</div><div class="k">GEO 量化全过</div></div>
+    <div class="cell c3"><div class="v">100%</div><div class="k">摘要自动生成</div></div>
+    <div class="cell c4"><div class="v">1.2%</div><div class="k">二轮修改幅度</div></div>
+  </div>
+
+  <div class="marquee"><div class="lane">
+    <span>反馈 <i>→</i> 记忆 <i>→</i> 注入 <i>→</i> 指标 <i>→</i> 回退 <i>→</i> 反馈 <i>→</i> 记忆 <i>→</i> 注入 <i>→</i> 指标 <i>→</i> 回退 <i>→</i>&nbsp;</span>
+    <span>反馈 <i>→</i> 记忆 <i>→</i> 注入 <i>→</i> 指标 <i>→</i> 回退 <i>→</i> 反馈 <i>→</i> 记忆 <i>→</i> 注入 <i>→</i> 指标 <i>→</i> 回退 <i>→</i>&nbsp;</span>
+  </div></div>
+
+  <div class="decl">
+    <div class="big">它已经在写了。<br>你扫一眼，<span class="bg-l">它就记得你</span>。<br>明天，它比今天<span class="bg-p">更懂流量</span>。</div>
+    <div class="qrbox">
+      <img src="qr_site.png" alt="扫码访问 InkPress">
+      <div class="scan">
+        <div class="s1"><span class="bg-l">扫码亲眼看</span><br>它已经写了 35 篇</div>
+        <div><span class="s2">117.72.154.28</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

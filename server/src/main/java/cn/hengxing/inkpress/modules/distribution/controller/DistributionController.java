@@ -33,11 +33,14 @@ public class DistributionController {
 
     private final DistributionService distributionService;
     private final cn.hengxing.inkpress.modules.distribution.service.PlatformConvertService platformConvertService;
+    private final cn.hengxing.inkpress.modules.distribution.mapper.PlatformAuthStatusMapper authStatusMapper;
 
     public DistributionController(DistributionService distributionService,
-                                  cn.hengxing.inkpress.modules.distribution.service.PlatformConvertService platformConvertService) {
+                                  cn.hengxing.inkpress.modules.distribution.service.PlatformConvertService platformConvertService,
+                                  cn.hengxing.inkpress.modules.distribution.mapper.PlatformAuthStatusMapper authStatusMapper) {
         this.distributionService = distributionService;
         this.platformConvertService = platformConvertService;
+        this.authStatusMapper = authStatusMapper;
     }
 
     /** 博主端发起分发 */
@@ -102,5 +105,49 @@ public class DistributionController {
     public Result<Void> report(@RequestBody ReportRequest req) {
         distributionService.report(req.id(), req.success(), req.publishedUrl(), req.detail());
         return Result.ok();
+    }
+
+    /** ── B 档：平台授权状态（distributor auth status 回报 + 管理端查看） ── */
+
+    public record AuthStatusRequest(@NotBlank String platform, String authType, boolean loggedIn,
+                                    String note, String deviceName) {
+    }
+
+    /** agent 回调：回报平台授权状态（设备令牌鉴权，由 SecurityConfig 的 /distribution/** 规则覆盖） */
+    @PostMapping("/distribution/auth-status")
+    public Result<Void> reportAuthStatus(@RequestBody AuthStatusRequest req) {
+        cn.hengxing.inkpress.modules.distribution.entity.PlatformAuthStatus row =
+                authStatusMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<
+                        cn.hengxing.inkpress.modules.distribution.entity.PlatformAuthStatus>()
+                        .eq(cn.hengxing.inkpress.modules.distribution.entity.PlatformAuthStatus::getPlatform, req.platform()));
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        if (row == null) {
+            row = new cn.hengxing.inkpress.modules.distribution.entity.PlatformAuthStatus();
+            row.setPlatform(req.platform());
+            row.setAuthType(req.authType() == null ? "browser" : req.authType());
+            row.setLoggedIn(req.loggedIn());
+            row.setNote(req.note());
+            row.setDeviceName(req.deviceName());
+            row.setLastCheckedAt(now);
+            authStatusMapper.insert(row);
+        } else {
+            row.setAuthType(req.authType() == null ? row.getAuthType() : req.authType());
+            row.setLoggedIn(req.loggedIn());
+            row.setNote(req.note());
+            row.setDeviceName(req.deviceName());
+            row.setLastCheckedAt(now);
+            authStatusMapper.updateById(row);
+        }
+        return Result.ok();
+    }
+
+    /** 管理端：各平台授权状态列表 */
+    @GetMapping("/studio/distribution/auth-status")
+    @PreAuthorize("hasRole('BLOGGER')")
+    public Result<List<cn.hengxing.inkpress.modules.distribution.entity.PlatformAuthStatus>> authStatusList() {
+        return Result.ok(authStatusMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<
+                        cn.hengxing.inkpress.modules.distribution.entity.PlatformAuthStatus>()
+                        .orderByAsc(cn.hengxing.inkpress.modules.distribution.entity.PlatformAuthStatus::getPlatform)));
     }
 }
