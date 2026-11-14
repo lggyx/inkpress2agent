@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InkPress · 暗红编辑风预览 v6</title>
+<link rel="preconnect" href="https://fonts.loli.net">
+<!-- 异步加载字体：镜像偶发抖动时不阻塞渲染与脚本，系统衬线兜底 -->
+<link href="https://fonts.loli.net/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.loli.net/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;900&display=swap" rel="stylesheet"></noscript>
+<style>
+/* ═══ v6：wodniack 转译 · 场景化版 ═══
+   病根修治：v5 是"穿着 wodniack 衣服的模板页"。v6 换骨架——
+   ① 虚拟平滑滚动（lerp 跟随，参考站的丝滑手感）② 全屏场景节奏（hero/翻转幕满屏）
+   ③ 中文海报级 900 字重（修 Windows 发虚）④ 加载幕计数 ⑤ 自定义光标。
+   token 不变（参考站实测）：#160000 / #fff0eb / #f40c3f / #540000。 */
+:root {
+  --bg: #160000; --ink: #fff0eb; --acc: #f40c3f; --shadow: rgba(244,12,63,.34);
+  --ink-dim: rgba(255,240,235,.8); --ink-faint: rgba(255,240,235,.55);
+  --serif: "Instrument Serif", "Noto Serif SC", "STSong", "SimSun", Georgia, serif;
+  --mono: "Space Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  --pad: clamp(20px, 3.4vw, 48px);
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); scrollbar-width: none; }
+html::-webkit-scrollbar { width: 0; height: 0; }
+html, body { margin: 0; }
+body { color: var(--ink); font: 400 16px/1.5 var(--serif); letter-spacing: -.01em;
+  overscroll-behavior: none; }
+::selection { background: var(--acc); color: var(--bg); }
+a { color: inherit; text-decoration: none; }
+.mono { font-family: var(--mono); }
+h1,h2,h3 { font-weight: 400; margin: 0; }
+
+/* 虚拟滚动外壳：内容固定，滚动条推 transform */
+#spacer { width: 1px; }
+#stage { position: fixed; top: 0; left: 0; width: 100%; will-change: transform; }
+body.native #stage { position: static; }
+body.native #spacer { display: none; }
+
+/* 加载幕 */
+#loader { position: fixed; inset: 0; z-index: 99; background: var(--bg);
+  display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+  transition: transform .7s cubic-bezier(.76,0,.24,1); }
+#loader.off { transform: translateY(-101%); }
+#loader .n { font-family: var(--mono); font-size: clamp(2.4rem, 6vw, 4.5rem); color: var(--acc); }
+#loader .t { font-family: var(--mono); font-size: .7rem; letter-spacing: .3em;
+  text-transform: uppercase; color: var(--ink-faint); }
+
+/* 自定义光标 */
+#cur { position: fixed; z-index: 98; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--acc); pointer-events: none; left: 0; top: 0;
+  transform: translate(-50%,-50%); transition: width .2s, height .2s, opacity .3s; }
+#cur.big { width: 52px; height: 52px; background: transparent; border: 1px solid var(--acc); }
+@media (pointer: coarse) { #cur { display: none; } }
+
+/* 滚动进度红线 */
+#prog { position: fixed; z-index: 97; top: 0; left: 0; height: 3px; width: 0;
+  background: var(--acc); pointer-events: none; }
+
+/* 顶部导航 */
+.head { display: flex; align-items: baseline; gap: 32px; padding: 20px var(--pad) 14px;
+  font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; }
+.head .brand { font-weight: 700; }
+.head .brand em { font-style: normal; color: var(--acc); }
+.head nav { display: flex; gap: 22px; flex: 1; }
+.head nav a { color: var(--ink-dim); position: relative; }
+.head nav a::after { content:""; position: absolute; left: 0; bottom: -3px; width: 0; height: 1px;
+  background: var(--acc); transition: width .25s; }
+.head nav a:hover { color: var(--ink); } .head nav a:hover::after { width: 100%; }
+.head .meta { color: var(--ink-faint); text-align: right; }
+.head .meta b { color: var(--acc); font-weight: 400; }
+
+/* 二进制字符流 */
+.binary { font-family: var(--mono); font-size: 10px; line-height: 2.1; letter-spacing: .4em;
+  color: rgba(244,12,63,.5); white-space: pre-wrap; word-break: break-all; user-select: none;
+  padding: 0 var(--pad); overflow: hidden; }
+.binary i { font-style: normal; color: var(--acc); }
+
+section { padding: clamp(64px, 12vh, 130px) var(--pad); }
+.sec-head { display: flex; align-items: baseline; gap: 18px; margin-bottom: clamp(28px, 5vh, 56px); }
+.sec-head .no { font-family: var(--mono); font-size: .72rem; letter-spacing: .15em; color: var(--acc); }
+.sec-head .star { color: var(--acc); display: inline-block; animation: spin 14s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.sec-head .lbl { font-family: var(--mono); font-size: .72rem; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--ink-faint); }
+.sec-head h2 { font-size: clamp(1.6rem, 3.2vw, 2.6rem); margin-left: auto; }
+
+/* ══ 场景 1：Hero（满屏）══ */
+.hero { min-height: 100svh; display: flex; flex-direction: column; justify-content: center;
+  padding-top: 10px; padding-bottom: 30px; }
+.kicker { font-family: var(--mono); font-size: .74rem; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--acc); margin: 0 0 3vh; }
+.hero h1 { font-size: clamp(3rem, 13.2vw, 12.5rem); line-height: 1.02; letter-spacing: .005em; }
+.hero h1 .zh { font-weight: 900; }
+.hero h1 .hl { color: var(--acc); }
+.hero h1 .ol { color: transparent; -webkit-text-stroke: 2px var(--acc); }
+.hero h1 .it { font-style: italic; font-weight: 400; color: var(--acc); letter-spacing: 0; }
+.hero .lede { max-width: 36em; font-size: clamp(1rem, 1.35vw, 1.3rem); color: var(--ink-dim);
+  margin: 4vh 0 0; line-height: 1.65; }
+.hero .lede b { color: var(--ink); font-weight: 600; }
+.hero .lede .rot { font-style: italic; color: var(--acc); font-weight: 400; }
+.cta { display: flex; gap: 34px; margin-top: 4.5vh; font-family: var(--mono);
+  font-size: .78rem; letter-spacing: .15em; text-transform: uppercase; }
+.cta a { position: relative; padding-bottom: 6px; }
+.cta a::after { content:""; position: absolute; left: 0; bottom: 0; width: 100%; height: 1px;
+  background: currentColor; }
+.cta a.acc { color: var(--acc); }
+.cta a:hover { color: var(--acc); }
+.counts { display: flex; gap: clamp(28px, 5vw, 72px); margin-top: 6vh; flex-wrap: wrap; }
+.counts .c { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-faint); }
+.counts .c b { display: block; font-family: var(--serif); font-weight: 400; font-size: clamp(2.2rem, 4vw, 3.6rem);
+  letter-spacing: 0; color: var(--ink); line-height: 1.15; }
+.counts .c b.acc { color: var(--acc); }
+
+/* ══ 巨型跑马灯 ══ */
+.marquee { overflow: hidden; border-top: 1px solid var(--shadow); border-bottom: 1px solid var(--shadow);
+  padding: clamp(8px, 2vh, 22px) 0; }
+.marquee .lane { display: flex; gap: 6vw; width: max-content; animation: mq 26s linear infinite; }
+.marquee:hover .lane { animation-play-state: paused; }
+.marquee span { font-size: clamp(3.4rem, 13vw, 11rem); line-height: 1.1; white-space: nowrap;
+  color: var(--acc); font-weight: 900; letter-spacing: .005em; }
+.marquee span em { font-style: italic; font-weight: 400; color: var(--ink); }
+@keyframes mq { to { transform: translateX(-50%); } }
+
+/* ══ 场景 2：索引列表（行反色）══ */
+.index { border-top: 1px solid var(--shadow); }
+.row { display: grid; grid-template-columns: 72px 1fr auto; align-items: baseline; gap: 24px;
+  padding: clamp(18px, 3vh, 30px) clamp(4px, 1vw, 16px); border-bottom: 1px solid var(--shadow);
+  cursor: pointer; transition: background .25s, color .25s, padding-left .25s; }
+.row .rn { font-family: var(--mono); font-size: .72rem; letter-spacing: .15em; color: var(--acc); transition: color .25s; }
+.row .rt { font-size: clamp(1.4rem, 2.8vw, 2.3rem); }
+.row .rt small { display: block; font-size: .5em; color: var(--ink-dim); margin-top: 3px; transition: color .25s; }
+.row .rk { font-family: var(--mono); font-size: .72rem; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--ink-faint); transition: color .25s; }
+.row:hover { background: var(--acc); color: var(--bg); padding-left: clamp(16px, 2vw, 32px); }
+.row:hover .rn, .row:hover .rk { color: var(--bg); }
+.row:hover .rt small { color: rgba(22,0,0,.66); }
+
+/* ══ 场景 3：翻转幕（满屏绯红）══ */
+.flip { min-height: 100svh; background: var(--acc); color: var(--bg);
+  display: flex; flex-direction: column; justify-content: center; }
+.flip ::selection { background: var(--bg); color: var(--acc); }
+.flip .sec-head .no, .flip .sec-head .star { color: var(--bg); }
+.flip .sec-head .lbl { color: rgba(22,0,0,.55); }
+.flip h2 { color: var(--bg); }
+.flip .statgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(24px, 4vw, 56px); }
+@media (max-width: 780px) { .flip .statgrid { grid-template-columns: 1fr 1fr; } }
+.flip .stat b { display: block; font-size: clamp(3rem, 6.5vw, 6rem); line-height: 1.05; font-weight: 900; }
+.flip .stat b em { font-style: italic; font-weight: 400; }
+.flip .stat .k { font-family: var(--mono); font-size: .72rem; letter-spacing: .15em;
+  text-transform: uppercase; color: rgba(22,0,0,.72); margin-top: 12px; }
+.flip .stat .s { font-size: .95rem; color: rgba(22,0,0,.55); margin-top: 3px; }
+
+/* ══ 场景 4：进化面板 + 终端 ══ */
+.runline { display: flex; align-items: baseline; gap: 14px; font-size: clamp(1.1rem, 1.8vw, 1.5rem); margin-bottom: 30px; }
+.pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--acc); align-self: center; animation: pp 1.6s infinite; }
+@keyframes pp { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+.runline .mono { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); }
+.evol { display: grid; grid-template-columns: 1.15fr .85fr; gap: clamp(28px, 4vw, 56px); align-items: start; }
+@media (max-width: 860px) { .evol { grid-template-columns: 1fr; } }
+.mems { border-top: 1px solid var(--shadow); }
+.mem { display: grid; grid-template-columns: 52px 1fr auto auto; align-items: baseline; gap: 20px;
+  padding: 17px clamp(4px, 1vw, 16px); border-bottom: 1px solid var(--shadow); transition: background .2s; }
+.mem .mi { font-family: var(--mono); font-size: .72rem; color: var(--acc); }
+.mem .mc { font-size: clamp(1.05rem, 1.7vw, 1.35rem); }
+.mem .mt { font-family: var(--mono); font-size: .66rem; letter-spacing: .15em; padding: 2px 9px; border-radius: 999px;
+  border: 1px solid var(--shadow); color: var(--ink-faint); }
+.mem .mt.new { border-color: var(--acc); color: var(--acc); }
+.mem .mm { font-family: var(--mono); font-size: .7rem; color: var(--ink-faint); }
+.mem:hover { background: rgba(244,12,63,.13); }
+.term { border: 1px solid var(--shadow); background: #1d0202; }
+.term .tbar { display: flex; gap: 7px; padding: 11px 16px; border-bottom: 1px solid var(--shadow);
+  font-family: var(--mono); font-size: .66rem; letter-spacing: .15em; text-transform: uppercase; color: var(--ink-faint); }
+.term .tbar i { width: 8px; height: 8px; border-radius: 50%; background: var(--shadow); }
+.term .tbar i:first-child { background: var(--acc); }
+.term .tbody { padding: 20px 22px; font-family: var(--mono); font-size: .82rem; line-height: 2.1; color: var(--ink-dim); }
+.term .ln b { color: var(--acc); font-weight: 400; }
+.cursor { display: inline-block; width: .55em; height: 1.05em; background: var(--acc);
+  vertical-align: text-bottom; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ══ 场景 5：文章 ══ */
+.posts { border-top: 1px solid var(--shadow); }
+.post { display: grid; grid-template-columns: 120px 1fr auto auto; align-items: baseline; gap: 24px;
+  padding: clamp(16px, 2.6vh, 24px) clamp(4px, 1vw, 16px); border-bottom: 1px solid var(--shadow); cursor: pointer; }
+.post .pd { font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; color: var(--ink-faint); }
+.post .pt { font-size: clamp(1.3rem, 2.4vw, 2rem); transition: color .2s; }
+.post .ptag { font-family: var(--mono); font-size: .68rem; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--ink-faint); border: 1px solid var(--shadow); padding: 3px 10px; border-radius: 999px; }
+.post .pv { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); }
+.post:hover .pt { color: var(--acc); font-style: italic; }
+.post:hover .ptag { color: var(--acc); border-color: var(--acc); }
+
+/* 逐字符入场 */
+.ch { display: inline-block; overflow: hidden; vertical-align: bottom; }
+.ch i { display: inline-block; font-style: inherit; font-weight: inherit;
+  transform: translateY(115%); transition: transform .9s cubic-bezier(.16,1,.3,1); }
+.in .ch i { transform: none; }
+.ch:nth-child(2) i { transition-delay: .04s; } .ch:nth-child(3) i { transition-delay: .08s; }
+.ch:nth-child(4) i { transition-delay: .12s; } .ch:nth-child(5) i { transition-delay: .16s; }
+.ch:nth-child(6) i { transition-delay: .2s; } .ch:nth-child(7) i { transition-delay: .24s; }
+
+/* 场景浮现 */
+.rv { opacity: 0; transform: translateY(34px); transition: opacity .8s, transform .8s cubic-bezier(.16,1,.3,1); }
+.rv.live { opacity: 1; transform: none; }
+
+.foot { padding: 26px var(--pad) 40px; display: flex; align-items: baseline; gap: 28px; flex-wrap: wrap;
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); }
+.foot .acc { color: var(--acc); }
+.note { padding: 0 var(--pad) 50px; font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; color: var(--ink-faint); }
+</style>
+</head>
+<body>
+
+<div id="loader"><div class="n" id="ldn">0</div><div class="t">InkPress — Evolution as a Feature</div></div>
+<div id="cur"></div>
+<div id="prog"></div>
+
+<div id="spacer"></div>
+<div id="stage">
+
+<header class="head">
+  <span class="brand">INK<em>PRESS</em> ✦</span>
+  <nav><a href="#">文章</a><a href="#">检索</a><a href="#">进化</a><a href="#">工作台</a><a href="#">管理</a></nav>
+  <span class="meta">BOHACK 2026 · 日新赛道<br><b id="clock">--:--:--</b> · 39.90°N 116.40°E</span>
+</header>
+
+<!-- 场景 1 · HERO -->
+<section class="hero">
+  <p class="kicker">BoHack 2026 — 自我进化赛道 · Evolution as a Feature</p>
+  <h1 id="heroTitle"><span class="zh">会自我进化的</span><br><span class="hl"><span class="zh">AI</span> <span class="zh">博客</span></span><span class="ol">系统</span></h1>
+  <p class="lede">它擅长 <span class="rot" id="rot">写作</span>，而且每一次运行都更懂你。
+    作者对 AI 输出的每一次采纳与拒绝，都会沉淀为<b>写作记忆</b>，注入下一次运行——反馈即燃料。</p>
+  <div class="cta"><a href="#" class="acc">阅读文章 →</a><a href="#">AI 检索 →</a><a href="#">进化面板 →</a></div>
+  <div class="counts">
+    <div class="c"><b class="acc" data-count="100" data-suffix="%">0%</b>采纳率 · Run 2</div>
+    <div class="c"><b data-count="12" data-suffix=" 条">0</b>写作记忆</div>
+    <div class="c"><b data-count="21">0</b>文章总数</div>
+    <div class="c"><b data-count="19">0</b>已发布</div>
+  </div>
+</section>
+
+<div class="marquee"><div class="lane">
+  <span>自我进化 <em>·</em> EVOLUTION LOOP <em>·</em> 越用越懂你 <em>·</em>&nbsp;</span>
+  <span>自我进化 <em>·</em> EVOLUTION LOOP <em>·</em> 越用越懂你 <em>·</em>&nbsp;</span>
+</div></div>
+
+<!-- 场景 2 · 索引 -->
+<section>
+  <div class="sec-head"><span class="no">01</span><span class="star">✦</span><span class="lbl">System Grid</span><h2>六个子系统，一条进化回路</h2></div>
+  <div class="index rv">
+    <div class="row"><span class="rn">01</span><span class="rt">AI 创作台<small>三栏创作流 · 命令卡 · 生成代码内联框</small></span><span class="rk">Workbench</span></div>
+    <div class="row"><span class="rn">02</span><span class="rt">混合检索<small>BM25 + 向量 RRF 三臂 · 宕机自动降级</small></span><span class="rk">Search</span></div>
+    <div class="row"><span class="rn">03</span><span class="rt">自我进化<small>反馈 → 记忆 → 注入下一次运行</small></span><span class="rk">Evolution</span></div>
+    <div class="row"><span class="rn">04</span><span class="rt">多端分发<small>排版转换 · 本机自动化 · 人工一键兜底</small></span><span class="rk">Distribution</span></div>
+    <div class="row"><span class="rn">05</span><span class="rt">知识图谱<small>标签共现 + 手动关联 · 相关阅读个性化</small></span><span class="rk">Graph</span></div>
+    <div class="row"><span class="rn">06</span><span class="rt">GEO / SEO 双引擎<small>核心结论前置 · 人和 AI 都好读</small></span><span class="rk">Optimizer</span></div>
+  </div>
+</section>
+
+<!-- 场景 3 · 翻转幕 -->
+<section class="flip">
+  <div class="sec-head"><span class="no">02</span><span class="star">✦</span><span class="lbl">Metrics</span><h2>第一次运行 50%，第二次 100%</h2></div>
+  <div class="statgrid">
+    <div class="stat rv"><b><span data-count="100" data-suffix="%">0</span></b><div class="k">采纳率 · Run 2</div><div class="s">Run 1 为 50%</div></div>
+    <div class="stat rv"><b><span data-count="12">0</span></b><div class="k">写作记忆 / 条</div><div class="s">蒸馏 + 纠正入库</div></div>
+    <div class="stat rv"><b><span data-count="8" data-suffix="%">0</span></b><div class="k">平均修改幅度</div><div class="s">越用越低</div></div>
+    <div class="stat rv"><b><span data-count="3971">0</span></b><div class="k">Terminal 令牌</div><div class="s">本轮流出</div></div>
+  </div>
+</section>
+
+<!-- 场景 4 · 进化 -->
+<section>
+  <div class="sec-head"><span class="no">03</span><span class="star">✦</span><span class="lbl">Evolution</span><h2>写作记忆</h2></div>
+  <div class="runline rv"><span class="pulse"></span>运行 #3 进行中<span class="mono">所有采纳与 👍/👎 都会被记住</span></div>
+  <div class="evol">
+    <div class="mems rv">
+      <div class="mem"><span class="mi">01</span><span class="mc">开头不用「随着互联网的发展」这类套话</span><span class="mt new">NEW</span><span class="mm">08:41</span></div>
+      <div class="mem"><span class="mi">02</span><span class="mc">段落控制在三句以内，先结论后展开</span><span class="mt new">NEW</span><span class="mm">08:41</span></div>
+      <div class="mem"><span class="mi">03</span><span class="mc">论证必须包含一个具体数字或案例</span><span class="mt">RUN1</span><span class="mm">08:12</span></div>
+      <div class="mem"><span class="mi">04</span><span class="mc">技术结论必须落到可复现的命令或配置</span><span class="mt">RUN2</span><span class="mm">09:02</span></div>
+    </div>
+    <div class="term rv">
+      <div class="tbar"><i></i><i></i><i></i><span>evolution — zsh</span></div>
+      <div class="tbody">
+        <div class="ln"><b>memory</b><span>已载入 4 条写作记忆</span></div>
+        <div class="ln"><b>generate</b><span>按偏好生成开头段落…</span> <span class="cursor"></span></div>
+        <div class="ln"><b>review</b><span>采纳 12 · 拒绝 0 · 修订 1</span></div>
+        <div class="ln"><b>tokens</b><span>1,284 in · 3,971 out · 2.4s</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 场景 5 · 文章 -->
+<section>
+  <div class="sec-head"><span class="no">04</span><span class="star">✦</span><span class="lbl">Posts</span><h2>最新文章</h2></div>
+  <div class="posts rv">
+    <div class="post"><span class="pd">2026-11-14</span><span class="pt">内容创作的 SEO 与 GEO 双轨优化</span><span class="ptag">SEO</span><span class="pv">200 阅读</span></div>
+    <div class="post"><span class="pd">2026-11-13</span><span class="pt">浏览器自动化分发的脆弱性与兜底</span><span class="ptag">分发</span><span class="pv">1 阅读</span></div>
+    <div class="post"><span class="pd">2026-11-12</span><span class="pt">RRF 混合检索的三臂对比实验</span><span class="ptag">检索</span><span class="pv">12 阅读</span></div>
+  </div>
+</section>
+
+<div class="binary" data-bits="2"></div>
+<footer class="foot">
+  <span>© 2026 INKPRESS</span><span class="acc">✦ 会自我进化的 AI 博客</span>
+  <span>FEEDBACK → MEMORY → RUN</span>
+  <span>BOHACK 2026 · 日新赛道</span>
+</footer>
+<p class="note">— v6 场景化版：虚拟平滑滚动 / 满屏翻转幕 / 海报字重。哪里加强、减弱、去掉，按区块说。</p>
+
+</div><!-- /stage -->
+
+<script>
+// 虚拟平滑滚动（触摸设备回退原生）
+(function () {
+  var stage = document.getElementById('stage'), spacer = document.getElementById('spacer');
+  var isTouch = matchMedia('(pointer: coarse)').matches;
+  if (isTouch) { document.body.classList.add('native'); return; }
+  var cur = 0, target = 0;
+  function measure() {
+    // offsetHeight = 布局高度，不受 transform/测量时序影响
+    var h = stage.offsetHeight;
+    spacer.style.height = h + 'px';
+    document.body.style.height = h + 'px';
+  }
+  // RAF 在部分 WebView/省电环境会被节流，关键动画全部用 interval 驱动
+  var prog = document.getElementById('prog');
+  function tick() {
+    target = window.scrollY || window.pageYOffset;
+    cur += (target - cur) * .085;
+    if (Math.abs(target - cur) < .05) cur = target;
+    stage.style.transform = 'translate3d(0,' + (-cur) + 'px,0)';
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    prog.style.width = (max > 0 ? Math.min(cur / max, 1) * 100 : 0) + '%';
+  }
+  setInterval(tick, 16);
+  // 高度自愈：字体/布局漂移后自动重校
+  setInterval(function () {
+    var h = stage.offsetHeight;
+    if (Math.abs((parseFloat(spacer.style.height) || 0) - h) > 2) measure();
+  }, 1200);
+  window.addEventListener('resize', function () { clearTimeout(window.__mz); window.__mz = setTimeout(measure, 150); });
+  measure(); tick();
+  window.__vscroll = { measure: measure };
+})();
+// 自定义光标
+(function () {
+  if (matchMedia('(pointer: coarse)').matches) return;
+  var c = document.getElementById('cur');
+  document.addEventListener('mousemove', function (e) {
+    c.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px) translate(-50%,-50%)';
+  }, { passive: true });
+  document.addEventListener('mouseover', function (e) {
+    c.classList.toggle('big', !!e.target.closest('a, .row, .post, .mem, input'));
+  }, { passive: true });
+})();
+// 加载幕 0→100
+(function () {
+  var n = document.getElementById('ldn'), ld = document.getElementById('loader');
+  var t0 = performance.now(), dur = 850;
+  var iv = setInterval(function () {
+    var p = Math.min((performance.now() - t0) / dur, 1);
+    n.textContent = Math.round(100 * (1 - Math.pow(1 - p, 2)));
+    if (p >= 1) { clearInterval(iv); setTimeout(function () { ld.classList.add('off'); }, 120); }
+  }, 30);
+})();
+// 二进制字符流
+(function () {
+  document.querySelectorAll('[data-bits]').forEach(function (el) {
+    var out = '';
+    for (var r = 0; r < 2; r++) {
+      var line = [];
+      for (var g = 0; g < 26; g++) {
+        var bits = '';
+        for (var b = 0; b < 7; b++) bits += Math.random() < .5 ? '1' : '0';
+        line.push(bits);
+      }
+      out += line.join('  ') + '\n';
+    }
+    el.innerHTML = out.replace(/1/g, '<i>1</i>');
+  });
+})();
+// 逐字符入场（hero 加载幕后触发）
+(function () {
+  var h = document.getElementById('heroTitle');
+  function split(el) {
+    function walk(node) {
+      Array.prototype.slice.call(node.childNodes).forEach(function (n) {
+        if (n.nodeType === 3) {
+          var frag = document.createDocumentFragment();
+          n.textContent.split('').forEach(function (ch) {
+            if (ch === ' ') { frag.appendChild(document.createTextNode(' ')); return; }
+            var w = document.createElement('span'); w.className = 'ch';
+            var i = document.createElement('i'); i.textContent = ch;
+            w.appendChild(i); frag.appendChild(w);
+          });
+          node.replaceChild(frag, n);
+        } else if (n.nodeType === 1 && n.tagName !== 'BR') walk(n);
+      });
+    }
+    walk(el);
+  }
+  split(h);
+  setTimeout(function () { h.classList.add('in'); }, 1050);
+})();
+// 时钟
+(function () {
+  var el = document.getElementById('clock');
+  function tick() {
+    var d = new Date();
+    el.textContent = [d.getHours(), d.getMinutes(), d.getSeconds()]
+      .map(function (n) { return (n < 10 ? '0' : '') + n; }).join(':');
+  }
+  tick(); setInterval(tick, 1000);
+})();
+// 轮换词
+(function () {
+  var words = ['写作', '进化', '检索', '创作'];
+  var el = document.getElementById('rot');
+  var i = 0;
+  setInterval(function () {
+    i = (i + 1) % words.length;
+    el.style.opacity = 0;
+    setTimeout(function () { el.textContent = words[i]; el.style.opacity = 1; }, 240);
+  }, 2300);
+  el.style.transition = 'opacity .22s';
+})();
+// Count Up
+(function () {
+  function animate(el) {
+    var target = parseInt(el.getAttribute('data-count'), 10) || 0;
+    var suffix = el.getAttribute('data-suffix') || '';
+    var t0 = performance.now(), dur = 1300;
+    var iv = setInterval(function () {
+      var p = Math.min((performance.now() - t0) / dur, 1);
+      el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3))) + suffix;
+      if (p >= 1) clearInterval(iv);
+    }, 30);
+  }
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (en) { if (en.isIntersecting) { animate(en.target); io.unobserve(en.target); } });
+  }, { threshold: .5 });
+  document.querySelectorAll('[data-count]').forEach(function (el) { io.observe(el); });
+})();
+// 场景浮现
+(function () {
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('live'); io.unobserve(en.target); } });
+  }, { threshold: .18 });
+  document.querySelectorAll('.rv').forEach(function (el) { io.observe(el); });
+})();
+// 字体就绪后重测虚拟滚动高度（防字体加载后高度漂移）
+document.fonts && document.fonts.ready.then(function () {
+  if (window.__vscroll) setTimeout(window.__vscroll.measure, 60);
+});
+</script>
+</body>
+</html>
