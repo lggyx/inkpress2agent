@@ -34,7 +34,7 @@ function fmtDate(s: string): string {
   <div>
     <!-- Hero：站名 + 签名 + 胶囊 CTA（Pure 式居中） -->
     <section class="hero">
-      <div class="hero-mark grad-title">Ink</div>
+      <div class="hero-mark grad-title beam">Ink</div>
       <h1 class="hero-name">InkPress</h1>
       <p class="hero-sig muted">从每次写作与反馈中学习，越用越懂你的 AI 博客</p>
       <NuxtLink to="/search" class="hero-cta">

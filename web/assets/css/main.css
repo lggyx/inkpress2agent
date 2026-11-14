@@ -74,8 +74,16 @@
 * { box-sizing: border-box; }
 
 html {
-  background: var(--bg);
+  /* 底纹三层：SVG 噪点颗粒 + 44px 网格线 + 深空底色（Aceternity/React Bits 质感底子） */
+  background-color: var(--bg);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"),
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 160px 160px, 44px 44px, 44px 44px;
 }
+:root[data-theme='dark'] { --grid-line: rgba(148, 163, 184, .055); }
+:root[data-theme='light'] { --grid-line: rgba(15, 23, 42, .05); }
 html, body {
   margin: 0;
   padding: 0;
@@ -186,8 +194,22 @@ input::placeholder, textarea::placeholder { color: var(--ink-faint); }
 }
 
 /* ═══ 颜色卡体系：.cc 基类 + 六色变体 ═══
-   左侧发光色带 + hover 抬升 + 专属色光晕 */
-.cc { position: relative; overflow: hidden; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+   左侧发光色带 + 聚光灯（鼠标跟随光斑，坐标由 spotlight.client.ts 写入 --mx/--my）
+   + hover 抬升 + 专属色光晕 */
+.cc {
+  position: relative;
+  overflow: hidden;
+  --mx: 50%;
+  --my: 30%;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  /* 电影感入场：渐次浮现（MotionSites cinematic motion 语言） */
+  animation: card-in .65s cubic-bezier(.22, 1, .36, 1) backwards;
+}
+.cc:nth-child(2) { animation-delay: .07s; }
+.cc:nth-child(3) { animation-delay: .14s; }
+.cc:nth-child(4) { animation-delay: .21s; }
+.cc:nth-child(n + 5) { animation-delay: .28s; }
+@keyframes card-in { from { opacity: 0; transform: translateY(16px) scale(.985); } }
 .cc::before {
   content: "";
   position: absolute;
@@ -196,15 +218,26 @@ input::placeholder, textarea::placeholder { color: var(--ink-faint); }
   border-radius: 3px;
   background: var(--cc, var(--primary));
   box-shadow: 0 0 14px var(--cc, var(--primary));
+  z-index: 1;
 }
 .cc::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(420px 160px at 85% 0%, color-mix(in srgb, var(--cc, var(--primary)) 12%, transparent), transparent 70%);
+  /* 聚光灯：跟随鼠标的径向光斑（白核 + 专属色晕，Aceternity Spotlight）+ 角部常驻微光 */
+  background:
+    radial-gradient(340px circle at var(--mx) var(--my),
+      color-mix(in srgb, #ffffff 9%, transparent),
+      color-mix(in srgb, var(--cc, var(--primary)) 24%, transparent) 26%,
+      transparent 62%),
+    radial-gradient(420px 160px at 85% 0%, color-mix(in srgb, var(--cc, var(--primary)) 12%, transparent), transparent 70%);
   pointer-events: none;
+  opacity: 0;
+  transition: opacity .35s ease;
+  z-index: 1;
 }
+.cc:hover::after { opacity: 1; }
 .cc:hover { transform: translateY(-3px); }
 .cc-violet { --cc: var(--c-violet); }
 .cc-cyan   { --cc: var(--c-cyan); }
@@ -214,13 +247,54 @@ input::placeholder, textarea::placeholder { color: var(--ink-faint); }
 .cc-blue   { --cc: var(--c-blue); }
 .cc:hover { box-shadow: var(--glass-hi), 0 14px 44px color-mix(in srgb, var(--cc, var(--primary)) 22%, transparent); border-color: color-mix(in srgb, var(--cc, var(--primary)) 38%, var(--line)); }
 
-/* 渐变文字（标题/大数字） */
+/* ═══ Border Beam：一道流光沿卡片边框跑圈（Aceternity 招牌）═══
+   用法：<div class="card cc beam">，颜色随 --cc 自动匹配 */
+@property --beam-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+.beam { position: relative; }
+.beam::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(from var(--beam-angle),
+    transparent 0deg, transparent 285deg,
+    color-mix(in srgb, var(--cc, var(--primary)) 40%, transparent) 318deg,
+    var(--cc, var(--primary)) 345deg,
+    color-mix(in srgb, var(--primary-2, #22d3ee) 85%, transparent) 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: beam-spin 5s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+@keyframes beam-spin { to { --beam-angle: 360deg; } }
+
+/* Shimmer 扫光：主按钮 hover 时一道白光掠过 */
+button.primary { position: relative; overflow: hidden; }
+button.primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 32%, rgba(255, 255, 255, .38) 50%, transparent 68%);
+  transform: translateX(-130%);
+  transition: transform .55s ease;
+  pointer-events: none;
+}
+button.primary:hover::after { transform: translateX(130%); }
+
+/* 渐变文字（标题/大数字）+ 缓慢流动 */
 .grad-title, .grad-text {
   background: var(--grad-text);
+  background-size: 200% 200%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  animation: grad-flow 7s ease-in-out infinite;
 }
+@keyframes grad-flow { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
 
 /* Pure 标志性分区：左栏标题 + 右栏内容 */
 .section-row { display: grid; grid-template-columns: 180px 1fr; gap: 28px; padding: 34px 0; }

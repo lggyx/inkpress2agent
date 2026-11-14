@@ -140,7 +140,7 @@ onMounted(async () => {
     </div>
 
     <!-- 指标对比 -->
-    <div class="card cc cc-violet">
+    <div class="card cc cc-violet beam">
       <h3>两次运行对比</h3>
       <div v-if="!runA && !runB" class="empty">还没有完成的运行。跑完两次后，这里自动出现对比。</div>
       <div v-else class="compare">
@@ -180,7 +180,7 @@ onMounted(async () => {
     </div>
 
     <!-- 写作记忆 -->
-    <div class="card cc cc-cyan">
+    <div class="card cc cc-cyan beam">
       <h3>写作记忆 <span class="h-sub">AI 从你的反馈里学到的偏好规则——「学到了什么」就在这里</span></h3>
       <div v-if="!memories.length" class="empty">还没有记忆。跑一次运行并给出 👎 或修改，结束后这里会出现新条目。</div>
       <div v-else class="mem-list">
@@ -198,7 +198,7 @@ onMounted(async () => {
     </div>
 
     <!-- 快照与回退 -->
-    <div class="card cc cc-lime">
+    <div class="card cc cc-lime beam">
       <h3>记忆快照与回退 <span class="h-sub">「怎么回退」——评委要求当场演示</span></h3>
       <div class="snap-actions">
         <button class="abtn ok" :disabled="busy" @click="onSnapshot">📷 拍快照（留存当前全部记忆）</button>
