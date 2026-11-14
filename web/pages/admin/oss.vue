@@ -19,6 +19,8 @@ const form = ref({
   publicBaseUrl: '', pathStyle: 'true',
 })
 const testing = ref(false)
+// AK/SK 输入框被实际编辑过才参与保存（未触碰 = 发 null 保留现有值）
+const touched = ref({ accessKey: false, secretKey: false })
 
 onMounted(async () => {
   view.value = await $api<OssView>('GET', '/admin/oss-config')
@@ -26,7 +28,7 @@ onMounted(async () => {
     endpoint: view.value?.endpoint || '',
     region: view.value?.region || '',
     bucket: view.value?.bucket || '',
-    // AK/SK 表单留空 = 不修改；脱敏值只作占位提示
+    // AK/SK 表单留空 = 不修改；脱敏值只作占位提示，绝不回填表单
     accessKey: '',
     secretKey: '',
     publicBaseUrl: view.value?.publicBaseUrl || '',
@@ -41,14 +43,16 @@ async function save() {
     bucket: form.value.bucket,
     publicBaseUrl: form.value.publicBaseUrl,
     pathStyle: form.value.pathStyle,
-    // AK/SK 未输入发 null（不改）；输入空串清除；有值更新
-    accessKey: form.value.accessKey === '' ? '' : form.value.accessKey || null,
-    secretKey: form.value.secretKey === '' ? '' : form.value.secretKey || null,
+    // 未触碰发 null（不改）；触碰后空串=清除；有值=更新
+    accessKey: touched.value.accessKey ? (form.value.accessKey || '') : null,
+    secretKey: touched.value.secretKey ? (form.value.secretKey || '') : null,
   })
   ElMessage.success('OSS 配置已保存')
   view.value = await $api<OssView>('GET', '/admin/oss-config')
-  form.value.accessKey = view.value?.accessKeyMasked || ''
+  // 保存后保持输入框为空并重置触碰标记，防止掩码回显值被下次保存写回库里
+  form.value.accessKey = ''
   form.value.secretKey = ''
+  touched.value = { accessKey: false, secretKey: false }
 }
 
 async function test() {
@@ -75,14 +79,14 @@ async function test() {
     <div class="card" v-if="view">
       <div class="form-row"><label>Endpoint（S3 兼容地址）</label>
         <input v-model="form.endpoint" placeholder="https://s3.cn-east-1.qiniucs.com / https://oss-cn-hangzhou.aliyuncs.com / http://inkpress-minio:9000"></div>
-      <div class="form-row"><label>Region（部分云固定值，如 us-east-1）</label>
-        <input v-model="form.region" placeholder="us-east-1"></div>
+      <div class="form-row"><label>Region（AWS 风格：七牛 z2=cn-south-1，z0=cn-east-1）</label>
+        <input v-model="form.region" placeholder="cn-south-1"></div>
       <div class="form-row"><label>Bucket</label>
         <input v-model="form.bucket" placeholder="inkpress-media"></div>
-      <div class="form-row"><label>Access Key</label>
-        <input v-model="form.accessKey" :placeholder="view.accessKeyMasked || 'AK'"></div>
-      <div class="form-row"><label>Secret Key（留空不改；输入空格清除）</label>
-        <input v-model="form.secretKey" type="password" :placeholder="view.secretKeyMasked || 'SK'"></div>
+      <div class="form-row"><label>Access Key（留空不改；重新粘贴=替换）</label>
+        <input v-model="form.accessKey" :placeholder="view.accessKeyMasked || 'AK'" @input="touched.accessKey = true"></div>
+      <div class="form-row"><label>Secret Key（留空不改；重新粘贴=替换）</label>
+        <input v-model="form.secretKey" type="password" :placeholder="view.secretKeyMasked || 'SK'" @input="touched.secretKey = true"></div>
       <div class="form-row"><label>公网访问域名（CDN/桶外链前缀，去尾斜杠）</label>
         <input v-model="form.publicBaseUrl" placeholder="https://cdn.example.com"></div>
       <div class="form-row"><label>路径风格（MinIO/部分网关需 true）</label>

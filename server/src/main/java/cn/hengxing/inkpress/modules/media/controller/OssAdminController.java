@@ -71,7 +71,14 @@ public class OssAdminController {
         put(user.id(), "oss.endpoint", req.endpoint());
         put(user.id(), "oss.region", req.region());
         put(user.id(), "oss.bucket", req.bucket());
-        put(user.id(), "oss.access_key", req.accessKey());
+        // AK：null=不改；空串=清除；含掩码（****）=前端回显误传，拒绝落库；其余更新
+        if (req.accessKey() != null && !req.accessKey().contains("****")) {
+            if (req.accessKey().isBlank()) {
+                systemConfigMapper.deleteById("oss.access_key");
+            } else {
+                put(user.id(), "oss.access_key", req.accessKey());
+            }
+        }
         put(user.id(), "oss.public_base_url", req.publicBaseUrl());
         put(user.id(), "oss.path_style", req.pathStyle());
         if (req.secretKey() != null) {

@@ -72,6 +72,8 @@ async function save() {
     const view = await $api<{ capabilities: Record<string, CapConfig> }>('GET', '/admin/ai-config')
     caps.value = view.capabilities
     for (const c of CAPS) forms.value[c.key].apiKey = ''
+    // 重置触碰标记：否则下一次保存会把重置后的空串当“清除”发出去，静默删掉库里的 api_key
+    touchedKeys.value = {}
   } catch (e) { ElMessage.error((e as Error).message) } finally { saving.value = false }
 }
 
