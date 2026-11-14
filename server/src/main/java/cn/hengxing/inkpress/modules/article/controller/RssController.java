@@ -3,6 +3,7 @@ package cn.hengxing.inkpress.modules.article.controller;
 import cn.hengxing.inkpress.modules.article.entity.Article;
 import cn.hengxing.inkpress.modules.article.mapper.ArticleMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -20,18 +21,41 @@ public class RssController {
             DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss '+0800'", java.util.Locale.US);
 
     private final ArticleMapper articleMapper;
-    private final String publicBase;
+    private final String configuredBase;
 
     public RssController(ArticleMapper articleMapper,
                          @org.springframework.beans.factory.annotation.Value(
                                  "${inkpress.mail.public-base-url:http://127.0.0.1:8912}") String publicBase) {
         this.articleMapper = articleMapper;
-        this.publicBase = publicBase.endsWith("/") ? publicBase.substring(0, publicBase.length() - 1) : publicBase;
+        this.configuredBase = publicBase.endsWith("/") ? publicBase.substring(0, publicBase.length() - 1) : publicBase;
+    }
+
+    /**
+     * 动态解析站点 origin：优先 X-Forwarded-Host/Proto（经 nginx 反代），
+     * 退化到请求 Host/Scheme，最后才用配置值——与 sitemap/AI 线同款域名自适应。
+     */
+    private String resolveBase(HttpServletRequest request) {
+        String host = firstNonBlank(request.getHeader("X-Forwarded-Host"), request.getHeader("Host"));
+        if (host == null || host.isBlank()) {
+            return configuredBase;
+        }
+        String proto = firstNonBlank(request.getHeader("X-Forwarded-Proto"), request.getScheme());
+        return proto + "://" + host;
+    }
+
+    private static String firstNonBlank(String... vals) {
+        for (String v : vals) {
+            if (v != null && !v.isBlank()) {
+                return v.trim();
+            }
+        }
+        return null;
     }
 
     @GetMapping(value = "/rss.xml", produces = "application/rss+xml;charset=UTF-8")
     @ResponseBody
-    public String rss() {
+    public String rss(HttpServletRequest request) {
+        String publicBase = resolveBase(request);
         List<Article> articles = articleMapper.selectList(new LambdaQueryWrapper<Article>()
                 .eq(Article::getStatus, "PUBLISHED")
                 .eq(Article::getDeleted, 0)
