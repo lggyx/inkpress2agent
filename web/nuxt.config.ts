@@ -11,7 +11,7 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: 'InkPress · 会自我进化的 AI 博客',
-      htmlAttrs: { lang: 'zh-CN', class: 'dark' },
+      htmlAttrs: { lang: 'zh-CN' },
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
@@ -20,7 +20,7 @@ export default defineNuxtConfig({
       // 首屏前设置主题，避免闪烁
       script: [
         {
-          innerHTML: "(function(){try{var t=localStorage.getItem('inkpress.theme')||'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.classList.toggle('dark',t==='dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();"
+          innerHTML: "(function(){try{var t=localStorage.getItem('inkpress.theme')||'light';document.documentElement.setAttribute('data-theme',t);document.documentElement.classList.toggle('dark',t==='dark');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();"
         }
       ]
     }

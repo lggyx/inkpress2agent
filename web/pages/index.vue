@@ -34,8 +34,8 @@ function fmtDate(s: string): string {
   <div>
     <!-- Hero：站名 + 签名 + 胶囊 CTA（Pure 式居中） -->
     <section class="hero">
-      <div class="hero-mark grad-title beam">Ink</div>
-      <h1 class="hero-name">InkPress</h1>
+      <div class="hero-mark">Ink</div>
+      <h1 class="hero-name">Ink<span class="press">Press</span></h1>
       <p class="hero-sig muted">从每次写作与反馈中学习，越用越懂你的 AI 博客</p>
       <NuxtLink to="/search" class="hero-cta">
         <span class="dot" /> AI 搜索
@@ -123,52 +123,51 @@ function fmtDate(s: string): string {
 </template>
 
 <style scoped>
-.hero { text-align: center; padding: 46px 0 30px; }
+.hero { text-align: center; padding: 48px 0 32px; }
 .hero-mark {
   width: 84px; height: 84px;
-  margin: 0 auto 18px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  background:
-    linear-gradient(160deg, var(--card-strong), var(--card-soft)) padding-box,
-    linear-gradient(140deg, var(--grad-a), var(--grad-b)) border-box;
+  margin: 0 auto 20px;
+  border-radius: 0;
+  border: 2px solid var(--ink);
+  background: var(--ink);
   display: flex; align-items: center; justify-content: center;
-  font-size: 2em; font-weight: 800;
-  color: #fff;
-  text-shadow: 0 2px 18px rgba(124, 58, 237, .55);
-  box-shadow: 0 0 34px color-mix(in srgb, var(--primary) 30%, transparent), var(--glass-hi);
-  backdrop-filter: blur(14px);
+  font-size: 2em; font-weight: 900;
+  color: var(--bg);
+  box-shadow: 8px 8px 0 var(--c-blue);
 }
-.hero-name { font-size: 2.1em; font-weight: 800; margin: 0 0 6px; background: var(--grad-text); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: 1px; }
-.hero-sig { margin: 0 0 20px; }
+.hero-name { font-size: 2.4em; font-weight: 900; margin: 0 0 8px; color: var(--ink); letter-spacing: -.5px; }
+.hero-name .press { background: var(--c-lime); color: var(--ink); padding: 0 10px; display: inline-block; transform: rotate(-.6deg); }
+.hero-sig { margin: 0 0 24px; }
 .hero-cta {
-  display: inline-flex; align-items: center; gap: 8px;
-  border: 1px solid color-mix(in srgb, var(--primary) 40%, var(--line));
-  border-radius: var(--radius-pill);
-  padding: 7px 22px;
-  color: var(--ink);
-  background: linear-gradient(165deg, var(--card-strong), var(--card-soft));
-  backdrop-filter: blur(12px);
-  transition: all .2s ease;
-  box-shadow: var(--glass-hi);
+  display: inline-flex; align-items: center; gap: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  padding: 8px 24px;
+  color: var(--bg);
+  background: var(--ink);
+  font-weight: 700;
+  transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+  box-shadow: 4px 4px 0 var(--c-lime);
 }
 .hero-cta:hover {
-  border-color: color-mix(in srgb, var(--primary) 70%, transparent);
-  color: var(--primary);
+  color: var(--ink);
   text-decoration: none;
-  box-shadow: 0 0 26px color-mix(in srgb, var(--primary) 28%, transparent);
-  transform: translateY(-1px);
+  background: var(--c-lime);
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--ink);
 }
-.hero-cta .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
-.about-more { color: var(--ink-soft); }
+.hero-cta .dot { width: 9px; height: 9px; border-radius: 0; background: var(--c-lime); }
+.hero-cta:hover .dot { background: var(--ink); }
+.about-more { color: var(--ink-soft); font-weight: 600; }
 .about-more:hover { color: var(--primary); }
-.pager { display: flex; gap: 18px; align-items: center; justify-content: center; margin-top: 18px; }
-.pager a { color: var(--primary); }
+.pager { display: flex; gap: 18px; align-items: center; justify-content: center; margin-top: 20px; }
+.pager a { color: var(--primary); font-weight: 600; }
 .more-link { text-align: center; margin-top: 12px; }
-.hot-row { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-top: 1px dashed var(--line); }
+.hot-row { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-top: 1.5px solid var(--line); }
 .hot-link { color: var(--ink); flex: 1; }
-.feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.hot-link:hover { color: var(--primary); }
+.feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 @media (max-width: 860px) { .feat-grid { grid-template-columns: 1fr; } }
-.feat-t { font-weight: 650; margin-bottom: 6px; color: var(--cc, var(--ink)); }
+.feat-t { font-weight: 900; margin-bottom: 6px; color: var(--ink); font-size: 1.05em; }
 .feat p { margin: 0; }
 </style>

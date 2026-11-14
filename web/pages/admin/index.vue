@@ -291,46 +291,44 @@ watch(themeRef, () => { if (chartReady) renderChart() })
   gap: 12px;
   align-items: flex-start;
   padding: 16px;
-  border: 1px solid var(--sline);
-  border-radius: 14px;
+  border: 2px solid var(--sline);
+  border-radius: 0;
   background: var(--scard);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: transform .2s cubic-bezier(.2, .7, .3, 1), border-color .2s ease, box-shadow .2s ease;
+  transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
   animation: s-row-in .3s cubic-bezier(.2, .7, .3, 1) both;
 }
 .stat:nth-child(2) { animation-delay: .05s; }
 .stat:nth-child(3) { animation-delay: .1s; }
 .stat:nth-child(4) { animation-delay: .15s; }
-.stat:hover { transform: translateY(-2px); border-color: rgba(217, 242, 79, .35); }
+.stat:hover { transform: translate(-2px, -2px); border-color: var(--ink); box-shadow: 5px 5px 0 var(--ink); }
 .s-icon {
   width: 38px; height: 38px;
   flex-shrink: 0;
   display: grid; place-items: center;
-  border-radius: 11px;
-  color: var(--sprimary);
-  background: rgba(217, 242, 79, .09);
+  border-radius: 0;
+  color: var(--accent-ink);
+  background: var(--c-lime);
+  border: 2px solid var(--ink);
 }
-.s-icon.warn { color: #f8bb66; background: rgba(248, 187, 102, .1); }
+.s-icon.warn { color: #fff; background: var(--c-orange); border-color: var(--ink); }
 .s-icon svg { width: 19px; height: 19px; }
 .s-body { min-width: 0; }
-.s-label { font-size: .76em; color: var(--ink-faint); letter-spacing: .5px; }
-.s-num { font-size: 1.65em; font-weight: 750; line-height: 1.25; }
-.s-num.alert { color: #f8bb66; }
+.s-label { font-size: .76em; color: var(--ink-faint); letter-spacing: .5px; font-weight: 600; }
+.s-num { font-size: 1.65em; font-weight: 900; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.s-num.alert { color: var(--c-orange); }
 .s-sub { font-size: .76em; color: var(--ink-faint); }
-.s-link { font-size: .76em; color: var(--primary); }
+.s-link { font-size: .76em; color: var(--primary); font-weight: 700; }
 
 /* 面板卡 */
 .dash-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 12px; margin-bottom: 12px; }
 .dash-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .panel-card {
-  border: 1px solid var(--sline);
-  border-radius: 14px;
+  border: 2px solid var(--sline);
+  border-radius: 0;
   background: var(--scard);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   padding: 16px 18px;
   min-width: 0;
+  box-shadow: 4px 4px 0 var(--ink);
 }
 .c-head { font-size: .8em; font-weight: 700; letter-spacing: 1.5px; color: var(--ink-faint); margin-bottom: 10px; }
 .chart { height: 240px; width: 100%; }
@@ -392,15 +390,16 @@ watch(themeRef, () => { if (chartReady) renderChart() })
 .int-bar {
   flex: 1;
   height: 10px;
-  border-radius: 999px;
-  background: rgba(128, 128, 128, .14);
+  border-radius: 0;
+  background: var(--sbubble);
+  border: 1.5px solid var(--sline);
   overflow: hidden;
 }
 .int-bar i {
   display: block;
   height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--sprimary-deep), var(--sprimary));
+  border-radius: 0;
+  background: var(--c-lime);
   transition: width .4s cubic-bezier(.2, .7, .3, 1);
 }
 .int-num { width: 44px; text-align: right; color: var(--ink); font-size: .85em; }
