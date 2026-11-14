@@ -2,6 +2,7 @@
 import { $pub, $api, visitorId, accessToken, base, cachedUser, type UserInfo } from '~/composables/useApi'
 import { useAuthUser } from '~/composables/useApi'
 import { renderMath } from '~/utils/mathRender'
+import { renderAiMd } from '~/utils/aiMd'
 
 interface ArticleDetail {
   id: number
@@ -32,6 +33,14 @@ const { data: article, error } = await useAsyncData(`article-${id}`, () => $pub<
 const contentBox = ref<HTMLElement>()
 onMounted(() => renderMath(contentBox.value))
 watch(() => article.value?.contentHtml, () => nextTick(() => renderMath(contentBox.value)))
+
+// GEO 核心结论：与正文同管线（markdown + KaTeX 客户端渲染），修掉公式/标记原样显示的问题；
+// 剥掉与「核心结论 · GEO」徽标重复的 **核心结论**： 前缀
+const geoBox = ref<HTMLElement>()
+const geoSummaryMd = computed(() =>
+  (article.value?.geoSummary || '').replace(/^\*\*核心结论\*\*\s*[：:]?\s*/, ''))
+onMounted(() => renderMath(geoBox.value))
+watch(geoSummaryMd, () => nextTick(() => renderMath(geoBox.value)))
 
 // 站点源：SSR 内同步求值（useSeoMeta/useHead 的回调在 Nuxt 实例外触发，不能在里面调 useRequestURL）
 const siteOrigin = import.meta.server ? useRequestURL().origin : window.location.origin
@@ -189,7 +198,7 @@ function fmtDate(s: string): string { return (s || '').replace('T', ' ').slice(0
         <!-- GEO：结构化「核心结论」摘要区块，供生成式引擎直接提取 -->
         <div v-if="article.geoSummary" class="geo-box">
           <div class="geo-badge">核心结论 · GEO</div>
-          <p class="geo-text">{{ article.geoSummary }}</p>
+          <p ref="geoBox" class="geo-text md" v-html="renderAiMd(geoSummaryMd)" />
         </div>
     <!-- 服务端渲染的深度排版正文（M4/M3 contentHtml；公式由客户端 KaTeX 渲染） -->
     <div ref="contentBox" class="article-content" v-html="article.contentHtml" />
@@ -280,6 +289,9 @@ function fmtDate(s: string): string { return (s || '').replace('T', ' ').slice(0
   margin-bottom: 8px;
 }
 .geo-text { margin: 0; color: var(--ink); line-height: 1.8; }
+.geo-text.md :deep(p) { margin: .35em 0; }
+.geo-text.md :deep(ul), .geo-text.md :deep(ol) { margin: .35em 0; padding-left: 1.3em; }
+.geo-text.md :deep(.katex) { font-size: 1em; }
 .a-actions { display: flex; align-items: center; gap: 16px; margin-top: 26px; border-top: 1px solid var(--line); padding-top: 16px; }
 .comments h3, .related h3 { margin: 0 0 12px; }
 .comment-item { border-top: 1px dashed var(--line); padding: 10px 0; }
