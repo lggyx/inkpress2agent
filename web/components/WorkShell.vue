@@ -191,21 +191,26 @@ watchEffect(() => {
   color: var(--ink);
 }
 
-/* 背景光晕：流动渐变 */
+/* 背景光晕：极光流动（紫/青双团，柔和模糊） */
 .orb {
   position: fixed;
   border-radius: 50%;
   pointer-events: none;
   z-index: 0;
+  filter: blur(90px);
 }
 .orb-a {
   width: 560px; height: 560px; top: -180px; left: 120px;
-  background: var(--sorba);
+  background:
+    radial-gradient(circle at 35% 35%, var(--sorba), transparent 62%),
+    radial-gradient(circle at 70% 70%, var(--sorbb), transparent 58%);
   animation: drift 26s ease-in-out infinite alternate;
 }
 .orb-b {
   width: 640px; height: 640px; bottom: -240px; right: -120px;
-  background: var(--sorbb);
+  background:
+    radial-gradient(circle at 60% 40%, var(--sorbb), transparent 60%),
+    radial-gradient(circle at 30% 70%, rgba(244, 114, 182, .08), transparent 58%);
   animation: drift 32s ease-in-out infinite alternate-reverse;
 }
 @keyframes drift {
@@ -236,10 +241,10 @@ watchEffect(() => {
   border-radius: 12px;
   color: #101012;
   background: var(--sprimary);
-  box-shadow: 0 4px 18px rgba(217, 242, 79, .22);
+  box-shadow: 0 4px 18px rgba(167, 139, 250, .22);
   transition: transform .2s ease, box-shadow .2s ease;
 }
-.rail-logo:hover { transform: translateY(-1px) scale(1.04); box-shadow: 0 6px 24px rgba(217, 242, 79, .32); }
+.rail-logo:hover { transform: translateY(-1px) scale(1.04); box-shadow: 0 6px 24px rgba(167, 139, 250, .32); }
 .rail-logo svg { width: 21px; height: 21px; }
 .rail-sep { width: 26px; height: 1px; background: var(--sline); margin: 2px 0; }
 .rail-nav, .rail-bottom { display: flex; flex-direction: column; gap: 6px; }
@@ -257,7 +262,7 @@ watchEffect(() => {
 .rail-btn svg { width: 20px; height: 20px; }
 .rail-btn:hover { color: var(--ink); background: rgba(128, 128, 128, .12); transform: scale(1.1); }
 .rail-btn:active { transform: scale(.96); }
-.rail-btn.router-link-active { color: var(--sprimary); background: rgba(217, 242, 79, .09); }
+.rail-btn.router-link-active { color: var(--sprimary); background: rgba(167, 139, 250, .09); }
 .rail-btn.router-link-active::before {
   content: '';
   position: absolute; left: -11px; top: 11px;
@@ -291,7 +296,7 @@ watchEffect(() => {
   background: var(--sprimary);
   transition: transform .18s ease, box-shadow .18s ease;
 }
-.rail-avatar:hover { transform: scale(1.08); box-shadow: 0 0 0 3px rgba(217, 242, 79, .25); }
+.rail-avatar:hover { transform: scale(1.08); box-shadow: 0 0 0 3px rgba(167, 139, 250, .25); }
 
 .studio-main {
   position: relative;
@@ -343,66 +348,87 @@ watchEffect(() => {
 </style>
 
 <style>
-/* ===== 主题变量：暗色默认，亮色经 :root[data-theme='light'] 覆盖 ===== */
+/* ===== 主题变量：Web3 颜色卡体系（紫青主色 + 六色卡），暗色默认，亮色经 :root[data-theme='light'] 覆盖 ===== */
 .studio-shell {
-  --sbg: #0c0c0e;
-  --scard: rgba(255, 255, 255, .032);
-  --scard-solid: #131316;
-  --sline: rgba(255, 255, 255, .08);
-  --sprimary: #d9f24f;
-  --sprimary-deep: #b8d42e;
-  --srail: rgba(12, 14, 22, .55);
-  --sglass: rgba(255, 255, 255, .05);
-  --spop: rgba(20, 24, 38, .85);
-  --spop-solid: rgba(22, 26, 40, .96);
-  --sinset: rgba(0, 0, 0, .25);
-  --sbubble: rgba(255, 255, 255, .05);
-  --spane: linear-gradient(180deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, .015));
-  --sorba: rgba(217, 242, 79, .06);
-  --sorbb: rgba(255, 255, 255, .045);
-  --shadow-pane: 0 20px 60px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .05);
-  --heroa: #ffffff;
-  --herob: #d9f24f;
+  --sbg: #070a12;
+  --scard: rgba(148, 163, 184, .07);
+  --scard-solid: #0f1420;
+  --sline: rgba(148, 163, 184, .17);
+  --sprimary: #a78bfa;
+  --sprimary-deep: #7c3aed;
+  --sprimary-2: #22d3ee;
+  --srail: rgba(10, 13, 24, .6);
+  --sglass: rgba(148, 163, 184, .07);
+  --spop: rgba(13, 17, 30, .88);
+  --spop-solid: rgba(15, 19, 33, .97);
+  --sinset: rgba(0, 0, 0, .28);
+  --sbubble: rgba(148, 163, 184, .07);
+  --spane: linear-gradient(180deg, rgba(148, 163, 184, .06), rgba(148, 163, 184, .02));
+  --sorba: rgba(139, 92, 246, .14);
+  --sorbb: rgba(34, 211, 238, .09);
+  --shadow-pane: 0 20px 60px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .06);
+  --heroa: #c4b5fd;
+  --herob: #22d3ee;
+  --grad-btn: linear-gradient(135deg, #7c3aed, #0891b2);
+  --grad-text: linear-gradient(100deg, #c4b5fd, #22d3ee 55%, #a3e635);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, .06);
+  --shadow-card: 0 10px 34px rgba(2, 6, 16, .45);
+  --c-violet: #a78bfa;
+  --c-cyan: #22d3ee;
+  --c-lime: #a3e635;
+  --c-orange: #fb923c;
+  --c-pink: #f472b6;
+  --c-blue: #60a5fa;
   /* 重定义博客变量，让子页面自动进入工作台语境 */
   --bg: var(--sbg);
-  --card: var(--scard-solid);
-  --card-soft: #1a1a1e;
+  --card: var(--scard);
+  --card-soft: rgba(148, 163, 184, .05);
   --line: var(--sline);
-  --ink: #ececec;
-  --ink-soft: #9a9aa0;
-  --ink-faint: #5d5d63;
+  --ink: #e9edf5;
+  --ink-soft: #a3adbf;
+  --ink-faint: #6e7891;
   --primary: var(--sprimary);
   --primary-deep: var(--sprimary-deep);
-  --primary-soft: rgba(217, 242, 79, .1);
-  --code-bg: #101012;
+  --primary-soft: rgba(139, 92, 246, .14);
+  --code-bg: rgba(2, 6, 16, .55);
   --radius: 14px;
 }
 :root[data-theme='light'] .studio-shell {
-  --sbg: #f5f5f7;
-  --scard: rgba(255, 255, 255, .66);
+  --sbg: #eef1f8;
+  --scard: rgba(255, 255, 255, .72);
   --scard-solid: #ffffff;
-  --sline: rgba(0, 0, 0, .09);
-  --srail: rgba(255, 255, 255, .66);
-  --sglass: rgba(255, 255, 255, .6);
-  --spop: rgba(255, 255, 255, .92);
+  --sline: rgba(15, 23, 42, .10);
+  --srail: rgba(255, 255, 255, .7);
+  --sglass: rgba(255, 255, 255, .62);
+  --spop: rgba(255, 255, 255, .93);
   --spop-solid: #ffffff;
-  --sinset: rgba(0, 0, 0, .035);
+  --sinset: rgba(0, 0, 0, .04);
   --sbubble: rgba(0, 0, 0, .045);
-  --spane: linear-gradient(180deg, rgba(255, 255, 255, .72), rgba(255, 255, 255, .45));
-  --sorba: rgba(184, 212, 46, .1);
-  --sorbb: rgba(0, 0, 0, .03);
-  --shadow-pane: 0 20px 60px rgba(0, 0, 0, .08), inset 0 1px 0 rgba(255, 255, 255, .6);
+  --spane: linear-gradient(180deg, rgba(255, 255, 255, .74), rgba(255, 255, 255, .46));
+  --sorba: rgba(139, 92, 246, .12);
+  --sorbb: rgba(8, 145, 178, .08);
+  --shadow-pane: 0 20px 60px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255, 255, 255, .7);
   --heroa: #1d1d1f;
-  --herob: #6b8409;
-  --card: #ffffff;
-  --card-soft: #f5f5f7;
-  --ink: #1d1d1f;
-  --ink-soft: #55555c;
-  --ink-faint: #86868b;
-  --primary: #6b8409;
-  --primary-deep: #5f7508;
-  --primary-soft: rgba(184, 212, 46, .16);
-  --code-bg: #f2f2f4;
+  --herob: #6d28d9;
+  --grad-btn: linear-gradient(135deg, #7c3aed, #0891b2);
+  --grad-text: linear-gradient(100deg, #6d28d9, #0891b2 55%, #4d7c0f);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, .8);
+  --shadow-card: 0 10px 30px rgba(15, 23, 42, .08);
+  --c-violet: #7c3aed;
+  --c-cyan: #0891b2;
+  --c-lime: #65a30d;
+  --c-orange: #ea580c;
+  --c-pink: #db2777;
+  --c-blue: #2563eb;
+  --card: rgba(255, 255, 255, .74);
+  --card-soft: rgba(255, 255, 255, .55);
+  --ink: #101828;
+  --ink-soft: #475467;
+  --ink-faint: #98a2b3;
+  --primary: #7c3aed;
+  --primary-deep: #6d28d9;
+  --primary-soft: rgba(124, 58, 237, .10);
+  --code-bg: rgba(15, 23, 42, .05);
 }
 
 /* ===== studio 管理页共享：玻璃行列表（articles/comments/admin 等） ===== */
@@ -506,7 +532,7 @@ watchEffect(() => {
   transition: all .16s ease;
   white-space: nowrap;
 }
-.studio-shell .abtn:hover { color: var(--ink); border-color: rgba(217, 242, 79, .45); background: rgba(128, 128, 128, .08); transform: translateY(-1px) scale(1.05); }
+.studio-shell .abtn:hover { color: var(--ink); border-color: rgba(167, 139, 250, .45); background: rgba(128, 128, 128, .08); transform: translateY(-1px) scale(1.05); }
 .studio-shell .abtn:active { transform: scale(.96); }
 .studio-shell .abtn.danger { color: #f28b82; border-color: rgba(242, 139, 130, .35); }
 .studio-shell .abtn.danger:hover { background: rgba(242, 139, 130, .1); border-color: rgba(242, 139, 130, .6); }
@@ -518,17 +544,17 @@ watchEffect(() => {
   border-radius: 10px;
   font-size: .88em;
   font-weight: 700;
-  background: var(--sprimary);
-  color: #101012;
+  background: var(--grad-btn);
+  color: #fff;
   border: 0;
-  box-shadow: 0 4px 16px rgba(217, 242, 79, .18);
+  box-shadow: 0 4px 18px rgba(124, 58, 237, .35);
   transition: all .2s cubic-bezier(.34, 1.56, .64, 1);
 }
 .studio-shell .btn.primary:hover {
-  filter: brightness(1.06);
+  filter: brightness(1.08);
   transform: translateY(-1px) scale(1.04);
-  color: #101012;
-  box-shadow: 0 8px 26px rgba(217, 242, 79, .28);
+  color: #fff;
+  box-shadow: 0 8px 28px rgba(124, 58, 237, .5), 0 0 0 1px rgba(167, 139, 250, .45);
 }
 .studio-shell .btn.ghost {
   display: inline-block;
@@ -541,7 +567,7 @@ watchEffect(() => {
   color: var(--ink-soft);
   transition: all .2s cubic-bezier(.34, 1.56, .64, 1);
 }
-.studio-shell .btn.ghost:hover { color: var(--ink); border-color: rgba(217, 242, 79, .4); transform: translateY(-1px) scale(1.03); }
+.studio-shell .btn.ghost:hover { color: var(--ink); border-color: rgba(167, 139, 250, .4); transform: translateY(-1px) scale(1.03); }
 
 /* 状态 pill（与工作台一致） */
 .studio-shell .st {

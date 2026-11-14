@@ -1042,7 +1042,7 @@ onMounted(async () => {
 }
 .btn:active { transform: scale(.96); }
 .btn.primary {
-  background: linear-gradient(135deg, var(--sprimary-deep), #b8d42e);
+  background: var(--grad-btn);
   border: 0;
   color: #fff;
   box-shadow: 0 4px 16px rgba(217, 242, 79, .32);
@@ -1222,7 +1222,7 @@ onMounted(async () => {
 .orange { background: #f2825a; color: #2a120a; }
 .orange .b1 { background: #e86a3e; }
 .orange .b2 { background: #f79a77; }
-.lime { background: #d9f24f; color: #1c2005; }
+.lime { background: var(--c-lime, #a3e635); color: #101418; }
 .lime .b1 { background: #c7e336; }
 .lime .b2 { background: #e6fa7e; }
 .yellow { background: #f6e17c; color: #2a2205; }
@@ -1363,7 +1363,7 @@ onMounted(async () => {
   border: 0;
   border-radius: 12px;
   color: #fff;
-  background: linear-gradient(135deg, var(--sprimary-deep), #b8d42e);
+  background: var(--grad-btn);
   box-shadow: 0 4px 14px rgba(217, 242, 79, .35), inset 0 1px 0 rgba(255, 255, 255, .25);
   transition: all .22s cubic-bezier(.34, 1.56, .64, 1);
 }

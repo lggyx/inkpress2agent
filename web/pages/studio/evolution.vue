@@ -140,7 +140,7 @@ onMounted(async () => {
     </div>
 
     <!-- 指标对比 -->
-    <div class="card">
+    <div class="card cc cc-violet">
       <h3>两次运行对比</h3>
       <div v-if="!runA && !runB" class="empty">还没有完成的运行。跑完两次后，这里自动出现对比。</div>
       <div v-else class="compare">
@@ -180,7 +180,7 @@ onMounted(async () => {
     </div>
 
     <!-- 写作记忆 -->
-    <div class="card">
+    <div class="card cc cc-cyan">
       <h3>写作记忆 <span class="h-sub">AI 从你的反馈里学到的偏好规则——「学到了什么」就在这里</span></h3>
       <div v-if="!memories.length" class="empty">还没有记忆。跑一次运行并给出 👎 或修改，结束后这里会出现新条目。</div>
       <div v-else class="mem-list">
@@ -198,7 +198,7 @@ onMounted(async () => {
     </div>
 
     <!-- 快照与回退 -->
-    <div class="card">
+    <div class="card cc cc-lime">
       <h3>记忆快照与回退 <span class="h-sub">「怎么回退」——评委要求当场演示</span></h3>
       <div class="snap-actions">
         <button class="abtn ok" :disabled="busy" @click="onSnapshot">📷 拍快照（留存当前全部记忆）</button>
@@ -218,7 +218,7 @@ onMounted(async () => {
     </div>
 
     <!-- 三行进化说明（项目说明必填三项，口径与面板一致） -->
-    <div class="card brief">
+    <div class="card brief cc cc-blue">
       <h3>进化说明（比什么 / 学到什么 / 怎么回退）</h3>
       <ol class="brief-list">
         <li><b>比什么指标：</b>建议采纳率（采纳+👍 占全部建议反馈的比例）、平均修改幅度（AI 建议与作者定稿的归一化编辑距离）、👍/👎 计数——面板自动核算，两次运行并列对比。</li>
@@ -239,7 +239,7 @@ onMounted(async () => {
 .evo-status .dot { width: 9px; height: 9px; border-radius: 50%; background: #9aa3b5; flex-shrink: 0; }
 .evo-status.on { border-color: rgba(129, 201, 149, .5); border-style: solid; background: rgba(129, 201, 149, .06); }
 .evo-status.on .dot { background: #81c995; box-shadow: 0 0 8px rgba(129, 201, 149, .8); animation: pulse 1.6s infinite; }
-.evo-status a { color: var(--sprimary, #d9f24f); }
+.evo-status a { color: var(--sprimary, #a78bfa); }
 @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: .45 } }
 
 .card {
@@ -256,8 +256,8 @@ onMounted(async () => {
   border: 1px solid var(--sline, rgba(128,128,128,.25)); border-radius: 12px; padding: 12px 14px;
 }
 .run-name { font-size: .82em; color: var(--ink-faint); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-.tag-ai { color: #d9f24f; font-size: .9em; }
-.big-rate { font-size: 2.1em; font-weight: 800; color: var(--sprimary, #d9f24f); letter-spacing: .5px; }
+.tag-ai { color: var(--c-lime, #a3e635); font-size: .9em; }
+.big-rate { font-size: 2.1em; font-weight: 800; color: var(--sprimary, #a78bfa); letter-spacing: .5px; }
 .big-rate.muted { color: var(--ink-faint); }
 .metric-rows { margin-top: 10px; display: grid; gap: 6px; }
 .mrow { display: flex; justify-content: space-between; font-size: .86em; color: var(--ink-soft); }
@@ -279,12 +279,12 @@ onMounted(async () => {
 .mem-item.off .mem-content { text-decoration: line-through; }
 .mem-cat {
   flex-shrink: 0; font-size: .74em; padding: 2px 9px; border-radius: 999px;
-  background: var(--primary-soft, rgba(217,242,79,.12)); color: var(--sprimary, #d9f24f);
+  background: var(--primary-soft, rgba(139,92,246,.12)); color: var(--sprimary, #a78bfa);
 }
 .mem-content { flex: 1; min-width: 200px; font-size: .9em; color: var(--ink); }
 .mem-meta { display: flex; align-items: center; gap: 8px; font-size: .74em; color: var(--ink-faint); }
 .mem-src { padding: 1px 7px; border-radius: 999px; border: 1px solid var(--sline, rgba(128,128,128,.3)); }
-.mem-src.s-DISTILL { color: #d9f24f; border-color: rgba(217,242,79,.4); }
+.mem-src.s-DISTILL { color: var(--c-lime, #a3e635); border-color: rgba(163,230,53,.4); }
 .mem-src.s-CORRECTION { color: #f8bb66; border-color: rgba(248,187,102,.4); }
 .mem-src.s-RESTORED { color: #7db4f8; border-color: rgba(125,180,248,.4); }
 .mem-off { color: #f28b82; }

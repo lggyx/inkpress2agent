@@ -47,7 +47,7 @@ async function renderChart() {
     days.push(key.slice(5).replace('-', '/'))
     vals.push(Number(map.get(key) || 0))
   }
-  const lime = '#d9f24f'
+  const lime = '#a3e635'
   chart.setOption({
     grid: { left: 8, right: 8, top: 18, bottom: 4, containLabel: true },
     tooltip: { trigger: 'axis' },
@@ -152,17 +152,17 @@ watch(themeRef, () => { if (chartReady) renderChart() })
 
     <!-- 统计卡 -->
     <div class="stat-grid" v-loading="loading">
-      <div class="stat">
+      <div class="stat cc cc-violet">
         <div class="s-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 12h4l2.5-7 5 14 2.5-7H21" /></svg>
         </div>
         <div class="s-body">
           <div class="s-label">访问量 · 7 天</div>
-          <div class="s-num mono">{{ pv }}</div>
+          <div class="s-num mono grad-text">{{ pv }}</div>
           <div class="s-sub">独立访客 {{ uv }}</div>
         </div>
       </div>
-      <div class="stat">
+      <div class="stat cc cc-cyan">
         <div class="s-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="3" width="15" height="18" rx="2.5" /><path d="M8.5 8h7M8.5 12h7M8.5 16h4.5" /></svg>
         </div>
@@ -172,7 +172,7 @@ watch(themeRef, () => { if (chartReady) renderChart() })
           <div class="s-sub">已发布 {{ aPublished }} · 草稿等 {{ aTotal - aPublished }}</div>
         </div>
       </div>
-      <div class="stat">
+      <div class="stat cc cc-orange">
         <div class="s-icon warn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5c-1.2 0-2.4-.3-3.4-.8L4 19.5l1.3-4.1A7.5 7.5 0 1 1 20 11.5z" /></svg>
         </div>
@@ -182,7 +182,7 @@ watch(themeRef, () => { if (chartReady) renderChart() })
           <NuxtLink to="/studio/comments" class="s-link">去处理 →</NuxtLink>
         </div>
       </div>
-      <div class="stat">
+      <div class="stat cc cc-pink">
         <div class="s-icon" :class="{ warn: dlqCount > 0 }">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 13.5L6 6.5A2 2 0 0 1 7.9 5h8.2a2 2 0 0 1 1.9 1.5l2.5 7v4a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5v-4z" /><path d="M3.5 13.5h5a3.5 3.5 0 0 0 7 0h5" /></svg>
         </div>

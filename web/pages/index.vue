@@ -105,17 +105,17 @@ function fmtDate(s: string): string {
     <section class="section-row">
       <h2 class="section-title">能力</h2>
       <div class="feat-grid">
-        <div class="card feat">
+        <div class="card feat cc cc-cyan">
           <div class="feat-t">AI 检索</div>
           <p class="muted">关键词与语义混合检索，并可由 AI 基于站内内容直接给出回答。</p>
         </div>
-        <div class="card feat">
+        <div class="card feat cc cc-violet">
           <div class="feat-t">AI 写作辅助</div>
           <p class="muted">润色、纠错、续写与起标题；发布前 AI 评审为质量把关。</p>
         </div>
-        <div class="card feat">
-          <div class="feat-t">多端分发</div>
-          <p class="muted">深度排版转换，一键把文章分发到掘金 / CSDN / 知乎 / 公众号。</p>
+        <div class="card feat cc cc-lime">
+          <div class="feat-t">自我进化</div>
+          <p class="muted">你的每次反馈都会沉淀成写作记忆，下一次输出更贴合你。</p>
         </div>
       </div>
     </section>
@@ -128,23 +128,38 @@ function fmtDate(s: string): string {
   width: 84px; height: 84px;
   margin: 0 auto 18px;
   border-radius: 50%;
-  border: 2px solid var(--line);
+  border: 2px solid transparent;
+  background:
+    linear-gradient(160deg, var(--card-strong), var(--card-soft)) padding-box,
+    linear-gradient(140deg, var(--grad-a), var(--grad-b)) border-box;
   display: flex; align-items: center; justify-content: center;
   font-size: 2em; font-weight: 800;
-  background: var(--card);
+  color: #fff;
+  text-shadow: 0 2px 18px rgba(124, 58, 237, .55);
+  box-shadow: 0 0 34px color-mix(in srgb, var(--primary) 30%, transparent), var(--glass-hi);
+  backdrop-filter: blur(14px);
 }
-.hero-name { font-size: 2em; font-weight: 800; margin: 0 0 6px; }
+.hero-name { font-size: 2.1em; font-weight: 800; margin: 0 0 6px; background: var(--grad-text); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: 1px; }
 .hero-sig { margin: 0 0 20px; }
 .hero-cta {
   display: inline-flex; align-items: center; gap: 8px;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--primary) 40%, var(--line));
   border-radius: var(--radius-pill);
-  padding: 7px 20px;
+  padding: 7px 22px;
   color: var(--ink);
-  background: var(--card);
+  background: linear-gradient(165deg, var(--card-strong), var(--card-soft));
+  backdrop-filter: blur(12px);
+  transition: all .2s ease;
+  box-shadow: var(--glass-hi);
 }
-.hero-cta:hover { border-color: var(--primary); color: var(--primary); text-decoration: none; }
-.hero-cta .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+.hero-cta:hover {
+  border-color: color-mix(in srgb, var(--primary) 70%, transparent);
+  color: var(--primary);
+  text-decoration: none;
+  box-shadow: 0 0 26px color-mix(in srgb, var(--primary) 28%, transparent);
+  transform: translateY(-1px);
+}
+.hero-cta .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
 .about-more { color: var(--ink-soft); }
 .about-more:hover { color: var(--primary); }
 .pager { display: flex; gap: 18px; align-items: center; justify-content: center; margin-top: 18px; }
@@ -154,6 +169,6 @@ function fmtDate(s: string): string {
 .hot-link { color: var(--ink); flex: 1; }
 .feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 @media (max-width: 860px) { .feat-grid { grid-template-columns: 1fr; } }
-.feat-t { font-weight: 650; margin-bottom: 6px; }
+.feat-t { font-weight: 650; margin-bottom: 6px; color: var(--cc, var(--ink)); }
 .feat p { margin: 0; }
 </style>
