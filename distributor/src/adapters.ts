@@ -149,8 +149,15 @@ const juejin: PlatformAdapter = {
   urlPattern: /juejin\.cn\/post\//,
   headlessDefault: false,
   async fill(page, task, steps) {
-    await fillTitle(page, task, steps, ['textarea[placeholder*="标题"]', '.title-input textarea']);
-    await fillContent(page, task, steps, ['.CodeMirror textarea', '.CodeMirror', '[contenteditable="true"]']);
+    await fillTitle(page, task, steps, [
+      'textarea[placeholder*="标题"]', '.title-input textarea',
+      'input[placeholder*="标题"]', 'input[placeholder*="输入文章标题"]',
+      '[placeholder*="请输入标题"]', 'div[contenteditable=true][data-title]',
+    ]);
+    await fillContent(page, task, steps, [
+      '.CodeMirror textarea', '.CodeMirror', '[contenteditable="true"]',
+      '.markdown-body[contenteditable]', 'div[contenteditable=true].editor',
+    ]);
   },
 };
 

@@ -1,0 +1,31 @@
+{
+  "juejin": {
+    "platform": "juejin",
+    "authType": "browser",
+    "loggedIn": true,
+    "lastCheckedAt": 1794667318374,
+    "lastLoginAt": 1794666694417,
+    "profilePath": "D:\\inkpress2agent\\distributor\\.profiles\\juejin"
+  },
+  "csdn": {
+    "platform": "csdn",
+    "authType": "browser",
+    "loggedIn": false,
+    "lastCheckedAt": 1794667098799,
+    "note": "尚未登录：执行 inkpress auth login csdn"
+  },
+  "zhihu": {
+    "platform": "zhihu",
+    "authType": "browser",
+    "loggedIn": false,
+    "lastCheckedAt": 1794667098883,
+    "note": "尚未登录：执行 inkpress auth login zhihu"
+  },
+  "wechat": {
+    "platform": "wechat",
+    "authType": "browser",
+    "loggedIn": false,
+    "lastCheckedAt": 1794667098958,
+    "note": "尚未登录：执行 inkpress auth login wechat"
+  }
+}
