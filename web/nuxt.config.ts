@@ -10,12 +10,12 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: 'InkPress · 个人博客与文章管理',
+      title: 'InkPress · 会自我进化的 AI 博客',
       htmlAttrs: { lang: 'zh-CN', class: 'dark' },
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'InkPress：写作、发布、分发一体的个人博客与文章管理系统' }
+        { name: 'description', content: 'InkPress：会自我进化的 AI 博客——从每次写作与访问反馈中学习，越用越懂你。' }
       ],
       // 首屏前设置主题，避免闪烁
       script: [

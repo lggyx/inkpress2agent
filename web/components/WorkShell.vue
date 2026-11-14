@@ -53,6 +53,15 @@ watchEffect(() => {
             </svg>
             <span class="rail-tip">文章管理</span>
           </NuxtLink>
+          <NuxtLink to="/studio/evolution" class="rail-btn" title="进化面板">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19c4.5 0 4.5-7 8-7s3.5 4 8 4" />
+              <path d="M16.5 12.5L20 16l-3.5 3.5" />
+              <path d="M4 8c2.5 0 3.5-3 6-3" />
+              <circle cx="12" cy="5" r="1.4" />
+            </svg>
+            <span class="rail-tip">进化面板</span>
+          </NuxtLink>
           <NuxtLink to="/studio/comments" class="rail-btn" title="评论审核">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5c-1.2 0-2.4-.3-3.4-.8L4 19.5l1.3-4.1A7.5 7.5 0 1 1 20 11.5z" />

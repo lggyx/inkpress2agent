@@ -36,7 +36,7 @@ function fmtDate(s: string): string {
     <section class="hero">
       <div class="hero-mark grad-title">Ink</div>
       <h1 class="hero-name">InkPress</h1>
-      <p class="hero-sig muted">写作 · 检索 · 分发，一体的个人创作工作台</p>
+      <p class="hero-sig muted">从每次写作与反馈中学习，越用越懂你的 AI 博客</p>
       <NuxtLink to="/search" class="hero-cta">
         <span class="dot" /> AI 搜索
       </NuxtLink>
@@ -46,10 +46,10 @@ function fmtDate(s: string): string {
     <section class="section-row">
       <h2 class="section-title">关于</h2>
       <div>
-        <p class="muted" style="margin:0 0 6px">博客 / AI 工作台</p>
+        <p class="muted" style="margin:0 0 6px">博客 / AI 创作台 / 进化面板</p>
         <p style="margin:0;color:var(--ink-soft)">
-          InkPress 是一个把 AI 写作辅助、语义检索与多端分发放进同一工作流的个人博客系统。
-          想法写下来，交给 AI 打磨；文章发布后自动可被检索、订阅与分发。
+          InkPress 是一个会自我进化的 AI 博客：AI 帮你写作、润色与配图，你对结果的每次反馈都会沉淀成写作记忆，
+          让下一次输出更贴合你；文章发布后自动可被混合检索、订阅，并针对搜索引擎与 AI 双重优化（GEO/SEO）。
         </p>
         <div style="text-align:right;margin-top:14px">
           <NuxtLink to="/search" class="about-more">

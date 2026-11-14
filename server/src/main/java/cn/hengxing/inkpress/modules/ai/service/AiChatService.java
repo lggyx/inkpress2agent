@@ -1,6 +1,7 @@
 package cn.hengxing.inkpress.modules.ai.service;
 
 import cn.hengxing.inkpress.common.BizException;
+import cn.hengxing.inkpress.modules.evolution.service.WritingMemoryService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
@@ -28,14 +29,16 @@ import java.util.concurrent.Executors;
 public class AiChatService {
 
     private final AiConfigService configService;
+    private final WritingMemoryService memoryService;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient http = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build();
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
-    public AiChatService(AiConfigService configService) {
+    public AiChatService(AiConfigService configService, WritingMemoryService memoryService) {
         this.configService = configService;
+        this.memoryService = memoryService;
     }
 
     /** SSE 流式对话：按提示词模板渲染后转发模型输出，逐 token 推给前端 */
@@ -55,9 +58,21 @@ public class AiChatService {
 
     /** 按 persona 路由系统提示模板：assistant=工作台写作助手，article_qa=文章页读者问答助手 */
     public SseEmitter chatStreamMessages(List<Map<String, String>> messages, String category) {
+        return chatStreamMessages(messages, category, null);
+    }
+
+    /** 多轮对话 + 作者写作记忆注入：工作台（assistant）会话时把该作者的 ACTIVE 记忆并入 system 提示；
+     *  读者侧（article_qa）与匿名调用不注入，行为与未开启进化闭环时一致 */
+    public SseEmitter chatStreamMessages(List<Map<String, String>> messages, String category, Long userId) {
         requireConfigured(AiConfigService.CAP_TEXT);
         SseEmitter emitter = new SseEmitter(180_000L);
         String system = configService.mustTemplate(category).getContent();
+        if (userId != null && "assistant".equals(category)) {
+            String memoryBlock = memoryService.activeBlock(userId);
+            if (memoryBlock != null && !memoryBlock.isBlank()) {
+                system = system + "\n\n" + memoryBlock;
+            }
+        }
         HttpRequest request = anthropic()
                 ? anthropicMessagesRequest(messages, system, true)
                 : openaiMessagesRequest(messages, system, true);

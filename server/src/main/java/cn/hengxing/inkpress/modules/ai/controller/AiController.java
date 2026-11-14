@@ -64,7 +64,9 @@ public class AiController {
 
     /** SSE 流式 AI 对话：{category,content} 模板模式 或 {messages:[...],persona?} 多轮直传（studio 工作台/文章页问答） */
     @PostMapping(path = "/ai/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter chat(@RequestBody Map<String, Object> body) {
+    public SseEmitter chat(@AuthenticationPrincipal JwtAuthFilter.LoginUser user,
+                           @RequestBody Map<String, Object> body) {
+        Long userId = user == null ? null : user.id();
         Object messages = body.get("messages");
         if (messages instanceof List<?> list && !list.isEmpty()) {
             List<Map<String, String>> hist = new ArrayList<>();
@@ -78,10 +80,10 @@ public class AiController {
                     hist.add(row);
                 }
             }
-            // persona=reader → 文章页问答助手模板；缺省 assistant（工作台写作助手）
+            // persona=reader → 文章页问答助手模板；缺省 assistant（工作台写作助手，注入作者写作记忆）
             String category = "reader".equals(String.valueOf(body.getOrDefault("persona", "")))
                     ? "article_qa" : "assistant";
-            return aiChatService.chatStreamMessages(hist, category);
+            return aiChatService.chatStreamMessages(hist, category, userId);
         }
         String category = body.get("category") == null ? "" : String.valueOf(body.get("category"));
         String content = body.get("content") == null ? "" : String.valueOf(body.get("content"));

@@ -129,14 +129,13 @@ services:
     restart: unless-stopped
 
 volumes:
-  # 老原型（D:\WorkSpace\inkpress，项目名 inkpress）保留 inkpress-* 容器名与卷名；
-  # 本工程改名 inkpress2agent 让路。数据卷用 name: 钉住既有卷，
-  # 避免按新项目名生成空卷导致演示数据丢失。
+  # 卷隔离：老原型（D:\WorkSpace\inkpress）与本工程的卷键完全同名，同时运行会互踩数据。
+  # 数据已从 inkpress_* 卷全量复制到 inkpress2agent_* 专属卷，两套栈从此独立演进。
   mysql-data-v2:
-    name: inkpress_mysql-data-v2
+    name: inkpress2agent_mysql-data-v2
   redis-data:
-    name: inkpress_redis-data
+    name: inkpress2agent_redis-data
   rabbitmq-data:
-    name: inkpress_rabbitmq-data
+    name: inkpress2agent_rabbitmq-data
   es-data-v2:
-    name: inkpress_es-data-v2
+    name: inkpress2agent_es-data-v2

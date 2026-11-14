@@ -4,6 +4,7 @@ import { $api, accessToken, base } from '~/composables/useApi'
 import { streamChat } from '~/composables/useAiStream'
 import { useTheme } from '~/composables/useTheme'
 import { renderAiMd } from '~/utils/aiMd'
+import { useEvolution } from '~/composables/useEvolution'
 
 const route = useRoute()
 
@@ -27,7 +28,7 @@ interface ArticleDetail {
   source: string
   coverUrl?: string
 }
-interface ChatMsg { role: 'user' | 'assistant'; content: string }
+interface ChatMsg { role: 'user' | 'assistant'; content: string; fb?: 'UP' | 'DOWN' }
 interface ReviewReport {
   totalScore: number
   readability: number
@@ -46,6 +47,11 @@ const STATUS_TEXT: Record<string, string> = {
 
 // 主题（与博客全局主题联动）：驱动 Vditor 编辑器/预览配色
 const { theme: themeRef } = useTheme()
+
+// 进化闭环：运行期间采集 👍/👎、采纳与作者纠正（演示面板负责开关运行，两边共享状态）
+const { activeRun, refreshActive, recordCorrection, reportFeedback } = useEvolution()
+refreshActive()
+;(window as any).__wbVersion = 'v2-lazy-editor'
 
 const rows = ref<ArticleRow[]>([])
 const current = ref<ArticleRow | null>(null)
@@ -177,14 +183,14 @@ async function refreshPreview() {
   } catch { /* 预览失败不打断 */ }
 }
 
-watch(docTab, (t) => {
-  nextTick(() => {
-    refreshPreview()
-    // 切到微调时若编辑器在视口外，滚到可见（sticky 文档头下）
-    if (t === 'edit' && editorBox.value) {
-      editorBox.value.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }
-  })
+watch(docTab, async (t) => {
+  if (t === 'edit') {
+    // 首次进入「微调」才实例化编辑器（容器此时已显示）
+    await createEditor()
+    nextTick(() => editorBox.value?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))
+  } else {
+    nextTick(refreshPreview)
+  }
 })
 watch(docOpen, (v) => { if (v) nextTick(refreshPreview) })
 
@@ -226,16 +232,31 @@ function pickArticle(row: ArticleRow) {
   if (current.value?.id !== row.id) openArticle(row)
 }
 
-async function initEditor() {
+/** 导入 Vditor 模块：预览 API（VditorCtor.preview）只需要类本身，挂载时即可做 */
+async function importVditor() {
+  if (VditorCtor) return
   const [{ default: Vditor }] = await Promise.all([
     import('vditor'),
     import('vditor/dist/index.css'),
   ])
   VditorCtor = Vditor
+}
+
+/** 实例化编辑器：仅在首次需要时执行——v-show 隐藏的容器里构造 Vditor 会量到 0 高度的空壳 */
+async function createEditor() {
+  if (vditor) return
+  await importVditor()
+  await nextTick() // 确保 v-show 已把容器显示出来，构造时才能量到真实高度
   const vt = themeRef.value
-  vditor = new Vditor(editorBox.value!, {
+  const w = window as any
+  w.__createEditorCalls = (w.__createEditorCalls || 0) + 1
+  try {
+    // 防御性固定高度：不依赖父容器 100% 高度解析
+    if (editorBox.value) editorBox.value.style.height = '560px'
+    // 注意：Vditor 类来自 importVditor() 存入的 VditorCtor——裸引用 new Vditor() 会 ReferenceError
+    vditor = new VditorCtor!(editorBox.value!, {
     cdn: '/vditor',
-    height: '100%',
+    height: 520,
     mode: 'ir',
     theme: vt,
     cache: { enable: false },
@@ -255,6 +276,7 @@ async function initEditor() {
     },
     after: () => {
       editorReady.value = true
+      ;(w.__vditorAfterFired = (w.__vditorAfterFired || 0) + 1)
       if (pendingContent) vditor?.setValue(pendingContent)
       nextTick(refreshPreview)
     },
@@ -276,6 +298,11 @@ async function initEditor() {
       },
     },
   })
+  } catch (e) {
+    w.__vditorErr = String((e as Error).stack || e).slice(0, 400)
+    vditor = null
+    throw e
+  }
 }
 
 async function uploadMediaOnly(f: File): Promise<string> {
@@ -458,6 +485,8 @@ async function send(text?: string) {
   if (text === undefined) chatInput.value = ''
   chat.value.push({ role: 'user', content: msg })
   chat.value.push({ role: 'assistant', content: '' })
+  // 运行期间的作者指令视为反馈语料，随运行结束送记忆蒸馏
+  recordCorrection(msg)
   const idx = chat.value.length - 1
   aiBusy.value = true
   scrollChat()
@@ -482,6 +511,7 @@ async function send(text?: string) {
 async function quick(command: string, apply: 'replace' | 'append' | 'title' | 'none') {
   const md = currentMd()
   if (!md.trim() && apply !== 'title') { ElMessage.warning('正文为空'); return }
+  if (apply === 'replace' || apply === 'append') await createEditor()
   aiBusy.value = true
   chat.value.push({ role: 'user', content: command })
   chat.value.push({ role: 'assistant', content: '' })
@@ -501,7 +531,11 @@ async function quick(command: string, apply: 'replace' | 'append' | 'title' | 'n
       const first = reply.split('\n')[0].replace(/^[#\s\d.、-]*/, '').trim().slice(0, 60)
       if (first) title.value = first
     }
-    if (apply === 'replace' || apply === 'append') refreshPreview()
+    if (apply === 'replace' || apply === 'append') {
+      refreshPreview()
+      // 快捷卡直接落地 = 采纳，记入运行反馈（结束运行时与定稿比对算修改幅度）
+      reportFeedback(apply.toUpperCase() as 'REPLACE' | 'APPEND', reply, 'APPLIED', current.value?.id ?? null)
+    }
   } catch (e) {
     chat.value[idx].content += `\n⚠ ${(e as Error).message}`
   } finally { aiBusy.value = false; scrollChat() }
@@ -509,11 +543,25 @@ async function quick(command: string, apply: 'replace' | 'append' | 'title' | 'n
 
 async function applyToEditor(mode: 'replace' | 'append') {
   const last = [...chat.value].reverse().find((m) => m.role === 'assistant')
-  if (!last || !vditor) { ElMessage.warning('暂无 AI 输出'); return }
+  if (!last) { ElMessage.warning('暂无 AI 输出'); return }
+  // 预览态下首次采纳：先建编辑器再写入（否则 vditor 为空壳无法落正文）
+  if (!vditor) await createEditor()
+  if (!vditor) return
   if (mode === 'replace') vditor.setValue(last.content)
   else vditor.setValue((vditor.getValue() || '') + '\n\n' + last.content)
   refreshPreview()
   ElMessage.success(mode === 'replace' ? '已替换正文' : '已追加到文末')
+  // 采纳动作入进化流水：结束运行时与定稿比对，量化"原样采纳 vs 修改采纳"
+  reportFeedback(mode.toUpperCase() as 'REPLACE' | 'APPEND', last.content, 'APPLIED', current.value?.id ?? null)
+}
+
+/** 对某条 AI 输出打 👍/👎：进化运行期间入库，作为记忆蒸馏与采纳率素材 */
+async function rateMsg(i: number, verdict: 'UP' | 'DOWN') {
+  const m = chat.value[i]
+  if (!m || m.role !== 'assistant' || !m.content || m.fb) return
+  m.fb = verdict
+  await reportFeedback('CHAT', m.content, verdict, current.value?.id ?? null)
+  ElMessage.success(verdict === 'UP' ? '已记 👍：这个方向保持' : '已记 👎：下次运行会避开')
 }
 
 function autoGrow(e: Event) {
@@ -588,7 +636,7 @@ onMounted(() => document.addEventListener('click', onDocClick))
 onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 
 onMounted(async () => {
-  await initEditor()
+  await importVditor()
   await loadList()
   // 支持外部直达：/studio/workbench?article=<id>（文章页「编辑此文」入口）
   const qid = Number(route.query.article)
@@ -658,6 +706,9 @@ onMounted(async () => {
           <button class="chip" :class="{ on: carryArticle }" title="对话时自动携带当前文章草稿作为上下文" @click="carryArticle = !carryArticle">
             <span class="chip-dot" /> 携带文章
           </button>
+          <span v-if="activeRun" class="chip evo-on" title="此期间所有采纳与 👍/👎 都会被记住，结束运行后蒸馏为写作记忆">
+            <span class="chip-dot" /> 进化运行中 · #{{ activeRun.id }}
+          </span>
         </div>
         <div ref="chatBody" class="chat-body">
           <div v-if="!chat.length" class="hero">
@@ -702,12 +753,14 @@ onMounted(async () => {
               <div v-else-if="m.content" class="b-content">{{ m.content }}</div>
               <div v-else-if="i === chat.length - 1 && aiBusy" class="dots"><i /><i /><i /></div>
               <div v-else class="b-content">…</div>
-              <div
-                v-if="m.role === 'assistant' && m.content && i === chat.length - 1 && !aiBusy"
-                class="b-actions"
-              >
-                <button @click="applyToEditor('replace')">替换正文</button>
-                <button @click="applyToEditor('append')">追加到文末</button>
+              <div v-if="m.role === 'assistant' && m.content && !aiBusy" class="b-actions">
+                <template v-if="i === chat.length - 1">
+                  <button @click="applyToEditor('replace')">替换正文</button>
+                  <button @click="applyToEditor('append')">追加到文末</button>
+                </template>
+                <button v-if="!m.fb" title="方向对，记住这个偏好" @click="rateMsg(i, 'UP')">👍</button>
+                <button v-if="!m.fb" title="不合偏好，下次运行避开" @click="rateMsg(i, 'DOWN')">👎</button>
+                <span v-else class="fb-done">{{ m.fb === 'UP' ? '✓ 已记 👍' : '✓ 已记 👎' }}</span>
               </div>
             </div>
           </template>
@@ -1255,6 +1308,10 @@ onMounted(async () => {
   transition: all .15s ease;
 }
 .b-actions button:hover { background: var(--primary-soft); transform: translateY(-1px); }
+/* 进化反馈：已表态标记 与 运行中横幅 */
+.fb-done { font-size: .74em; color: var(--ok, #81c995); align-self: center; }
+.chip.evo-on { border-color: rgba(129, 201, 149, .55); color: #81c995; }
+.chip.evo-on .chip-dot { background: #81c995; box-shadow: 0 0 6px rgba(129, 201, 149, .8); }
 
 .dots { display: inline-flex; gap: 5px; padding: 4px 0; }
 .dots i {
