@@ -213,6 +213,35 @@ public class EvolutionService {
 
     // ===== 查询 =====
 
+    /** 公开摘要（AI 线 / /ai/evolution 数据源）：仅聚合指标，不暴露用户隐私字段 */
+    public Map<String, Object> publicSummary() {
+        Long finishedRuns = runMapper.selectCount(new LambdaQueryWrapper<EvolutionRun>()
+                .eq(EvolutionRun::getStatus, STATUS_FINISHED));
+        Long activeMemories = memoryMapper.selectCount(new LambdaQueryWrapper<cn.hengxing.inkpress.modules.evolution.entity.WritingMemory>()
+                .eq(cn.hengxing.inkpress.modules.evolution.entity.WritingMemory::getStatus, "ACTIVE"));
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("finishedRuns", finishedRuns);
+        m.put("activeMemories", activeMemories);
+        EvolutionRun last = runMapper.selectOne(new LambdaQueryWrapper<EvolutionRun>()
+                .eq(EvolutionRun::getStatus, STATUS_FINISHED)
+                .orderByDesc(EvolutionRun::getId)
+                .last("LIMIT 1"));
+        if (last != null) {
+            m.put("lastRunId", last.getId());
+            if (last.getMetricsJson() != null) {
+                try {
+                    m.put("lastMetrics", objectMapper.readTree(last.getMetricsJson()));
+                } catch (Exception ignore) {
+                    m.put("lastMetricsRaw", last.getMetricsJson());
+                }
+            }
+            if (last.getFinishedAt() != null) {
+                m.put("lastFinishedAt", last.getFinishedAt().toString());
+            }
+        }
+        return m;
+    }
+
     public List<EvolutionRun> listRuns(Long userId) {
         return runMapper.selectList(new LambdaQueryWrapper<EvolutionRun>()
                 .eq(EvolutionRun::getUserId, userId)
