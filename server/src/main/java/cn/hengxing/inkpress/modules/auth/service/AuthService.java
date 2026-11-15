@@ -49,7 +49,8 @@ public class AuthService {
                        PasswordEncoder passwordEncoder, JwtService jwtService,
                        JavaMailSender mailSender,
                        @Value("${inkpress.jwt.refresh-token-ttl}") Duration refreshTtl,
-                       @Value("${spring.mail.host}") String smtpHost) {
+                       @Value("${spring.mail.host:}") String smtpHost,
+                       @Value("${spring.mail.password:}") String smtpPassword) {
         this.userMapper = userMapper;
         this.userRoleMapper = userRoleMapper;
         this.refreshTokenMapper = refreshTokenMapper;
@@ -58,7 +59,10 @@ public class AuthService {
         this.jwtService = jwtService;
         this.mailSender = mailSender;
         this.refreshTtl = refreshTtl;
-        this.smtpConfigured = smtpHost != null && !smtpHost.isBlank() && !"smtp.local".equals(smtpHost);
+        // 主机与密码都就绪才算真实配置：任缺其一（如 .env 只填了 host）保持开发降级，
+        // 避免「配了主机但认证必失败」把注册拖进静默无邮件的中间态
+        this.smtpConfigured = smtpHost != null && !smtpHost.isBlank() && !"smtp.local".equals(smtpHost)
+                && smtpPassword != null && !smtpPassword.isBlank();
     }
 
     /**

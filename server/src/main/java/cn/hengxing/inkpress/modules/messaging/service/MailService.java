@@ -41,6 +41,7 @@ public class MailService {
     private final EmailDigestLogMapper digestLogMapper;
     private final JavaMailSender mailSender;
     private final String smtpHost;
+    private final String smtpPassword;
     private final String from;
     private final String publicBaseUrl;
     private final SecureRandom random = new SecureRandom();
@@ -48,6 +49,7 @@ public class MailService {
     public MailService(RabbitTemplate rabbitTemplate, UserMapper userMapper,
                        EmailDigestLogMapper digestLogMapper, JavaMailSender mailSender,
                        @Value("${spring.mail.host:}") String smtpHost,
+                       @Value("${spring.mail.password:}") String smtpPassword,
                        @Value("${inkpress.mail.from:inkpress@noreply.local}") String from,
                        @Value("${inkpress.mail.public-base-url:http://127.0.0.1:8912}") String publicBaseUrl) {
         this.rabbitTemplate = rabbitTemplate;
@@ -55,6 +57,7 @@ public class MailService {
         this.digestLogMapper = digestLogMapper;
         this.mailSender = mailSender;
         this.smtpHost = smtpHost;
+        this.smtpPassword = smtpPassword;
         this.from = from;
         this.publicBaseUrl = publicBaseUrl;
     }
@@ -165,8 +168,9 @@ public class MailService {
     }
 
     private void send(String to, String subject, String body) {
-        if (smtpHost == null || smtpHost.isBlank() || "smtp.local".equals(smtpHost)) {
-            // 开发期未配置 SMTP：降级日志输出，保持链路可验证且不进 DLQ
+        if (smtpHost == null || smtpHost.isBlank() || "smtp.local".equals(smtpHost)
+                || smtpPassword == null || smtpPassword.isBlank()) {
+            // 未配置 SMTP（或只配了主机没配密钥）：降级日志输出，保持链路可验证且不进 DLQ
             log.info("[MAIL-DEV] to={} subject={}\n{}", to, subject, body);
             return;
         }
