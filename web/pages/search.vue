@@ -9,6 +9,15 @@ const keyword = ref((route.query.keyword as string) || '')
 const hits = ref<Hit[]>([])
 const searching = ref(false)
 const searched = ref(false)
+const corpus = ref<{ articles: number; chunks: number; degraded: boolean } | null>(null)
+
+/** 语料规模：文章数与检索单元（chunk）数，来自公开统计端点 */
+onMounted(async () => {
+  try {
+    const d = await $pub<{ articles: number; chunks: number; degraded: boolean }>('/search/stats')
+    corpus.value = d
+  } catch { /* 统计失败不阻塞检索 */ }
+})
 
 async function run() {
   const kw = keyword.value.trim()
@@ -57,6 +66,12 @@ useSeoMeta({ title: () => (keyword.value.trim() ? `${keyword.value.trim()} - 搜
           <button class="s-go" :disabled="searching" @click="run">{{ searching ? '检索中…' : '检索' }}</button>
         </div>
 
+        <div v-if="corpus" class="s-corpus">
+          <span class="s-chip">语料库 · {{ corpus.articles }} 篇文章</span>
+          <span class="s-chip">{{ corpus.chunks >= 0 ? corpus.chunks.toLocaleString() + ' 个检索单元' : '检索单元统计不可用' }}</span>
+          <span v-if="corpus.degraded" class="s-chip s-chip-warn">索引降级中</span>
+        </div>
+
         <div v-if="searching" class="muted s-hint">检索中…</div>
         <div v-else-if="keyword.trim() && searched && !hits.length" class="muted s-hint">无匹配内容。</div>
 
@@ -69,7 +84,7 @@ useSeoMeta({ title: () => (keyword.value.trim() ? `${keyword.value.trim()} - 搜
         </div>
 
         <div v-if="!keyword.trim()" class="muted s-hint">
-          输入关键词回车，或使用导航栏的即时搜索下拉。检索按 BM25 关键词与语义向量混合排序（RRF）。
+          输入关键词回车，或使用导航栏的即时搜索下拉。检索按 BM25 关键词与语义向量混合排序（RRF），命中精确到段落级检索单元。
         </div>
       </div>
     </section>
@@ -99,6 +114,15 @@ useSeoMeta({ title: () => (keyword.value.trim() ? `${keyword.value.trim()} - 搜
 }
 .s-go:hover { color: var(--primary, #9ef01a); border-color: var(--primary, #9ef01a); }
 .s-hint { margin: 14px 0; }
+.s-corpus { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.s-chip {
+  border: 1px solid var(--line, #333);
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--ink-soft, #aaa);
+  font-variant-numeric: tabular-nums;
+}
+.s-chip-warn { color: #d98c3f; border-color: #d98c3f; }
 .s-hit { display: block; }
 .s-title-link { display: flex; align-items: center; gap: 8px; }
 .s-hl { margin: 4px 0 14px; font-size: 13px; line-height: 1.7; max-width: 72ch; }
