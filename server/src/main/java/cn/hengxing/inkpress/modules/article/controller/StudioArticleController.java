@@ -46,10 +46,11 @@ public class StudioArticleController {
     }
 
     @GetMapping
-    public Result<IPage<ArticleResponse>> page(@RequestParam(defaultValue = "1") int page,
+    public Result<IPage<ArticleResponse>> page(@AuthenticationPrincipal JwtAuthFilter.LoginUser user,
+                                              @RequestParam(defaultValue = "1") int page,
                                               @RequestParam(defaultValue = "10") int size,
                                               @RequestParam(required = false) String status) {
-        return Result.ok(articleService.studioPage(page, size, status));
+        return Result.ok(articleService.studioPage(user.id(), page, size, status));
     }
 
     @GetMapping("/{id}")

@@ -61,7 +61,11 @@ public class AuthService {
         this.smtpConfigured = smtpHost != null && !smtpHost.isBlank() && !"smtp.local".equals(smtpHost);
     }
 
-    /** 注册：创建未激活用户并发放邮箱验证码；首个用户自动授予 BLOGGER+ADMIN */
+    /**
+     * 注册：创建未激活用户并发放邮箱验证码。
+     * 角色策略：所有注册用户授予 READER + BLOGGER——工作台（AI 创作流/进化面板）对注册用户开放，
+     * 「人人可写的 AI 博客」是产品定位；仅首个用户额外授予 ADMIN（管理端）。
+     */
     @Transactional
     public void register(String email, String password, String nickname) {
         User user = new User();
@@ -76,8 +80,8 @@ public class AuthService {
         }
         boolean first = userMapper.selectCount(null) == 1;
         grantRole(user.getId(), UserRole.READER, null);
+        grantRole(user.getId(), UserRole.BLOGGER, user.getId());
         if (first) {
-            grantRole(user.getId(), UserRole.BLOGGER, user.getId());
             grantRole(user.getId(), UserRole.ADMIN, user.getId());
         }
         sendEmailCode(email, EmailCode.PURPOSE_VERIFY, "InkPress 邮箱验证码");

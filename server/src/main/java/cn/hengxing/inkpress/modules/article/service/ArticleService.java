@@ -154,9 +154,11 @@ public class ArticleService {
     }
 
     @PreAuthorize("hasRole('BLOGGER')")
-    public IPage<ArticleResponse> studioPage(int page, int size, String status) {
+    /** 博主工作台文章列表：只看本人稿件（与 studioDetail 的作者校验一致，避免列表能见、详情 403 的割裂） */
+    public IPage<ArticleResponse> studioPage(Long authorId, int page, int size, String status) {
         LambdaQueryWrapper<Article> qw = new LambdaQueryWrapper<Article>()
                 .eq(Article::getDeleted, 0)
+                .eq(authorId != null, Article::getAuthorId, authorId)
                 .eq(status != null && !status.isBlank(), Article::getStatus, status)
                 .orderByDesc(Article::getPinned)
                 .orderByDesc(Article::getUpdatedAt);
