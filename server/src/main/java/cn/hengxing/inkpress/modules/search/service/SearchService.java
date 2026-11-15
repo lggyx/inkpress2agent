@@ -32,17 +32,21 @@ public class SearchService {
     private static final Logger log = LoggerFactory.getLogger(SearchService.class);
     private static final int RRF_K = 60;
     private static final int FETCH_SIZE = 30;
+    /** chunk 级检索预取数（聚合到文章前多取一些，保证分页深度） */
+    private static final int CHUNK_FETCH = 120;
 
     private final EsClient esClient;
     private final EmbeddingService embeddingService;
+    private final ChunkingService chunkingService;
     private final ArticleMapper articleMapper;
     private final ArticleTagMapper articleTagMapper;
     private final TagMapper tagMapper;
 
-    public SearchService(EsClient esClient, EmbeddingService embeddingService,
+    public SearchService(EsClient esClient, EmbeddingService embeddingService, ChunkingService chunkingService,
                          ArticleMapper articleMapper, ArticleTagMapper articleTagMapper, TagMapper tagMapper) {
         this.esClient = esClient;
         this.embeddingService = embeddingService;
+        this.chunkingService = chunkingService;
         this.articleMapper = articleMapper;
         this.articleTagMapper = articleTagMapper;
         this.tagMapper = tagMapper;
@@ -51,6 +55,7 @@ public class SearchService {
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
         esClient.ensureIndex();
+        esClient.ensureChunkIndex();
     }
 
     public boolean esUp() {
@@ -72,8 +77,35 @@ public class SearchService {
                 doc.put("embedding", vector);
             }
             esClient.index(String.valueOf(article.getId()), doc);
+            indexChunks(article, tags);
         } catch (Exception e) {
             log.warn("index article {} failed: {}", article.getId(), e.getMessage());
+        }
+    }
+
+    /** 同步 chunk 索引：先清该文章的旧单元，再批量写入新单元（失败不影响文章级索引） */
+    private void indexChunks(Article article, List<String> tags) {
+        try {
+            List<String> chunks = chunkingService.chunk(article.getContentMd());
+            esClient.chunkDeleteByArticle(article.getId());
+            if (chunks.isEmpty()) {
+                return;
+            }
+            List<Map<String, Object>> docs = new ArrayList<>();
+            for (int i = 0; i < chunks.size(); i++) {
+                Map<String, Object> d = new HashMap<>();
+                d.put("chunkId", article.getId() + "-" + i);
+                d.put("articleId", article.getId());
+                d.put("chunkIndex", i);
+                d.put("title", article.getTitle());
+                d.put("content", chunks.get(i));
+                d.put("tags", tags);
+                d.put("publishedAt", article.getPublishedAt() == null ? null : article.getPublishedAt().toString());
+                docs.add(d);
+            }
+            esClient.chunkBulkIndex(docs);
+        } catch (Exception e) {
+            log.warn("index chunks for article {} failed: {}", article.getId(), e.getMessage());
         }
     }
 
@@ -82,6 +114,11 @@ public class SearchService {
             esClient.delete(String.valueOf(id));
         } catch (Exception e) {
             log.warn("remove article {} from index failed: {}", id, e.getMessage());
+        }
+        try {
+            esClient.chunkDeleteByArticle(id);
+        } catch (Exception e) {
+            log.warn("remove chunks of article {} failed: {}", id, e.getMessage());
         }
     }
 
@@ -96,7 +133,7 @@ public class SearchService {
 
     // ---------- 检索 ----------
 
-    /** mode: bm25 / vector / hybrid（默认 hybrid） */
+    /** mode: bm25 / vector / hybrid（默认 hybrid）；ES 可用且 chunk 索引就绪时走 chunk 级检索，聚合到文章 */
     public Map<String, Object> search(String keyword, String mode, int page, int size) {
         if (keyword == null || keyword.isBlank()) {
             return Map.of("total", 0, "records", List.of(), "degraded", !esUp(), "mode", mode);
@@ -109,10 +146,11 @@ public class SearchService {
             effectiveMode = "bm25"; // 向量不可用降级
         }
         try {
+            boolean chunked = chunkReady();
             List<SearchHit> hits = switch (effectiveMode) {
-                case "bm25" -> bm25(keyword);
-                case "vector" -> vector(keyword);
-                default -> hybrid(keyword);
+                case "bm25" -> chunked ? chunkBm25(keyword) : bm25(keyword);
+                case "vector" -> vector(keyword); // chunk 索引无向量，向量臂走文章级
+                default -> chunked ? chunkHybrid(keyword) : hybrid(keyword);
             };
             int from = Math.max(0, (page - 1) * size);
             int to = Math.min(hits.size(), from + size);
@@ -125,6 +163,72 @@ public class SearchService {
             log.warn("ES search failed, fallback to LIKE: {}", e.getMessage());
             return mysqlLikeSearch(keyword, page, size);
         }
+    }
+
+    /** chunk 索引是否有文档（无则回退文章级检索） */
+    private boolean chunkReady() {
+        return esClient.chunkCount() > 0;
+    }
+
+    /** chunk 级 BM25：命中检索单元，按文章聚合（保留最佳命中块与高亮） */
+    private List<SearchHit> chunkBm25(String keyword) throws Exception {
+        String body = """
+                {"size":%d,"query":{"multi_match":{"query":"%s","fields":["title^3","content"]}},
+                 "highlight":{"fields":{"title":{},"content":{"fragment_size":150,"number_of_fragments":1}}}}
+                """.formatted(CHUNK_FETCH, escape(keyword));
+        return aggregateChunks(esClient.chunkSearch(body));
+    }
+
+    /** chunk 级混合：chunk BM25 臂 + 文章级向量臂，RRF 按文章融合 */
+    private List<SearchHit> chunkHybrid(String keyword) throws Exception {
+        List<SearchHit> keywordHits = chunkBm25(keyword);
+        List<SearchHit> vectorHits = vector(keyword);
+        Map<Long, SearchHit> merged = new LinkedHashMap<>();
+        Map<Long, Double> score = new HashMap<>();
+        applyRanks(merged, score, keywordHits);
+        applyRanks(merged, score, vectorHits);
+        List<SearchHit> result = new ArrayList<>(merged.values());
+        result.sort((a, b) -> Double.compare(score.getOrDefault(b.id(), 0.0), score.getOrDefault(a.id(), 0.0)));
+        return result;
+    }
+
+    /** chunk 命中按文章聚合：_id 形如 "{articleId}-{chunkIndex}"，首次出现即最佳块 */
+    private List<SearchHit> aggregateChunks(JsonNode root) {
+        Map<Long, SearchHit> byArticle = new LinkedHashMap<>();
+        for (JsonNode h : root.path("hits").path("hits")) {
+            String chunkId = h.path("_id").asText();
+            int dash = chunkId.lastIndexOf('-');
+            if (dash <= 0) {
+                continue;
+            }
+            Long articleId = Long.valueOf(chunkId.substring(0, dash));
+            String title = h.path("_source").path("title").asText("");
+            String highlight = "";
+            JsonNode hl = h.path("highlight");
+            if (hl.has("title") && hl.path("title").size() > 0) {
+                highlight = hl.path("title").get(0).asText();
+            } else if (hl.has("content") && hl.path("content").size() > 0) {
+                highlight = hl.path("content").get(0).asText();
+            }
+            byArticle.putIfAbsent(articleId, new SearchHit(articleId, title, highlight));
+        }
+        return new ArrayList<>(byArticle.values());
+    }
+
+    /** 语料规模统计（公开端点用）：文章数 + 检索单元数，ES 宕机时文章数走 MySQL、单元数标 -1 */
+    public Map<String, Object> corpusStats() {
+        boolean up = esUp();
+        long articles;
+        long chunks;
+        if (up) {
+            articles = esClient.docCount();
+            chunks = esClient.chunkCount();
+        } else {
+            articles = articleMapper.selectCount(new LambdaQueryWrapper<Article>()
+                    .eq(Article::getStatus, "PUBLISHED").eq(Article::getDeleted, 0));
+            chunks = -1;
+        }
+        return Map.of("articles", articles, "chunks", chunks, "degraded", !up);
     }
 
     private List<SearchHit> bm25(String keyword) throws Exception {

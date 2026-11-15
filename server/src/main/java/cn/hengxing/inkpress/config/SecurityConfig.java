@@ -41,9 +41,9 @@ public class SecurityConfig {
                         // M6 统计采集与公开榜：游客可上报/可读；画像一键清除为匿名隐私权利
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/track/visit", "/api/track/clear").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/r", "/api/stats/hot", "/api/graph", "/rss.xml").permitAll()
-                        // 游客可读：公开文章、搜索、分类、标签、媒体资产、AI 线公开摘要
+                        // 游客可读：公开文章、搜索、语料统计、分类、标签、媒体资产、AI 线公开摘要
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
-                                "/api/articles/**", "/api/search", "/api/categories", "/api/tags",
+                                "/api/articles/**", "/api/search", "/api/search/stats", "/api/categories", "/api/tags",
                                 "/api/media/**", "/api/evolution/public-summary").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(traceIdFilter, UsernamePasswordAuthenticationFilter.class)

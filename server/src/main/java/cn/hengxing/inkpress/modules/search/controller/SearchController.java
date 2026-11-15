@@ -30,6 +30,15 @@ public class SearchController {
         return Result.ok(searchService.search(keyword, mode, page, size));
     }
 
+    /**
+     * 语料规模统计（公开）：文章数与检索单元（chunk）数。
+     * chunk 口径即路演物料「3000+ 语料全部可检索」的可验证数字；ES 宕机时 chunks 为 -1 且 degraded=true。
+     */
+    @GetMapping("/search/stats")
+    public Result<Map<String, Object>> stats() {
+        return Result.ok(searchService.corpusStats());
+    }
+
     @GetMapping("/admin/search/status")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Map<String, Boolean>> status() {
