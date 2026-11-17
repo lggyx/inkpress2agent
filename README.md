@@ -15,7 +15,8 @@
                             ├─ RabbitMQ 3.13（索引同步 + DLQ）
                             └─ Elasticsearch 8.15 + IK（BM25/vector/hybrid 三臂检索）
 
-distributor/：本机 CLI（Playwright），把待分发文章自动化发布到掘金/CSDN/知乎/公众号；
+distributor/：本机 CLI（Playwright），把待分发文章自动填充为平台草稿（掘金/CSDN/知乎/公众号：
+授权检测/排版填充/剪贴板兜底），发布确认由人工完成，发布后自动捕获外链回报；
 平台 Cookie 不出机，服务端只提供内容与回调。
 ```
 
