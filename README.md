@@ -46,7 +46,7 @@ docker compose up -d --build
 ## 测试与压测
 
 ```bash
-# 单元测试（26 用例）：容器内跑，源码以 docker cp 注入
+# 单元测试（42 用例）：容器内跑，源码以 docker cp 注入
 docker run -d --name unittest maven:3.9-eclipse-temurin-17 sleep 1800
 docker cp server/. unittest:/app
 docker exec -w /app unittest mvn -B -s maven-settings.xml test
