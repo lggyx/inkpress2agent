@@ -19,6 +19,7 @@ public/vditor/
 distributor/config.json
 distributor/.profiles/
 distributor/.artifacts/
+distributor/.auth/
 
 # 日志与系统文件
 logs/
