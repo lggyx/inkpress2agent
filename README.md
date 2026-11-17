@@ -10,7 +10,7 @@
 ```
 浏览器 ── nginx(8912) ──┬── web (Nuxt 3 SSR/ISR)   前台/工作室/管理端
                         └── server (:8080)          Spring Boot 3.3 / Java 17
-                            ├─ MySQL 8（Flyway 21 个迁移）
+                            ├─ MySQL 8（Flyway 24 个迁移）
                             ├─ Redis 7（计数缓冲/限流）
                             ├─ RabbitMQ 3.13（索引同步 + DLQ）
                             └─ Elasticsearch 8.15 + IK（BM25/vector/hybrid 三臂检索）
@@ -46,7 +46,7 @@ docker compose up -d --build
 ## 测试与压测
 
 ```bash
-# 单元测试（12 用例）：容器内跑，源码以 docker cp 注入
+# 单元测试（26 用例）：容器内跑，源码以 docker cp 注入
 docker run -d --name unittest maven:3.9-eclipse-temurin-17 sleep 1800
 docker cp server/. unittest:/app
 docker exec -w /app unittest mvn -B -s maven-settings.xml test
