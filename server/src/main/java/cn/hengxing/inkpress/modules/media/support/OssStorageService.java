@@ -48,10 +48,10 @@ public class OssStorageService {
                 + (ext == null || ext.isBlank() ? "" : (ext.startsWith(".") ? ext : "." + ext));
     }
 
-    /** 公网访问链接：public_base_url 去尾斜杠 + "/" + key（用户漏填协议时自动补 http://） */
+    /** 公网访问链接：public_base_url 去全部尾斜杠 + "/" + key（用户漏填协议时自动补 http://） */
     public String publicUrl(String key) {
         String base = get("oss.public_base_url");
-        base = base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
+        base = base.replaceAll("/+$", "");
         if (!base.startsWith("http://") && !base.startsWith("https://")) {
             base = "http://" + base;
         }

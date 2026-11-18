@@ -107,6 +107,37 @@ public class DistributionController {
         return Result.ok();
     }
 
+    /** ── WorkProvider 数据回流：agent 从已发布详情页提取阅读/点赞/评论后回报 ── */
+
+    public record WorkStatsRequest(@NotBlank Long id, Long views, Long likes, Long comments) {
+    }
+
+    /** agent 拉取已发布作品清单（有外链的 PUBLISHED 记录），据此逐条 queryWork */
+    @GetMapping("/distribution/works")
+    public Result<List<Map<String, Object>>> works() {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (DistributionRecord r : distributionService.publishedWorks()) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("recordId", r.getId());
+            item.put("platform", r.getPlatform());
+            item.put("articleId", r.getArticleId());
+            item.put("publishedUrl", r.getPublishedUrl());
+            item.put("workViews", r.getWorkViews());
+            item.put("workLikes", r.getWorkLikes());
+            item.put("workComments", r.getWorkComments());
+            item.put("workFetchedAt", r.getWorkFetchedAt() == null ? null : r.getWorkFetchedAt().toString());
+            out.add(item);
+        }
+        return Result.ok(out);
+    }
+
+    /** agent 回调：作品数据回流（字段可缺省，平台未必公开全部指标） */
+    @PostMapping("/distribution/work")
+    public Result<Void> work(@RequestBody WorkStatsRequest req) {
+        distributionService.saveWorkStats(req.id(), req.views(), req.likes(), req.comments());
+        return Result.ok();
+    }
+
     /** ── B 档：平台授权状态（distributor auth status 回报 + 管理端查看） ── */
 
     public record AuthStatusRequest(@NotBlank String platform, String authType, boolean loggedIn,

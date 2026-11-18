@@ -26,6 +26,8 @@ public class EsClient {
     private final String index;
     /** 检索单元（chunk）索引：文章级索引名 + "-chunks" */
     private final String chunkIndex;
+    /** 文章级索引的向量维度缓存（-1 = 未知）：写向量前必须与之对齐，避免整篇文档被 ES 拒收 */
+    private volatile int cachedIndexDims = -1;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient http = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
@@ -49,8 +51,8 @@ public class EsClient {
         }
     }
 
-    /** 启动时确保索引存在（IK 分词 + 1024 维向量） */
-    public void ensureIndex() {
+    /** 启动时确保索引存在（IK 分词 + 按配置维度建向量字段；已存在的索引不动） */
+    public void ensureIndex(int dims) {
         try {
             HttpRequest head = HttpRequest.newBuilder(URI.create(baseUrl + "/" + index))
                     .timeout(Duration.ofSeconds(5)).GET().build();
@@ -63,9 +65,9 @@ public class EsClient {
                       "title":{"type":"text","analyzer":"ik_max_word","search_analyzer":"ik_smart"},
                       "content":{"type":"text","analyzer":"ik_max_word","search_analyzer":"ik_smart"},
                       "tags":{"type":"keyword"},
-                      "embedding":{"type":"dense_vector","dims":1024,"index":true,"similarity":"cosine"},
+                      "embedding":{"type":"dense_vector","dims":%d,"index":true,"similarity":"cosine"},
                       "publishedAt":{"type":"date"}
-                    }}}""";
+                    }}}""".formatted(dims);
             HttpRequest create = HttpRequest.newBuilder(URI.create(baseUrl + "/" + index))
                     .timeout(Duration.ofSeconds(10))
                     .header("Content-Type", "application/json")
@@ -84,6 +86,33 @@ public class EsClient {
 
     public void index(String id, Map<String, Object> doc) throws IOException, InterruptedException {
         put("/" + index + "/_doc/" + id, objectMapper.writeValueAsString(doc));
+    }
+
+    /**
+     * 文章级索引的实际向量维度（读 _mapping，进程内缓存）。
+     * 返回 -1 表示未知（ES 不可达/字段未建）——调用方应退回配置口径并显式告警。
+     */
+    public int indexDims() {
+        if (cachedIndexDims > 0) {
+            return cachedIndexDims;
+        }
+        try {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(baseUrl + "/" + index + "/_mapping"))
+                    .timeout(Duration.ofSeconds(5)).GET().build();
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() != 200) {
+                return -1;
+            }
+            JsonNode dims = objectMapper.readTree(resp.body())
+                    .path(index).path("mappings").path("properties").path("embedding").path("dims");
+            int d = dims.asInt(-1);
+            if (d > 0) {
+                cachedIndexDims = d;
+            }
+            return d;
+        } catch (Exception e) {
+            return -1;
+        }
     }
 
     // ---------- chunk（检索单元）索引 ----------

@@ -20,9 +20,12 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -38,7 +41,9 @@ class SearchOrchestrationTest {
 
     private EsClient esClient;
     private EmbeddingService embedding;
+    private ChunkingService chunking;
     private ArticleMapper articleMapper;
+    private ArticleTagMapper articleTagMapper;
     private SearchService service;
     private final ObjectMapper om = new ObjectMapper();
 
@@ -48,16 +53,19 @@ class SearchOrchestrationTest {
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
         assistant.setCurrentNamespace("test");
         TableInfoHelper.initTableInfo(assistant, Article.class);
+        TableInfoHelper.initTableInfo(assistant, cn.hengxing.inkpress.modules.article.entity.ArticleTag.class);
+        TableInfoHelper.initTableInfo(assistant, cn.hengxing.inkpress.modules.article.entity.Tag.class);
     }
 
     @BeforeEach
     void setUp() {
         esClient = mock(EsClient.class);
         embedding = mock(EmbeddingService.class);
-        ChunkingService chunking = mock(ChunkingService.class);
+        chunking = mock(ChunkingService.class);
         articleMapper = mock(ArticleMapper.class);
+        articleTagMapper = mock(ArticleTagMapper.class);
         service = new SearchService(esClient, embedding, chunking,
-                articleMapper, mock(ArticleTagMapper.class), mock(TagMapper.class));
+                articleMapper, articleTagMapper, mock(TagMapper.class));
     }
 
     private static Article article(long id, String title) {
@@ -214,5 +222,73 @@ class SearchOrchestrationTest {
         assertEquals(49L, m.get("articles"), "ES 宕机时文章数走 MySQL");
         assertEquals(-1L, m.get("chunks"), "单元数无法统计标 -1");
         assertEquals(true, m.get("degraded"));
+    }
+
+    // ---------- 索引写入与向量维度守门 ----------
+
+    @Test
+    void initCreatesIndexWithConfiguredDims() {
+        when(embedding.dims()).thenReturn(2048);
+        service.init();
+        verify(esClient).ensureIndex(2048);
+        verify(esClient).ensureChunkIndex();
+    }
+
+    private Article publishedArticle(long id, String title) {
+        Article a = article(id, title);
+        a.setContentMd("# 标题\n\n正文内容。");
+        return a;
+    }
+
+    @Test
+    void indexArticleIncludesEmbeddingWhenDimsMatch() throws Exception {
+        // 维度守门：索引 mapping 与向量同为 3 维即写入
+        when(esClient.indexDims()).thenReturn(3);
+        when(embedding.embed(anyString())).thenReturn(new ArrayList<>(java.util.Collections.nCopies(3, 0.5)));
+        when(embedding.dims()).thenReturn(3);
+        when(articleTagMapper.selectList(any())).thenReturn(List.of());
+        when(chunking.chunk(anyString())).thenReturn(List.of("检索单元一"));
+
+        service.indexArticle(publishedArticle(1L, "标题一"));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> doc = ArgumentCaptor.forClass(Map.class);
+        verify(esClient).index(eq("1"), doc.capture());
+        assertTrue(doc.getValue().containsKey("embedding"), "维度与索引 mapping 一致时应写入向量");
+        verify(esClient).chunkDeleteByArticle(1L);
+        verify(esClient).chunkBulkIndex(any());
+    }
+
+    @Test
+    void indexArticleDropsEmbeddingWithWarnWhenDimsMismatch() throws Exception {
+        when(esClient.indexDims()).thenReturn(768);
+        when(embedding.embed(anyString())).thenReturn(new ArrayList<>(java.util.Collections.nCopies(1024, 0.1)));
+        when(articleTagMapper.selectList(any())).thenReturn(List.of());
+        when(chunking.chunk(anyString())).thenReturn(List.of("检索单元一"));
+
+        service.indexArticle(publishedArticle(2L, "标题二"));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> doc = ArgumentCaptor.forClass(Map.class);
+        verify(esClient).index(eq("2"), doc.capture());
+        assertFalse(doc.getValue().containsKey("embedding"), "维度不符必须跳过向量，避免整篇被 ES 拒收");
+        // 文本仍要正常入索引（降级不是丢文档）
+        assertEquals("标题二", doc.getValue().get("title"));
+    }
+
+    @Test
+    void indexArticleSkipsVectorWhenSlotUnconfigured() throws Exception {
+        when(embedding.embed(anyString())).thenReturn(null);
+        when(articleTagMapper.selectList(any())).thenReturn(List.of());
+        when(chunking.chunk(anyString())).thenReturn(List.of());
+
+        service.indexArticle(publishedArticle(3L, "标题三"));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> doc = ArgumentCaptor.forClass(Map.class);
+        verify(esClient).index(eq("3"), doc.capture());
+        assertFalse(doc.getValue().containsKey("embedding"));
+        // 空块列表不应触发 bulk 写入
+        verify(esClient, never()).chunkBulkIndex(any());
     }
 }

@@ -137,7 +137,7 @@ async function test(cap: string) {
                  @input="touchedKeys[c.key] = true">
         </div>
         <div v-if="c.key === 'embedding'" class="form-row">
-          <label>向量维度（需与 ES 索引一致，默认 1024；智谱 embedding-3 / bge-m3 均支持）</label>
+          <label>向量维度（新建 ES 索引时生效，默认 1024；已有索引改维度需删除索引后在搜索页触发重建并重新索引）</label>
           <input v-model="forms[c.key].dimensions" placeholder="1024">
         </div>
 

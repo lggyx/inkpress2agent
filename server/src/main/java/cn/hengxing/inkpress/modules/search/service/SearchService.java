@@ -54,7 +54,8 @@ public class SearchService {
 
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
-        esClient.ensureIndex();
+        // 新建索引时按配置维度建向量字段；已有索引不动（改维度需删索引重建，见 indexArticle 的守门告警）
+        esClient.ensureIndex(embeddingService.dims());
         esClient.ensureChunkIndex();
     }
 
@@ -73,8 +74,19 @@ public class SearchService {
             doc.put("tags", tags);
             doc.put("publishedAt", article.getPublishedAt() == null ? null : article.getPublishedAt().toString());
             List<Double> vector = embeddingService.embed(article.getTitle() + "\n" + article.getContentMd());
-            if (vector != null && vector.size() == 1024) {
-                doc.put("embedding", vector);
+            if (vector != null) {
+                // 守门：向量维度必须与 ES 索引 mapping 一致，否则整篇文档会被拒收；
+                // mapping 未知（ES 不可达/字段未建）时退回配置口径。不符时显式告警只降级本篇，不静默丢弃。
+                int idxDims = esClient.indexDims();
+                if (idxDims <= 0) {
+                    idxDims = embeddingService.dims();
+                }
+                if (vector.size() == idxDims) {
+                    doc.put("embedding", vector);
+                } else {
+                    log.warn("article {} embedding 维度不符（vector={}，索引 mapping={}），只索引文本不写向量；"
+                            + "若已改配置维度，需删除 ES 索引重建后执行管理端重索引", article.getId(), vector.size(), idxDims);
+                }
             }
             esClient.index(String.valueOf(article.getId()), doc);
             indexChunks(article, tags);

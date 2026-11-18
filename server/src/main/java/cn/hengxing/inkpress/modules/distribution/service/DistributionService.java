@@ -93,6 +93,34 @@ public class DistributionService {
         distributionRecordMapper.updateById(record);
     }
 
+    /** 已发布且有外链的分发记录（供 agent 拉取做作品数据回流） */
+    public List<DistributionRecord> publishedWorks() {
+        return distributionRecordMapper.selectList(new LambdaQueryWrapper<DistributionRecord>()
+                .eq(DistributionRecord::getStatus, DistributionRecord.STATUS_PUBLISHED)
+                .isNotNull(DistributionRecord::getPublishedUrl)
+                .orderByDesc(DistributionRecord::getId));
+    }
+
+    /** 作品数据回流（agent 回调）：仅 PUBLISHED 记录接受回填；字段可缺省（平台未必都公开） */
+    @Transactional
+    public void saveWorkStats(Long id, Long views, Long likes, Long comments) {
+        DistributionRecord record = mustGet(id);
+        if (!DistributionRecord.STATUS_PUBLISHED.equals(record.getStatus())) {
+            throw BizException.of(4003, "分发记录未发布，无法回流作品数据");
+        }
+        if (views != null) {
+            record.setWorkViews(views);
+        }
+        if (likes != null) {
+            record.setWorkLikes(likes);
+        }
+        if (comments != null) {
+            record.setWorkComments(comments);
+        }
+        record.setWorkFetchedAt(java.time.LocalDateTime.now());
+        distributionRecordMapper.updateById(record);
+    }
+
     public List<DistributionRecord> listByArticle(Long articleId) {
         return distributionRecordMapper.selectList(new LambdaQueryWrapper<DistributionRecord>()
                 .eq(DistributionRecord::getArticleId, articleId)

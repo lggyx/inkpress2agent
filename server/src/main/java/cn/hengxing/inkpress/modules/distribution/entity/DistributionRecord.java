@@ -24,6 +24,11 @@ public class DistributionRecord {
     private String publishedUrl;
     private Integer attemptCount;
     private String detail;
+    /** 作品数据回流（WorkProvider）：阅读/点赞/评论 + 最近回流时间 */
+    private Long workViews;
+    private Long workLikes;
+    private Long workComments;
+    private LocalDateTime workFetchedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -35,6 +40,10 @@ public class DistributionRecord {
     public String getPublishedUrl() { return publishedUrl; }
     public Integer getAttemptCount() { return attemptCount; }
     public String getDetail() { return detail; }
+    public Long getWorkViews() { return workViews; }
+    public Long getWorkLikes() { return workLikes; }
+    public Long getWorkComments() { return workComments; }
+    public LocalDateTime getWorkFetchedAt() { return workFetchedAt; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 
@@ -46,6 +55,10 @@ public class DistributionRecord {
     public void setPublishedUrl(String publishedUrl) { this.publishedUrl = publishedUrl; }
     public void setAttemptCount(Integer attemptCount) { this.attemptCount = attemptCount; }
     public void setDetail(String detail) { this.detail = detail; }
+    public void setWorkViews(Long workViews) { this.workViews = workViews; }
+    public void setWorkLikes(Long workLikes) { this.workLikes = workLikes; }
+    public void setWorkComments(Long workComments) { this.workComments = workComments; }
+    public void setWorkFetchedAt(LocalDateTime workFetchedAt) { this.workFetchedAt = workFetchedAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
