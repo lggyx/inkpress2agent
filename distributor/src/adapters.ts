@@ -106,7 +106,7 @@ async function contentLength(page: Page, sel: string): Promise<number> {
   }, sel);
 }
 
-/** 本地 stub 编辑器：全自动冒烟用，模拟 平台填充→发布→详情页跳转 全链路 */
+/** 本地 stub 编辑器：全自动冒烟用，模拟 平台填充→发布→详情页跳转→数据回流 全链路 */
 function stubEditorHtml(): string {
   return `<!DOCTYPE html><html lang="zh"><head><meta charset="UTF-8"><title>Stub 平台编辑器</title></head>
 <body style="font-family:system-ui;max-width:52rem;margin:2rem auto">
@@ -115,6 +115,9 @@ function stubEditorHtml(): string {
 <div id="content" contenteditable="true" style="min-height:240px;border:1px solid #bbb;padding:12px;margin-top:8px"></div>
 <button id="publish" onclick="publish()" style="margin-top:12px;padding:8px 24px">发布</button>
 <span id="pub-status"></span>
+<div id="work-stats" style="display:none;margin-top:12px;padding:10px;border:1px dashed #999">
+  模拟作品数据：阅读 <b id="stat-views">128</b> · 点赞 <b id="stat-likes">12</b> · 评论 <b id="stat-comments">3</b>
+</div>
 <script>
 function publish(){
   var t=document.querySelector('#title').value;
@@ -122,6 +125,12 @@ function publish(){
   location.hash='#/published/'+Date.now();
   document.querySelector('#pub-status').textContent='已发布：'+t;
 }
+function renderStats(){
+  document.querySelector('#work-stats').style.display =
+    location.hash.indexOf('#/published/')===0 ? 'block' : 'none';
+}
+window.addEventListener('hashchange', renderStats);
+renderStats();
 </script></body></html>`;
 }
 

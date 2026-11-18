@@ -112,32 +112,70 @@ async function main(): Promise<void> {
       return;
     }
     case 'auth': {
-      // B 档授权三分法：auth status / auth login <platform>
+      // v2 Provider 注册表是授权能力的唯一入口（auth.ts 是实现载体）
       const sub = rest[0];
-      const { metaOf, allPlatforms } = await import('./platform-meta.js');
-      const { checkAuth, authLogin, allStatuses } = await import('./auth.js');
+      const { providerOf, allProviders } = await import('./providers-v2.js');
       if (sub === 'status') {
         const rows: string[] = [];
-        for (const meta of allPlatforms()) {
-          if (meta.authType === 'user_handoff') {
-            rows.push(`${meta.platform.padEnd(8)} ${meta.displayName}  [${meta.authType}]  ${meta.handoffNote ?? ''}`);
+        for (const p of allProviders()) {
+          if (p.authType === 'user_handoff') {
+            rows.push(`${p.platform.padEnd(8)} ${p.displayName}  [${p.authType}]  本地演练，无需授权`);
             continue;
           }
-          const st = await checkAuth(meta.platform, meta.loginUrl, meta.loggedInSelector);
-          rows.push(`${meta.platform.padEnd(8)} ${meta.displayName}  [${st.authType}]  ${st.loggedIn ? '✅ 已登录' : '❌ 未登录/失效'}  ${st.note ?? ''}`);
+          const st = await p.authStatus();
+          rows.push(`${st.platform.padEnd(8)} ${p.displayName}  [${st.authType}]  ${st.loggedIn ? '✅ 已登录' : '❌ 未登录/失效'}  ${st.note ?? ''}`);
         }
         console.log(rows.join('\n'));
         return;
       }
       if (sub === 'login') {
         const platform = rest[1];
-        if (!platform) throw new Error('用法：auth login <platform>（可选：' + allPlatforms().filter(m => m.authType !== 'user_handoff').map(m => m.platform).join(' / ') + '）');
-        const meta = metaOf(platform);
-        const st = await authLogin(meta.platform, meta.loginUrl, meta.loggedInSelector);
+        if (!platform) throw new Error('用法：auth login <platform>（可选：' + allProviders().filter(p => p.authType !== 'user_handoff').map(p => p.platform).join(' / ') + '）');
+        const st = await providerOf(platform).authLogin(false);
         console.log(st.loggedIn ? `${platform} 授权成功，profile 已持久化` : `${platform} 登录未完成：${st.note}`);
         return;
       }
       throw new Error('用法：auth status | auth login <platform>');
+    }
+    case 'work': {
+      // WorkProvider 数据回流：拉取已发布作品清单 → 逐平台提取阅读/点赞/评论 → 回报站点
+      requireToken(cfg);
+      const { publishedWorks, reportWork } = await import('./api.js');
+      const { providerOf } = await import('./providers-v2.js');
+      const records = await publishedWorks();
+      const onlyId = Number(rest[0]);
+      const targets = Number.isFinite(onlyId) && onlyId > 0
+        ? records.filter((r) => r.recordId === onlyId)
+        : records;
+      if (targets.length === 0) {
+        console.log('没有可回流的作品数据（需要 PUBLISHED 且已捕获外链的分发记录）。');
+        return;
+      }
+      let ok = 0, skipped = 0, failed = 0;
+      for (const r of targets) {
+        const provider = providerOf(r.platform);
+        if (!provider.queryWork) {
+          console.log(`#${r.recordId} [${r.platform}] 未实现数据回流，跳过`);
+          skipped++;
+          continue;
+        }
+        try {
+          const stats = await provider.queryWork(r.publishedUrl, { headless: r.platform === 'stub' });
+          await reportWork({
+            id: r.recordId,
+            views: stats.views ?? null,
+            likes: stats.likes ?? null,
+            comments: stats.comments ?? null,
+          });
+          console.log(`#${r.recordId} [${r.platform}] 回流成功：阅读 ${stats.views ?? '—'} 点赞 ${stats.likes ?? '—'} 评论 ${stats.comments ?? '—'}  ← ${r.publishedUrl}`);
+          ok++;
+        } catch (e) {
+          console.error(`#${r.recordId} [${r.platform}] 回流失败：${(e as Error).message}`);
+          failed++;
+        }
+      }
+      console.log(`作品回流完成：成功 ${ok} / 跳过 ${skipped} / 失败 ${failed}`);
+      return;
     }
     default:
       console.log(`InkPress 本机分发工具
@@ -156,7 +194,10 @@ async function main(): Promise<void> {
       真实平台默认有头（用持久化 profile 保留平台登录态），stub 冒烟默认无头
       发布前自动检查授权态：未登录会提示先执行 auth login
   clipboard <recordId>
-      剪贴板兜底（自动化失败/风控熔断时用）：复制排版内容，人工粘贴发布`);
+      剪贴板兜底（自动化失败/风控熔断时用）：复制排版内容，人工粘贴发布
+  work [<recordId>] [--headless]
+      作品数据回流：拉取已发布作品，从详情页提取阅读/点赞/评论回报站点
+      （juejin/stub 已实现，其余平台未适配会提示跳过）`);
       process.exitCode = cmd === undefined ? 0 : 1;
   }
 }

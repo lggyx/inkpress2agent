@@ -79,3 +79,26 @@ export function reportAuthStatus(payload: {
 }) {
   return call<void>('POST', '/api/distribution/auth-status', payload);
 }
+
+/** ── WorkProvider 数据回流：已发布作品清单与统计回填 ── */
+
+export interface PublishedWork {
+  recordId: number;
+  platform: string;
+  articleId: number;
+  publishedUrl: string;
+  workViews?: number | null;
+  workLikes?: number | null;
+  workComments?: number | null;
+  workFetchedAt?: string | null;
+}
+
+/** 拉取已发布且有外链的分发记录（供 work 命令逐条回流） */
+export function publishedWorks(): Promise<PublishedWork[]> {
+  return call<PublishedWork[]>('GET', '/api/distribution/works');
+}
+
+/** 回流作品数据（字段可缺省——平台未必公开全部指标） */
+export function reportWork(payload: { id: number; views?: number | null; likes?: number | null; comments?: number | null }) {
+  return call<void>('POST', '/api/distribution/work', payload);
+}
